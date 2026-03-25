@@ -175,7 +175,6 @@ describe('Schema: short_list_items source and grit_fit_status', () => {
       .from('short_list_items')
       .insert({
         user_id: '00000000-0000-0000-0000-000000000000',
-        said: 'TEST-SAID',
         unitid: 999999,
         source: 'invalid_source_value',
       });
@@ -189,7 +188,10 @@ describe('Schema: short_list_items source and grit_fit_status', () => {
   it('grit_fit_status column has correct enum values defined', async () => {
     if (skipIfNoClient()) return;
 
+    // DEC-CFBRB-013: grit_fit_status is NOT NULL DEFAULT 'not_evaluated'
+    // 'not_evaluated' is the default enum member; all values documented here.
     const VALID_STATUSES = [
+      'not_evaluated',
       'currently_recommended',
       'out_of_academic_reach',
       'below_academic_fit',
@@ -203,7 +205,6 @@ describe('Schema: short_list_items source and grit_fit_status', () => {
       .from('short_list_items')
       .insert({
         user_id: '00000000-0000-0000-0000-000000000000',
-        said: 'TEST-SAID',
         unitid: 999999,
         source: 'grit_fit',
         grit_fit_status: 'not_a_valid_status',
@@ -212,48 +213,6 @@ describe('Schema: short_list_items source and grit_fit_status', () => {
     expect(error).not.toBeNull();
     // This documents the constraint exists. Positive-case insert requires valid user_id.
     void VALID_STATUSES; // referenced for documentation purposes
-  });
-});
-
-// ── profiles: SAID trigger ──────────────────────────────────────────────────
-
-describe('Schema: profiles.said generation trigger', () => {
-  it('said column exists on profiles table', async () => {
-    if (skipIfNoClient()) return;
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('said')
-      .limit(1);
-
-    if (error && error.message.includes('column "said" does not exist')) {
-      throw new Error('profiles.said column is missing — trigger cannot fire');
-    }
-    // Column exists even if no rows yet
-    expect(error?.message).not.toContain('column "said" does not exist');
-  });
-
-  it('seeded test student profile has a non-null said value', async () => {
-    if (skipIfNoClient()) return;
-
-    const TEST_STUDENT_EMAIL = process.env.TEST_STUDENT_EMAIL;
-    if (!TEST_STUDENT_EMAIL) {
-      console.warn('TEST_STUDENT_EMAIL not set — said trigger test skipped');
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('said, email')
-      .eq('email', TEST_STUDENT_EMAIL)
-      .limit(1);
-
-    if (error) throw new Error(`Profile query failed: ${error.message}`);
-
-    expect(data).not.toBeNull();
-    expect(data.length).toBeGreaterThan(0);
-    expect(data[0].said).not.toBeNull();
-    expect(data[0].said).toMatch(/^GRIT-\d{4}-\d{4}$/);
   });
 });
 

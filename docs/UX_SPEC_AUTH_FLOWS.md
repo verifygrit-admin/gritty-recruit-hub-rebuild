@@ -268,7 +268,7 @@ Separates sections:
 **Coach Auto-Link Logic:**
 
 After student selects a school:
-1. Query `users` table for `user_type = 'hs_coach'` where `school_id = [selected_school_id]`
+1. Query `hs_coach_schools` table for coaches at the same `hs_program_id` where `is_head_coach = true`
 2. If coach found:
    - Show secondary prompt: "Is [Coach Name] your head coach?"
    - Display coach's name (first + last)
@@ -305,14 +305,12 @@ After student selects a school:
 
 **Data Flow:**
 1. On submit:
-   - Form data + email + password + school_id bundled
+   - Form data + email + password + selected hs_program_id bundled (note: users table has no school_id column in v2 — A-06)
    - POST to `/api/auth/register` endpoint
    - Server-side (Morty):
-     - Create auth.users record (if not already created in Step 1)
-     - Create users table record (user_type = 'student_athlete', school_id, account_status = 'active')
+     - Create auth.users record (if not already created in Step 1) — user_id (Supabase Auth UUID) is assigned by Supabase
+     - Create users table record (user_type = 'student_athlete', account_status = 'active') — no school_id column; student-school linkage via hs_coach_students junction (A-06)
      - Create profiles table record (user_id, name, athletic/academic stats, etc.)
-     - generate_said() trigger fires → said assigned
-     - linkSaidToAuth() called → said written to user_metadata
      - Run GRIT FIT algorithm
      - Return 30 schools (or fewer) as JSON
    - Client-side:
@@ -337,6 +335,8 @@ After student selects a school:
 ---
 
 ## AUTHENTICATION FLOW 2: HIGH SCHOOL COACH SIGNUP & LOGIN
+
+**Phase:** Phase 2 (Post-MVP). Coach signup is deferred. MVP includes Coach Login only (with pre-seeded test account).
 
 ### Signup Entry Screen (Coach)
 
@@ -383,8 +383,10 @@ After student selects a school:
 **Data Flow:**
 1. User enters email, password, confirms password, selects high school
 2. On submit:
-   - Create auth.users record
-   - Create users table record (user_type = 'hs_coach', school_id, account_status = 'active')
+   - Create auth.users record — user_id (Supabase Auth UUID) is assigned by Supabase
+   - Query `hs_programs` for the selected school's `hs_program_id`
+   - Create users table record (user_type = 'hs_coach', account_status = 'active')
+   - Create hs_coach_schools junction record linking coach's user_id to the selected hs_program_id
    - Set session and navigate to `/coach/dashboard`
 
 ---
@@ -457,8 +459,8 @@ After student selects a school:
 
 **Session Restore:**
 - On app load, check if active session exists
-- If yes: Call auth_said() to get said from user_metadata
-- Fetch profile and GRIT FIT results
+- If yes: Extract user_id from session.user
+- Fetch profile and GRIT FIT results using user_id
 - Navigate to `/grit-fit/results` or Dashboard (depending on profile status)
 - If no: Show landing page (anonymous users can still browse)
 
@@ -602,9 +604,11 @@ User receives an email with a link. Clicking the link redirects to:
 
 ---
 
-## GUIDANCE COUNSELOR FLOW (MVP SCOPE TBD)
+## GUIDANCE COUNSELOR FLOW (PHASE 2 ONLY)
 
-**Status:** Pending Chris decision on MVP scope
+**Phase:** Phase 2 (deferred post-MVP). Guidance counselor signup and login are not included in MVP.
+
+**Status:** Pending Chris confirmation. Placeholder specs below for Phase 2 implementation.
 
 **Option A (MVP-Included):**
 Guidance counselors sign up like coaches:
@@ -647,8 +651,8 @@ Every time the app loads:
 ```javascript
 1. Check for active session (getSession())
 2. If session exists:
-   a. Extract said from user_metadata
-   b. Fetch profile from DB
+   a. Extract user_id from session.user
+   b. Fetch profile from DB using user_id
    c. Determine user_type from users table
    d. If student:
       - Run GRIT FIT if needed (or load cached results)

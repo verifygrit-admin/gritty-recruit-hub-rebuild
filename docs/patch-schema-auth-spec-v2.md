@@ -18,7 +18,7 @@
 | OQ-4 counselor dashboard | Open | Same view as coach + EFC field + document upload status by category | Chris answer |
 | OQ-5 SAID system | Retained on profiles; flagged as OQ | REMOVED ENTIRELY. No `said` column anywhere. No `generate_said()` trigger. No `linkSaidToAuth()`. No `auth_said()` RPC. `user_id` is the sole identity key in ALL tables including `profiles`. | Chris answer |
 | is_head_coach field | Not specified | Added to `hs_coach_schools` junction — it is a property of the coach-school relationship | Chris answer + Patch placement decision |
-| grit_fit_status default for manual_add | `'currently_recommended'` (directive default) | `NULL` — `'currently_recommended'` is factually false for user-added schools; `NULL` means "not evaluated by GRIT FIT" | Patch decision (Chris: make your call) |
+| grit_fit_status default for manual_add | `'currently_recommended'` (directive default) | `NOT NULL DEFAULT 'not_evaluated'` — `'currently_recommended'` is factually false for user-added schools; `'not_evaluated'` is the canonical sentinel value (DEC-CFBRB-013) | Patch decision → confirmed by Chris (DEC-CFBRB-013) |
 
 ---
 
@@ -51,7 +51,7 @@ Resolution: All references in this spec use 15 steps. The narrative "16-step" la
 | SAID removed entirely | No `said` column anywhere | `user_id` is the sole identity key; SAID was adding complexity with no MVP benefit |
 | Distinct junction tables per role | `hs_coach_schools`, `hs_counselor_schools`, `hs_coach_students`, `hs_counselor_students` | Chris's explicit direction: schools have a unique table, coaches have a unique table, counselors have a unique table, all junction with the student table |
 | `is_head_coach` on `hs_coach_schools` | Coach-school relationship record carries this field | A coach is head coach at a school — not at a student; belongs on the coach-school junction |
-| `grit_fit_status` DEFAULT `NULL` for manual_add | `'currently_recommended'` replaced with `NULL` | Manual-add schools have not been evaluated by GRIT FIT; `'currently_recommended'` would be factually false |
+| `grit_fit_status` DEFAULT `'not_evaluated'` for manual_add | `'currently_recommended'` replaced with `NOT NULL DEFAULT 'not_evaluated'` | Manual-add schools have not been evaluated by GRIT FIT; `'not_evaluated'` is the canonical sentinel (non-nullable); DEC-CFBRB-013 |
 | Email verify tokens: dedicated table | `email_verify_tokens` table | Keeps auth metadata clean, queryable for expiry, avoids user_metadata complexity that caused problems in prior project |
 | Counselors CAN see financial_aid_info | RLS updated | Chris confirmed; only coaches are excluded from financial aid documents |
 
@@ -268,7 +268,7 @@ CREATE TABLE public.hs_counselor_students (
 
 ### 2.11 Table: `short_list_items` (UPDATED)
 
-`said` removed. `grit_fit_status` DEFAULT changed from `'currently_recommended'` to `NULL`.
+`said` removed. `grit_fit_status` changed from `DEFAULT 'currently_recommended'` to `NOT NULL DEFAULT 'not_evaluated'` with `'not_evaluated'` added to the CHECK constraint enum. (DEC-CFBRB-013)
 
 ```sql
 CREATE TABLE public.short_list_items (
@@ -292,7 +292,8 @@ CREATE TABLE public.short_list_items (
   q_link                  text,
   coach_link              text,
   source                  text NOT NULL DEFAULT 'manual_add' CHECK (source IN ('grit_fit', 'manual_add')),
-  grit_fit_status         text DEFAULT NULL CHECK (grit_fit_status IS NULL OR grit_fit_status IN (
+  grit_fit_status         text NOT NULL DEFAULT 'not_evaluated' CHECK (grit_fit_status IN (
+                            'not_evaluated',
                             'currently_recommended',
                             'out_of_academic_reach',
                             'below_academic_fit',
@@ -325,7 +326,7 @@ CREATE TABLE public.short_list_items (
 ```
 
 **v1 → v2 changes:**
-- `grit_fit_status` DEFAULT changed from `'currently_recommended'` to `NULL`. The CHECK constraint now permits NULL explicitly. Application code sets `grit_fit_status` only when GRIT FIT has actually evaluated the school. Manual-add rows carry NULL until evaluated.
+- `grit_fit_status` changed from `DEFAULT 'currently_recommended'` to `NOT NULL DEFAULT 'not_evaluated'`. `'not_evaluated'` added to the CHECK constraint enum. IS NULL guard removed — column is non-nullable. Manual-add rows default to `'not_evaluated'`; application code updates to a specific status when GRIT FIT evaluates the school. (DEC-CFBRB-013)
 - `said` column removed (carried from v1, confirmed in v2)
 
 ---
@@ -399,7 +400,7 @@ CREATE TABLE public.email_verify_tokens (
 | `hs_counselor_students` | New | Explicit counselor-student link; drives counselor RLS |
 | `profiles` | New | `said` REMOVED; no trigger; no RPC |
 | `schools` | Migrated | Unchanged from prior project |
-| `short_list_items` | New | `said` removed; `grit_fit_status` DEFAULT NULL |
+| `short_list_items` | New | `said` removed; `grit_fit_status` NOT NULL DEFAULT `'not_evaluated'` (DEC-CFBRB-013) |
 | `file_uploads` | New | `said` removed; `document_type` added |
 | `email_verify_tokens` | New | Dedicated verify token table (OQ-1 resolution) |
 
@@ -704,7 +705,7 @@ financial_aid_info download:
 | Distinct junction tables per role | Sections 2.6–2.9 | Applied (v2 change from v1) |
 | `is_head_coach` on `hs_coach_schools` | Section 2.6 | Applied |
 | `UNIQUE (school_name, state)` on `hs_programs` | Section 2.2 | Applied |
-| `grit_fit_status` DEFAULT `NULL` for manual_add | Section 2.11 | Applied |
+| `grit_fit_status` NOT NULL DEFAULT `'not_evaluated'` for manual_add | Section 2.11 | Applied (DEC-CFBRB-013) |
 | SAID removed entirely | All tables | Applied |
 | Dedicated `email_verify_tokens` table | Section 2.13 | Applied |
 
@@ -742,9 +743,9 @@ The `email_verify_tokens` table carries service-role-only policies. In the curre
 
 The `profiles.high_school` text column is used by `scoring.js` and displayed in coach dashboards. The authoritative coach-student relationship is through `hs_coach_students`. These two can drift: a student enters "Boston College High School" in their profile but the seeded `hs_programs` record is "BC High." Morty should assess whether the profile form should autocomplete from `hs_programs` or whether this is acceptable drift for MVP.
 
-### RC-4 — `grit_fit_status` NULL vs. enum CHECK constraint
+### RC-4 — `grit_fit_status` nullable enum — RESOLVED (DEC-CFBRB-013)
 
-The CHECK constraint on `grit_fit_status` is `(grit_fit_status IS NULL OR grit_fit_status IN (...))`. This is correct PostgreSQL syntax, but the prior project's Supabase type generation occasionally had issues with nullable enum-style columns. Morty should verify this syntax is clean in the migration and that the Supabase PostgREST client handles the nullable text column correctly when reading shortlist data.
+`grit_fit_status` is now `NOT NULL DEFAULT 'not_evaluated'`. The nullable / IS NULL guard concern is moot — the column is non-nullable and the CHECK constraint is a clean `IN (...)` with `'not_evaluated'` as the sentinel value. No Supabase type generation issue expected. This RC is closed.
 
 ### RC-5 — EFC data in profiles vs. a separate financial table
 
@@ -783,7 +784,7 @@ No open questions remain. Migrations can be written after Morty audits this spec
 0006_hs_counselor_students.sql   — hs_counselor_students junction
 0007_profiles.sql                — profiles (no said, no trigger, no RPC)
 0008_schools.sql                 — NCAA schools (migrated via sync_schools.py)
-0009_short_list_items.sql        — short_list_items (grit_fit_status NULL default)
+0009_short_list_items.sql        — short_list_items (grit_fit_status NOT NULL DEFAULT 'not_evaluated')
 0010_file_uploads.sql            — file_uploads (document_type enum)
 0011_email_verify_tokens.sql     — email verify token table
 0012_rls_policies.sql            — all RLS policies (after schema stable)
