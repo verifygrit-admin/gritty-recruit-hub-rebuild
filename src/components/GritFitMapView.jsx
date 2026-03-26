@@ -14,11 +14,11 @@ import { TIER_COLORS, TIER_LABELS } from '../lib/constants.js';
 // Tier color legend items for the legend below the map
 const LEGEND_ITEMS = [
   { label: 'Power 4', color: TIER_COLORS['Power 4'] },
-  { label: 'G5', color: TIER_COLORS['G6'] },
-  { label: 'FCS', color: TIER_COLORS['1-FCS'] },
+  { label: 'G6', color: TIER_COLORS['G6'] },
+  { label: 'FCS', color: TIER_COLORS['FCS'] },
   { label: 'FBS Ind', color: TIER_COLORS['FBS Ind'] },
-  { label: 'D2', color: TIER_COLORS['2-Div II'] },
-  { label: 'D3', color: TIER_COLORS['3-Div III'] },
+  { label: 'D2', color: TIER_COLORS['D2'] },
+  { label: 'D3', color: TIER_COLORS['D3'] },
 ];
 
 function makeMatchedIcon(color, initial) {

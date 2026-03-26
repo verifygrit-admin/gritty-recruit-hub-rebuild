@@ -27,11 +27,11 @@ const STATUS_OPTIONS = [
 const DIVISION_OPTIONS = [
   { value: '', label: 'All Divisions' },
   { value: 'Power 4', label: 'Power 4' },
-  { value: 'G6', label: 'G5' },
-  { value: '1-FCS', label: 'FCS' },
+  { value: 'G6', label: 'G6' },
+  { value: 'FCS', label: 'FCS' },
   { value: 'FBS Ind', label: 'FBS Ind' },
-  { value: '2-Div II', label: 'D2' },
-  { value: '3-Div III', label: 'D3' },
+  { value: 'D2', label: 'D2' },
+  { value: 'D3', label: 'D3' },
 ];
 
 const SORT_OPTIONS = [

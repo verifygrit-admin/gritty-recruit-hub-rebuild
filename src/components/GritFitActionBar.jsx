@@ -29,7 +29,7 @@ export default function GritFitActionBar({
   }, [results]);
 
   const divisions = useMemo(() => {
-    return ['Power 4', 'G6', '1-FCS', 'FBS Ind', '2-Div II', '3-Div III'];
+    return ['Power 4', 'G6', 'FCS', 'FBS Ind', 'D2', 'D3'];
   }, []);
 
   const states = useMemo(() => {

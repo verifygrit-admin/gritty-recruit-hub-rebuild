@@ -21,7 +21,7 @@ export const ATH_STANDARDS = {
     EDGE: { h50:74, w50:235, s50:4.70 }, LB:   { h50:72, w50:225, s50:4.65 },
     CB:   { h50:71, w50:180, s50:4.55 }, S:    { h50:71, w50:195, s50:4.60 },
   },
-  "1-FCS": {
+  "FCS": {
     QB:   { h50:73, w50:195, s50:4.75 }, RB:   { h50:70, w50:195, s50:4.60 },
     FB:   { h50:70, w50:220, s50:4.80 }, TE:   { h50:73, w50:230, s50:4.85 },
     WR:   { h50:72, w50:180, s50:4.60 }, OL:   { h50:74, w50:280, s50:5.30 },
@@ -31,7 +31,7 @@ export const ATH_STANDARDS = {
     EDGE: { h50:73, w50:225, s50:4.80 }, LB:   { h50:71, w50:215, s50:4.70 },
     CB:   { h50:70, w50:175, s50:4.60 }, S:    { h50:71, w50:190, s50:4.65 },
   },
-  "2-Div II": {
+  "D2": {
     QB:   { h50:72, w50:190, s50:4.80 }, RB:   { h50:69, w50:190, s50:4.65 },
     FB:   { h50:69, w50:210, s50:4.85 }, TE:   { h50:72, w50:225, s50:4.95 },
     WR:   { h50:71, w50:175, s50:4.65 }, OL:   { h50:73, w50:270, s50:5.40 },
@@ -41,7 +41,7 @@ export const ATH_STANDARDS = {
     EDGE: { h50:72, w50:220, s50:4.90 }, LB:   { h50:70, w50:205, s50:4.75 },
     CB:   { h50:69, w50:170, s50:4.65 }, S:    { h50:70, w50:185, s50:4.70 },
   },
-  "3-Div III": {
+  "D3": {
     QB:   { h50:71, w50:180, s50:4.90 }, RB:   { h50:68, w50:180, s50:4.75 },
     FB:   { h50:68, w50:200, s50:4.95 }, TE:   { h50:71, w50:215, s50:5.05 },
     WR:   { h50:70, w50:170, s50:4.75 }, OL:   { h50:72, w50:260, s50:5.50 },
@@ -57,12 +57,12 @@ export const ATH_STANDARDS = {
 export const RECRUIT_BUDGETS = {
   "Power 4":   2500,
   "G6":        1500,
-  "1-FCS":     1000,
-  "2-Div II":  600,
-  "3-Div III": 450,
+  "FCS":       1000,
+  "D2":        600,
+  "D3":        450,
 };
 
-export const TIER_ORDER = ["Power 4", "G6", "1-FCS", "2-Div II", "3-Div III"];
+export const TIER_ORDER = ["Power 4", "G6", "FCS", "D2", "D3"];
 
 // SAT nationally-representative percentiles
 export const SAT_PERCENTILES = {
@@ -89,19 +89,19 @@ export const TIER_COLORS = {
   "Power 4":   "#F5A623",
   "G6":        "#4FC3F7",
   "FBS Ind":   "#CE93D8",
-  "1-FCS":     "#81C784",
-  "2-Div II":  "#EF9A9A",
-  "3-Div III": "#B0BEC5",
+  "FCS":       "#81C784",
+  "D2":        "#EF9A9A",
+  "D3":        "#B0BEC5",
 };
 
 // Short labels for table display
 export const TIER_LABELS = {
   "Power 4":   "P4",
-  "G6":        "G5",
+  "G6":        "G6",
   "FBS Ind":   "FBS Ind",
-  "1-FCS":     "FCS",
-  "2-Div II":  "D2",
-  "3-Div III": "D3",
+  "FCS":       "FCS",
+  "D2":        "D2",
+  "D3":        "D3",
 };
 
 // US state geographic centroids for recruit-reach distance approximation
