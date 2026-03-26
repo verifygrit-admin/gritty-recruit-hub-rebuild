@@ -7,3 +7,4 @@ dist/
 .DS_Store
 data/users.csv
 scripts/seed_users.js
+.claude/

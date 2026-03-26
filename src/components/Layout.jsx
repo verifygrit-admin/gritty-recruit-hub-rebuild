@@ -1,11 +1,16 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 
-const navLinks = [
+const studentNavLinks = [
   { to: '/', label: 'Home' },
   { to: '/gritfit', label: 'GRIT FIT' },
   { to: '/shortlist', label: 'Shortlist' },
   { to: '/profile', label: 'Profile' },
+];
+
+const coachNavLinks = [
+  { to: '/', label: 'Home' },
+  { to: '/coach', label: 'Dashboard' },
 ];
 
 export default function Layout({ children }) {
@@ -41,7 +46,7 @@ export default function Layout({ children }) {
         </Link>
 
         <nav data-testid="authenticated-nav" style={{ display: 'flex', gap: 24 }}>
-          {navLinks.map(({ to, label }) => {
+          {(userType === 'hs_coach' || userType === 'hs_guidance_counselor' ? coachNavLinks : studentNavLinks).map(({ to, label }) => {
             const isActive = location.pathname === to;
             return (
               <Link

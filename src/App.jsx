@@ -8,6 +8,7 @@ import RegisterPage from './pages/RegisterPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import GritFitPage from './pages/GritFitPage.jsx';
 import ShortlistPage from './pages/ShortlistPage.jsx';
+import CoachDashboardPage from './pages/CoachDashboardPage.jsx';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/profile" element={<Layout><ProtectedRoute><ProfilePage /></ProtectedRoute></Layout>} />
           <Route path="/gritfit" element={<Layout><ProtectedRoute><GritFitPage /></ProtectedRoute></Layout>} />
           <Route path="/shortlist" element={<Layout><ProtectedRoute><ShortlistPage /></ProtectedRoute></Layout>} />
+          <Route path="/coach" element={<Layout><ProtectedRoute><CoachDashboardPage /></ProtectedRoute></Layout>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
