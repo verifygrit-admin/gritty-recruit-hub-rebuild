@@ -1,668 +1,957 @@
-# UX SPEC: GRIT FIT PROFILE FORM
+# UX SPEC: PROFILE FORM — Student-Athlete Data Collection
 
 **Status:** Draft for review
-**Date:** 2026-03-24
+**Date:** 2026-03-25
 **Authority:** Quill (UX/UI Design)
-**Related Decision:** RB-005 (QuickListForm structure, add school dropdown + parent email)
-**Component Reuse:** QuickListForm from existing cfb-recruit-hub codebase
+**Implementation Owner:** Nova (React component) + Patch (Supabase integration)
+**Related Spec:** patch-schema-auth-spec-v2.md Section 2.4 (profiles table)
+**Related Decision:** DEC-CFBRB-029 (high school must be autocomplete, not free text)
 
 ---
 
 ## OVERVIEW
 
-The GRIT FIT Profile Form is the core data collection interface for student-athletes. It captures the four gates of the GRIT FIT algorithm: athletic tier, geographic reach, academic rigor, and financial fit. The form appears both at signup (after high school selection and coach auto-link) and on the student dashboard for editing.
+The profile form collects student-athlete data that powers the GRIT FIT algorithm and coaches' dashboard visibility. This form is the critical data entry point for MVP — all fields feed downstream GRIT FIT calculations, financial analysis, and coach recruiting workflows.
+
+The form is accessed from:
+1. **Landing page** — "Complete Profile" CTA (if profile incomplete)
+2. **Landing page** — "Edit Profile" CTA (if profile complete)
+3. **Post-login flow** — mandatory if first-time user and role = student_athlete
+
+This spec covers the full form layout, field definitions, validation rules, autocomplete behavior, sensitive field handling, and mobile responsiveness.
 
 ---
 
 ## DESIGN INTENT
 
-The BC High Eagles logo conveys confidence and clear hierarchy. Applied to this form: The sections are clearly labeled and organized. Heavy fields (athletic stats, academic stats) come first. Optional fields (social, parent email) come last. The form should feel quick, not overwhelming. Progress indication reassures the student.
+The profile form represents the student's **full recruiting identity**. It must feel:
+- **Approachable** — Grouped into logical sections, not overwhelming
+- **Trustworthy** — Clear labels, contextual help, privacy assurances (especially for AGI)
+- **Complete** — Every field has a purpose (GRIT FIT, coach visibility, or financial analysis)
+
+Color and typography follow DESIGN_SYSTEM.md. Maroon buttons indicate primary actions. Gold accents highlight critical fields. All inputs use 16px font on mobile (iOS zoom prevention).
 
 ---
 
-## FORM LAYOUT
+## FORM ARCHITECTURE
+
+### Section Hierarchy
+
+The form is divided into **five logical sections**, each preceded by an H3 heading and separated by a horizontal divider. Each section groups related fields by purpose:
+
+1. **Personal Info** — Name, contact, high school, graduation year, location
+2. **Academic** — GPA, SAT, high school coursework indicators
+3. **Athletic** — Position, height, weight, speed, accolades
+4. **Financial** — AGI, dependents (sensitive section with privacy note)
+5. **Parent/Guardian** — Emergency contact email
+
+### Mobile Behavior
+
+- Single-column layout (100% width)
+- Sections collapse into mobile-optimized stacks
+- Font sizes remain constant (16px for inputs prevents iOS zoom)
+- Buttons stack vertically or sit 50% width side-by-side (depending on action count)
+- Horizontal dividers shrink from 100% width to 80% with centered alignment
+
+---
+
+## FIELD DEFINITIONS & LAYOUT
+
+### SECTION 1: PERSONAL INFO
+
+**Purpose:** Establish student identity and geographic context.
+
+---
+
+#### Field 1.1: Full Name
+- **Label:** "Full Name"
+- **Type:** Text input
+- **Required:** YES
+- **Validation:** Non-empty, max 255 characters
+- **Placeholder:** "John Smith"
+- **data-testid:** `input-name`
+- **Width:** 100%
+- **Help text:** None
+- **Styling:**
+  - Background: `#FFFFFF`
+  - Border: `1px solid #D4D4D4`
+  - Border radius: 4px
+  - Padding: 12px 16px
+  - Font size: 1rem (16px on mobile)
+  - Focus border: `2px solid #8B3A3A` (Maroon)
+  - Focus shadow: `0 0 0 3px rgba(139,58,58,0.1)`
+
+---
+
+#### Field 1.2: High School (Autocomplete)
+- **Label:** "High School"
+- **Type:** Text input with autocomplete dropdown
+- **Required:** YES
+- **Validation:** Must select from `hs_programs` table; not free text
+- **Placeholder:** "Start typing... (e.g., 'Boston College High')"
+- **data-testid:** `input-high-school-autocomplete`
+- **Width:** 100%
+- **Autocomplete Behavior:**
+  - Query `hs_programs` table in real-time as user types
+  - Match on `school_name` field (case-insensitive partial match)
+  - Display dropdown with school name, city, state (e.g., "Boston College High, Boston, MA")
+  - Show up to 10 results; add "Show more" link if >10
+  - On selection: auto-populate `hs_lat`, `hs_lng` from the selected `hs_programs` record
+  - Debounce queries by 300ms to avoid excessive network traffic
+  - If user clears field after selection, reset `hs_lat` and `hs_lng` to null
+- **Help text:** "(Required — allows coaches to find you)"
+- **Styling:** Same as Field 1.1; dropdown background `#FFFFFF`, items hover at `#F5EFE0` (Cream)
+
+---
+
+#### Field 1.3: Graduation Year
+- **Label:** "Graduation Year"
+- **Type:** Dropdown (select)
+- **Required:** NO
+- **Validation:** Valid year (current year + 1 to current year + 5 typical range)
+- **Options:** Generate dynamically as [current_year + 1] through [current_year + 5]
+- **Example:** If today is 2026-03-25, options are 2027, 2028, 2029, 2030, 2031
+- **Default:** Empty (placeholder text: "Select graduation year")
+- **data-testid:** `select-grad-year`
+- **Width:** 100% (mobile), 50% (desktop)
+- **Help text:** None
+- **Styling:** Same as text input; focused state same as Field 1.1
+
+---
+
+#### Field 1.4: State
+- **Label:** "State"
+- **Type:** Dropdown (select) or text autocomplete
+- **Required:** NO
+- **Validation:** Valid US state abbreviation (2 letters)
+- **Options:** All 50 US states + DC (alphabetical)
+- **Example:** "MA", "CA", "TX", etc.
+- **Default:** Empty (placeholder: "Select state")
+- **data-testid:** `select-state`
+- **Width:** 100% (mobile), 50% (desktop)
+- **Help text:** None
+- **Note:** Can be auto-populated if user selects a high school in `hs_programs` (optional enhancement; not MVP requirement)
+- **Styling:** Same as text input
+
+---
+
+#### Field 1.5: Email (Pre-filled from Auth)
+- **Label:** "Email"
+- **Type:** Text input (disabled/read-only)
+- **Required:** YES
+- **Validation:** Valid email (pre-validated at auth time; displayed read-only)
+- **Placeholder:** User's auth email (e.g., "student@school.com")
+- **data-testid:** `input-email-readonly`
+- **Width:** 100%
+- **Help text:** "(From your account — cannot edit here)"
+- **Styling:**
+  - Background: `#F5F5F5` (disabled gray)
+  - Border: `1px solid #E8E8E8`
+  - Text color: `#6B6B6B` (Stone Gray)
+  - Cursor: `not-allowed`
+
+---
+
+#### Field 1.6: Phone
+- **Label:** "Phone"
+- **Type:** Text input with mask (optional enhancement)
+- **Required:** NO
+- **Validation:** Accepts US phone format or freeform; max 20 characters
+- **Placeholder:** "(123) 456-7890"
+- **data-testid:** `input-phone`
+- **Width:** 100%
+- **Help text:** None
+- **Styling:** Same as Field 1.1; default state
+
+---
+
+#### Field 1.7: Twitter Handle
+- **Label:** "Twitter/X Handle (Optional)"
+- **Type:** Text input
+- **Required:** NO
+- **Validation:** Max 20 characters (Twitter handle limit)
+- **Placeholder:** "@your_handle"
+- **data-testid:** `input-twitter`
+- **Width:** 100%
+- **Help text:** "(Optional — helps coaches find you online)"
+- **Styling:** Same as Field 1.1; default state
+
+---
+
+**Layout (Desktop 1024px+):**
+```
+┌────────────────────────────────────────────┐
+│ PERSONAL INFO                              │
+├────────────────────────────────────────────┤
+│ [Full Name (100%)]                         │
+│ [High School Autocomplete (100%)]          │
+│ [Graduation Year (50%)] [State (50%)]      │
+│ [Email Read-Only (100%)]                   │
+│ [Phone (50%)] [Twitter Handle (50%)]       │
+└────────────────────────────────────────────┘
+```
+
+**Layout (Mobile <768px):**
+```
+┌────────────────────────────────────────────┐
+│ PERSONAL INFO                              │
+├────────────────────────────────────────────┤
+│ [Full Name (100%)]                         │
+│ [High School Autocomplete (100%)]          │
+│ [Graduation Year (100%)]                   │
+│ [State (100%)]                             │
+│ [Email Read-Only (100%)]                   │
+│ [Phone (100%)]                             │
+│ [Twitter Handle (100%)]                    │
+└────────────────────────────────────────────┘
+```
+
+---
+
+### SECTION 2: ACADEMIC
+
+**Purpose:** Capture academic credentials for college matching.
+
+---
+
+#### Field 2.1: GPA
+- **Label:** "High School GPA"
+- **Type:** Number input (decimal)
+- **Required:** NO
+- **Validation:** 0.0 to 4.0 (or 0.0 to 4.5 if weighted GPA supported); 2 decimal places
+- **Placeholder:** "3.75"
+- **data-testid:** `input-gpa`
+- **Width:** 100% (mobile), 50% (desktop)
+- **Help text:** "(Unweighted preferred)"
+- **Error state:** If value > 4.0, show inline error: "GPA must be 4.0 or lower" in `#F44336` (Error red)
+- **Styling:** Same as Field 1.1; error state has background `#FFF5F5` (light pink) and border `#F44336`
+
+---
+
+#### Field 2.2: SAT Score
+- **Label:** "SAT Score (Total)"
+- **Type:** Number input (integer)
+- **Required:** NO
+- **Validation:** 400 to 1600; no decimal places
+- **Placeholder:** "1450"
+- **data-testid:** `input-sat`
+- **Width:** 100% (mobile), 50% (desktop)
+- **Help text:** "(New SAT out of 1600)"
+- **Error state:** If value < 400 or > 1600, show inline error: "SAT must be between 400–1600" in `#F44336`
+- **Styling:** Same as GPA field
+
+---
+
+**Layout (Desktop 1024px+):**
+```
+┌────────────────────────────────────────────┐
+│ ACADEMIC                                   │
+├────────────────────────────────────────────┤
+│ [GPA (50%)] [SAT Score (50%)]              │
+└────────────────────────────────────────────┘
+```
+
+**Layout (Mobile <768px):**
+```
+┌────────────────────────────────────────────┐
+│ ACADEMIC                                   │
+├────────────────────────────────────────────┤
+│ [GPA (100%)]                               │
+│ [SAT Score (100%)]                         │
+└────────────────────────────────────────────┘
+```
+
+---
+
+### SECTION 3: ATHLETIC
+
+**Purpose:** Capture athletic profile for GRIT FIT tier matching and coach visibility.
+
+---
+
+#### Field 3.1: Position
+- **Label:** "Football Position"
+- **Type:** Dropdown (select)
+- **Required:** NO
+- **Validation:** Must select from predefined list or leave empty
+- **Options:**
+  - (Placeholder: "Select position")
+  - QB (Quarterback)
+  - RB (Running Back)
+  - FB (Fullback)
+  - WR (Wide Receiver)
+  - TE (Tight End)
+  - OL (Offensive Lineman)
+  - OT (Offensive Tackle)
+  - OG (Offensive Guard)
+  - C (Center)
+  - DL (Defensive Lineman)
+  - DE (Defensive End)
+  - DT (Defensive Tackle)
+  - LB (Linebacker)
+  - DB (Defensive Back)
+  - CB (Cornerback)
+  - S (Safety)
+  - K (Kicker)
+  - P (Punter)
+  - LS (Long Snapper)
+- **data-testid:** `select-position`
+- **Width:** 100% (mobile), 50% (desktop)
+- **Help text:** None
+- **Styling:** Same as Field 1.1
+
+---
+
+#### Field 3.2: Height
+- **Label:** "Height"
+- **Type:** Text input (flexible format)
+- **Required:** NO
+- **Validation:** Accepts "5'10\"", "5-10", "5 10", or "70 in"; stores as free text
+- **Placeholder:** "5'10\""
+- **data-testid:** `input-height`
+- **Width:** 100% (mobile), 33% (desktop)
+- **Help text:** None
+- **Styling:** Same as Field 1.1
+
+---
+
+#### Field 3.3: Weight
+- **Label:** "Weight (lbs)"
+- **Type:** Number input (integer)
+- **Required:** NO
+- **Validation:** Positive integer, 50–400 lbs typical range
+- **Placeholder:** "190"
+- **data-testid:** `input-weight`
+- **Width:** 100% (mobile), 33% (desktop)
+- **Help text:** "(Pounds)"
+- **Styling:** Same as Field 1.1
+
+---
+
+#### Field 3.4: 40-Yard Dash Time
+- **Label:** "40-Yard Dash (seconds)"
+- **Type:** Number input (decimal)
+- **Required:** NO
+- **Validation:** 4.0 to 7.0 seconds (typical range); 2 decimal places
+- **Placeholder:** "4.65"
+- **data-testid:** `input-speed-40`
+- **Width:** 100% (mobile), 33% (desktop)
+- **Help text:** "(Best time in seconds)"
+- **Styling:** Same as Field 1.1
+
+---
+
+#### Field 3.5: Expected Starter (Checkbox)
+- **Label:** "Expect to start as a freshman?"
+- **Type:** Checkbox (boolean toggle)
+- **Required:** NO
+- **Default:** false
+- **data-testid:** `checkbox-expected-starter`
+- **Width:** 100%
+- **Styling:**
+  - Checkbox: 20×20px, Maroon border `#8B3A3A`, white background
+  - Checked state: Maroon background `#8B3A3A`, white checkmark
+  - Label text: 16px, Charcoal `#2C2C2C`, left-aligned next to checkbox, 8px gap
+
+---
+
+#### Field 3.6: Team Captain (Checkbox)
+- **Label:** "Team captain in high school?"
+- **Type:** Checkbox (boolean toggle)
+- **Required:** NO
+- **Default:** false
+- **data-testid:** `checkbox-captain`
+- **Width:** 100%
+- **Styling:** Same as Field 3.5
+
+---
+
+#### Field 3.7: All-Conference (Checkbox)
+- **Label:** "All-conference selection?"
+- **Type:** Checkbox (boolean toggle)
+- **Required:** NO
+- **Default:** false
+- **data-testid:** `checkbox-all-conference`
+- **Width:** 100%
+- **Styling:** Same as Field 3.5
+
+---
+
+#### Field 3.8: All-State (Checkbox)
+- **Label:** "All-state selection?"
+- **Type:** Checkbox (boolean toggle)
+- **Required:** NO
+- **Default:** false
+- **data-testid:** `checkbox-all-state`
+- **Width:** 100%
+- **Styling:** Same as Field 3.5
+
+---
+
+**Layout (Desktop 1024px+):**
+```
+┌────────────────────────────────────────────┐
+│ ATHLETIC                                   │
+├────────────────────────────────────────────┤
+│ [Position (100%)]                          │
+│ [Height (33%)] [Weight (33%)] [40 Time (33%)]  │
+│ ☑ Expect to start as a freshman?          │
+│ ☑ Team captain in high school?             │
+│ ☑ All-conference selection?                │
+│ ☑ All-state selection?                     │
+└────────────────────────────────────────────┘
+```
+
+**Layout (Mobile <768px):**
+```
+┌────────────────────────────────────────────┐
+│ ATHLETIC                                   │
+├────────────────────────────────────────────┤
+│ [Position (100%)]                          │
+│ [Height (100%)]                            │
+│ [Weight (100%)]                            │
+│ [40 Time (100%)]                           │
+│ ☑ Expect to start as a freshman?          │
+│ ☑ Team captain in high school?             │
+│ ☑ All-conference selection?                │
+│ ☑ All-state selection?                     │
+└────────────────────────────────────────────┘
+```
+
+---
+
+### SECTION 4: FINANCIAL (SENSITIVE)
+
+**Purpose:** Collect financial context for GRIT FIT analysis and institutional financial aid matching.
+
+**Privacy Notice:** This section requires a privacy assurance at the top.
+
+---
+
+#### Privacy Notice (Inline Header)
+```
+🔒 Financial Information is Private
+Your AGI and family financial details are encrypted and
+only visible to you. College coaches cannot see this
+information — it powers our financial fit analysis only.
+```
+
+**Styling:**
+- Background: `#FFF8DC` (very light cream, subtle warning tint)
+- Border-left: `3px solid #FF9800` (Warning orange)
+- Padding: 12px 16px
+- Icon: 🔒 (lock emoji) + text
+- Text color: `#6B6B6B` (Stone Gray)
+- Font size: 0.875rem (14px)
+- Margin-bottom: 16px
+
+---
+
+#### Field 4.1: Adjusted Gross Income (AGI)
+- **Label:** "Adjusted Gross Income (AGI) — Last Fiscal Year"
+- **Type:** Number input (currency)
+- **Required:** NO
+- **Validation:** Positive integer; commas acceptable (e.g., "75,000")
+- **Placeholder:** "75000"
+- **data-testid:** `input-agi`
+- **Width:** 100%
+- **Help text:** "(From parents' or guardians' most recent tax return. Used only for financial fit calculation.)"
+- **Styling:**
+  - Background: `#FFFFFF`
+  - Border: `1px solid #D4D4D4`
+  - Border radius: 4px
+  - Padding: 12px 16px
+  - Font size: 1rem (16px on mobile)
+  - Focus border: `2px solid #8B3A3A` (Maroon)
+
+---
+
+#### Field 4.2: Number of Dependents
+- **Label:** "Number of Dependents"
+- **Type:** Number input (integer, stepper)
+- **Required:** NO
+- **Validation:** 0 to 10 (typical range); non-negative integer
+- **Placeholder:** "2"
+- **data-testid:** `input-dependents`
+- **Width:** 100% (mobile), 50% (desktop)
+- **Help text:** "(Including yourself)"
+- **Styling:** Same as Field 4.1
+
+---
+
+**Layout (Desktop 1024px+):**
+```
+┌────────────────────────────────────────────┐
+│ FINANCIAL                                  │
+├────────────────────────────────────────────┤
+│ 🔒 Financial Information is Private        │
+│ [Your AGI and family details...]           │
+│                                            │
+│ [AGI (100%)]                               │
+│ [Dependents (50%)]                         │
+└────────────────────────────────────────────┘
+```
+
+**Layout (Mobile <768px):**
+```
+┌────────────────────────────────────────────┐
+│ FINANCIAL                                  │
+├────────────────────────────────────────────┤
+│ 🔒 Financial Information is Private        │
+│ [Your AGI and family details...]           │
+│                                            │
+│ [AGI (100%)]                               │
+│ [Dependents (100%)]                        │
+└────────────────────────────────────────────┘
+```
+
+---
+
+### SECTION 5: PARENT/GUARDIAN
+
+**Purpose:** Contact information for parental communication and emergency outreach.
+
+---
+
+#### Field 5.1: Parent/Guardian Email
+- **Label:** "Parent/Guardian Email"
+- **Type:** Text input (email)
+- **Required:** NO
+- **Validation:** Valid email format; max 255 characters
+- **Placeholder:** "parent@email.com"
+- **data-testid:** `input-parent-guardian-email`
+- **Width:** 100%
+- **Help text:** "(Colleges may contact your parent/guardian directly)"
+- **Styling:** Same as Field 1.1; default state
+
+---
+
+**Layout (Desktop & Mobile):**
+```
+┌────────────────────────────────────────────┐
+│ PARENT/GUARDIAN                            │
+├────────────────────────────────────────────┤
+│ [Parent/Guardian Email (100%)]             │
+└────────────────────────────────────────────┘
+```
+
+---
+
+## FORM ACTIONS & SUBMIT BEHAVIOR
+
+### Primary Action: Save Profile
+
+**Button:** "Save Profile"
+**Type:** Primary button (Maroon)
+**Width:** 100% (mobile), auto (desktop)
+**Styling:**
+- Background: `#8B3A3A` (Maroon)
+- Text: `#FFFFFF` (White)
+- Padding: 12px 32px
+- Font size: 1rem (16px)
+- Font weight: 600
+- Border radius: 4px
+- Box shadow: `0 2px 4px rgba(0,0,0,0.2)`
+- Hover state: Background `#6B2C2C`, shadow `0 4px 8px rgba(0,0,0,0.3)`
+- Active state: Background `#5A1F1F`, shadow `0 1px 2px rgba(0,0,0,0.2)`
+- Disabled state: Background `#E8E8E8`, text `#6B6B6B`, cursor `not-allowed`
+
+**data-testid:** `button-save-profile`
+
+### Secondary Action: Cancel
+
+**Button:** "Cancel"
+**Type:** Secondary button (text link)
+**Styling:**
+- Background: transparent
+- Text: `#8B3A3A` (Maroon)
+- Padding: 12px 16px
+- Font size: 1rem (16px)
+- Text decoration: underline on hover
+- Cursor: pointer
+
+**Behavior:** Navigate back to landing page without saving.
+
+**data-testid:** `button-cancel`
+
+### Submit Behavior (Happy Path)
+
+1. **Validation:**
+   - Run client-side validation on all fields (see Field Definitions for rules)
+   - Display inline error messages in red (`#F44336`) below each invalid field
+   - Disable "Save Profile" button until all required fields are valid
+   - Required fields: `name`, `high_school`, `email`
+
+2. **Submission:**
+   - Show loading spinner inside "Save Profile" button for 0.5–2 seconds
+   - Button text changes to "Saving..." during submission
+   - Button disabled during submission
+
+3. **Success:**
+   - Upsert record to `profiles` table (Supabase)
+   - Query key: `user_id` from auth context
+   - Insert/update all collected fields from the form
+   - On success, show success toast: "Profile saved successfully" (top-right, green background `#4CAF50`, white text, 3-second auto-dismiss)
+   - Redirect to landing page after 1 second
+   - Log event: `profile_saved` with timestamp and user_id
+
+4. **Error Handling:**
+   - If Supabase insert/update fails, show error toast: "Failed to save profile. Please try again." (red background `#F44336`, white text, persistent)
+   - Provide "Retry" button in toast to re-submit
+   - Log error event: `profile_save_error` with error message
+
+---
+
+## VALIDATION RULES SUMMARY
+
+| Field | Required | Format | Min/Max | Error Message |
+|-------|----------|--------|---------|---------------|
+| Name | YES | Non-empty | 1–255 chars | "Name is required" |
+| High School | YES | Autocomplete select | Must exist in hs_programs | "Select a high school from the list" |
+| Graduation Year | NO | Integer | current_year+1 to current_year+5 | "Invalid year" |
+| State | NO | Dropdown | Valid US state | "Invalid state" |
+| Email | YES | Valid email | Read-only from auth | N/A |
+| Phone | NO | Flexible format | Max 20 chars | "Phone must be 20 characters or fewer" |
+| Twitter | NO | Max 20 chars | Twitter handle limit | "Handle must be 20 characters or fewer" |
+| GPA | NO | Decimal | 0.0–4.0 | "GPA must be 4.0 or lower" |
+| SAT | NO | Integer | 400–1600 | "SAT must be between 400–1600" |
+| Position | NO | Dropdown | Predefined list | N/A |
+| Height | NO | Text | Flexible | N/A |
+| Weight | NO | Integer | 50–400 lbs | "Weight must be between 50–400 lbs" |
+| 40-Yard Dash | NO | Decimal | 4.0–7.0 sec | "Time must be between 4.0–7.0 seconds" |
+| AGI | NO | Integer | Positive | "AGI must be a positive number" |
+| Dependents | NO | Integer | 0–10 | "Dependents must be 0–10" |
+| Parent/Guardian Email | NO | Valid email | Max 255 chars | "Enter a valid email address" |
+
+---
+
+## HIGH SCHOOL AUTOCOMPLETE DETAILS
+
+### Query Logic (Client-Side)
+
+```javascript
+// Pseudo-code for autocomplete behavior
+async function queryHighSchools(searchTerm: string) {
+  if (searchTerm.length < 2) return [];
+
+  const { data, error } = await supabase
+    .from('hs_programs')
+    .select('id, school_name, city, state, hs_lat, hs_lng')
+    .ilike('school_name', `%${searchTerm}%`)
+    .limit(10);
+
+  return data || [];
+}
+
+function onHighSchoolSelect(school: HsProgram) {
+  // Auto-populate lat/lng from hs_programs record
+  setFieldValue('hs_lat', school.hs_lat);
+  setFieldValue('hs_lng', school.hs_lng);
+  setFieldValue('high_school', school.school_name);
+}
+```
+
+### Dropdown Display Format
+
+Each result shows:
+```
+[School Name], [City], [State]
+Example: "Boston College High, Boston, MA"
+```
+
+### Behavior on Clear
+
+If user clears the high school field after selection:
+- `hs_lat` and `hs_lng` are set to null
+- Form does NOT prevent save with null lat/lng
+- (Lat/lng are optional for MVP; used only for geographic GRIT FIT analysis)
+
+---
+
+## RESPONSIVE DESIGN SUMMARY
+
+### Desktop (1024px+)
+- Multi-column layouts (2–3 columns per row)
+- Form max-width: 800px, centered
+- Padding: 32px (xl spacing)
+- Button width: auto (not full width)
+
+### Tablet (768px–1023px)
+- 2-column layouts shrink to single-column
+- Form padding: 24px (lg spacing)
+- Buttons remain auto-width
+
+### Mobile (<768px)
+- Single-column layout (100% width)
+- Form padding: 16px (md spacing)
+- All inputs: 100% width
+- Font size: 16px (prevents iOS zoom)
+- Button width: 100% (stacked or 50% side-by-side if two actions)
+
+---
+
+## ACCESSIBILITY SPECIFICATIONS
+
+### Focus & Keyboard Navigation
+
+- **Tab order:** Name → High School → Grad Year → State → Email → Phone → Twitter → GPA → SAT → Position → Height → Weight → 40 Time → Checkboxes (in order) → AGI → Dependents → Parent Email → Cancel → Save Profile
+- **Focus indicator:** Visible 2px outline at `#8B3A3A` (Maroon) with 2px offset
+- **Enter key:** In any field, Submit the form (standard behavior)
+- **Escape key:** Clear field focus (standard behavior)
+
+### ARIA Labels & Descriptions
+
+- Every input has an associated `<label>` element with `for` attribute pointing to input `id`
+- All required fields marked with `aria-required="true"`
+- Error messages associated via `aria-describedby` to input
+- Checkboxes have `aria-label` describing the intent (e.g., "Expected starter")
+- Privacy notice marked with `role="region"` and `aria-label="Financial privacy notice"`
+
+### Color Contrast
+
+- All text meets WCAG AA 4.5:1 minimum contrast
+- Maroon text on white: 9.1:1 (AAA)
+- Error red on light pink background: 5.2:1 (AA)
+- Stone Gray on white: 4.7:1 (AA)
+- Disabled gray text on light gray: 3.1:1 (above 3:1 minimum for UI components)
+
+### Mobile Touch Targets
+
+- All buttons: minimum 44×44px
+- All input fields: minimum 44px height (touch-friendly)
+- Checkbox + label: 44px minimum height
+
+---
+
+## FIELD-BY-FIELD TEST DATA (FOR QA)
+
+Use these values to populate the form for Quin's test plan (PROTO-GLOBAL-015/016):
+
+| Field | Test Value | Notes |
+|-------|-----------|-------|
+| Name | "Emma Rodriguez" | Common name, 13 chars |
+| High School | "Boston College High" | Exact match in hs_programs seed |
+| Grad Year | "2027" | Current year + 1 |
+| State | "MA" | Matches BC High |
+| Email | (pre-filled from auth) | Read-only |
+| Phone | "(617) 555-0123" | US format |
+| Twitter | "@emmarod" | Valid handle |
+| GPA | "3.92" | High academic profile |
+| SAT | "1520" | High SAT |
+| Position | "WR" | Wide Receiver |
+| Height | "5'10\"" | Typical WR height |
+| Weight | "175" | Typical WR weight |
+| 40-Yard Dash | "4.58" | Competitive athletic time |
+| Expected Starter | true | Checked |
+| Team Captain | true | Checked |
+| All-Conference | true | Checked |
+| All-State | false | Unchecked |
+| AGI | "85000" | Middle-income household |
+| Dependents | "4" | Family of 4 |
+| Parent/Guardian Email | "parent.rodriguez@email.com" | Valid email |
+
+---
+
+## COMPLETE FORM WIREFRAME
+
+### Desktop View (1024px+)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    HEADER (Maroon)                      │
+│  [Logo] Gritty Recruit Hub    [Nav] Home Shortlist...  │
 └─────────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────────────────────────┐
-│                                                          │
-│  Complete Your GRIT FIT Profile                          │
-│  We'll use this to find your best college matches.       │
-│                                                          │
-│  Progress: ████████░░░░ 60%                              │
-│                                                          │
-│  SECTION 1: ATHLETIC STATS                              │
-│  ─────────────────────────────────────────────────────   │
-│                                                          │
-│  Position *                                              │
-│  [Football Position Dropdown ▼]                          │
-│                                                          │
-│  Height                                                  │
-│  [5'11"]                                                 │
-│                                                          │
-│  Weight                                                  │
-│  [215 lbs]                                               │
-│                                                          │
-│  40-Yard Dash Time                                       │
-│  [4.75 seconds]                                          │
-│                                                          │
-│  Accolades                                               │
-│  ☐ Expected Starter      ☐ Captain                       │
-│  ☐ All-Conference        ☐ All-State                    │
-│                                                          │
-│  SECTION 2: ACADEMIC STATS                              │
-│  ─────────────────────────────────────────────────────   │
-│                                                          │
-│  GPA *                                                   │
-│  [3.85]                                                  │
-│                                                          │
-│  SAT Score (Optional)                                    │
-│  [1480]                                                  │
-│                                                          │
-│  Graduation Year *                                       │
-│  [2024 ▼]                                                │
-│                                                          │
-│  SECTION 3: LOCATION & HOME INFO                        │
-│  ─────────────────────────────────────────────────────   │
-│                                                          │
-│  Your Home Address (City, State)                         │
-│  [City] [State ▼]                                        │
-│                                                          │
-│  (Used to calculate distance to colleges)               │
-│                                                          │
-│  SECTION 4: HOUSEHOLD FINANCIAL INFO                    │
-│  ─────────────────────────────────────────────────────   │
-│                                                          │
-│  Estimated Family Income (AGI) *                         │
-│  [< $40k ▼]                                              │
-│                                                          │
-│  Number of Dependents                                    │
-│  [2]                                                     │
-│                                                          │
-│  (Used to estimate net cost and EFC)                    │
-│                                                          │
-│  SECTION 5: SOCIAL & CONTACT (Optional)                │
-│  ─────────────────────────────────────────────────────   │
-│                                                          │
-│  Twitter Handle                                          │
-│  [@]                                                     │
-│                                                          │
-│  Phone Number                                            │
-│  [(XXX) XXX-XXXX]                                        │
-│                                                          │
-│  Parent/Guardian Email (Optional)                        │
-│  [parent@example.com]                                    │
-│                                                          │
-│  ─────────────────────────────────────────────────────   │
-│                                                          │
-│  [← Back] [Submit & Calculate Matches ➜]                │
-│                                                          │
-│  * Required fields                                       │
-│                                                          │
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  Edit Your Profile                                      │
+│                                                         │
+│  ─────────────────────────────────────────────────────  │
+│                                                         │
+│  PERSONAL INFO                                          │
+│  ────────────────────────────────────────────────────  │
+│  [Full Name (100%)]                                     │
+│  [High School Autocomplete (100%)]                      │
+│  [Grad Year (50%)]     [State (50%)]                    │
+│  [Email Read-Only (100%)]                               │
+│  [Phone (50%)]         [Twitter (50%)]                  │
+│                                                         │
+│  ─────────────────────────────────────────────────────  │
+│                                                         │
+│  ACADEMIC                                               │
+│  ────────────────────────────────────────────────────  │
+│  [GPA (50%)]           [SAT Score (50%)]                │
+│                                                         │
+│  ─────────────────────────────────────────────────────  │
+│                                                         │
+│  ATHLETIC                                               │
+│  ────────────────────────────────────────────────────  │
+│  [Position (100%)]                                      │
+│  [Height (33%)]  [Weight (33%)]  [40 Time (33%)]       │
+│  ☑ Expected to start as a freshman?                    │
+│  ☑ Team captain in high school?                         │
+│  ☑ All-conference selection?                           │
+│  ☑ All-state selection?                                 │
+│                                                         │
+│  ─────────────────────────────────────────────────────  │
+│                                                         │
+│  FINANCIAL                                              │
+│  ────────────────────────────────────────────────────  │
+│  🔒 Financial Information is Private                    │
+│  Your AGI and family financial details are encrypted   │
+│  and only visible to you...                             │
+│                                                         │
+│  [AGI (100%)]                                           │
+│  [Dependents (50%)]                                     │
+│                                                         │
+│  ─────────────────────────────────────────────────────  │
+│                                                         │
+│  PARENT/GUARDIAN                                        │
+│  ────────────────────────────────────────────────────  │
+│  [Parent/Guardian Email (100%)]                         │
+│                                                         │
+│  [Cancel]  [Save Profile]                              │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
 
-┌────────────────────────────────────────────────────────┐
-│                    FOOTER                              │
-│            Documentation  Privacy  Help  Contact       │
-└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    FOOTER                               │
+│            Documentation  Privacy  Help  Contact        │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Mobile View (<768px)
+
+```
+┌────────────────────────┐
+│  [☰] Gritty Recruit    │
+│          [Logout]      │
+└────────────────────────┘
+
+┌────────────────────────┐
+│                        │
+│  Edit Your Profile     │
+│                        │
+│  ────────────────────  │
+│                        │
+│  PERSONAL INFO         │
+│  ──────────────────    │
+│  [Full Name (100%)]    │
+│  [High School (100%)]  │
+│  [Grad Year (100%)]    │
+│  [State (100%)]        │
+│  [Email (100%)]        │
+│  [Phone (100%)]        │
+│  [Twitter (100%)]      │
+│                        │
+│  ────────────────────  │
+│                        │
+│  ACADEMIC              │
+│  ──────────────────    │
+│  [GPA (100%)]          │
+│  [SAT (100%)]          │
+│                        │
+│  ────────────────────  │
+│                        │
+│  ATHLETIC              │
+│  ──────────────────    │
+│  [Position (100%)]     │
+│  [Height (100%)]       │
+│  [Weight (100%)]       │
+│  [40 Time (100%)]      │
+│  ☑ Expected starter?   │
+│  ☑ Team captain?       │
+│  ☑ All-conference?     │
+│  ☑ All-state?          │
+│                        │
+│  ────────────────────  │
+│                        │
+│  FINANCIAL             │
+│  ──────────────────    │
+│  🔒 Financial Info     │
+│  [Your AGI...]         │
+│  [AGI (100%)]          │
+│  [Dependents (100%)]   │
+│                        │
+│  ────────────────────  │
+│                        │
+│  PARENT/GUARDIAN       │
+│  ──────────────────    │
+│  [Email (100%)]        │
+│                        │
+│  [Cancel]              │
+│  [Save Profile]        │
+│                        │
+└────────────────────────┘
+
+┌────────────────────────┐
+│  Documentation Privacy │
+│  Help Contact          │
+└────────────────────────┘
 ```
 
 ---
 
-## DETAILED FIELD SPECIFICATIONS
+## DESIGN TOKENS REFERENCE
 
-### Form Header
+### Colors (from DESIGN_SYSTEM.md)
 
-- **Title (H2):** "Complete Your GRIT FIT Profile"
-- **Subtitle (Body Regular):** "We'll use this to find your best college matches."
-- **Progress Bar (optional):** Horizontal bar showing % completion
-  - **Background:** Light gray `#E8E8E8`
-  - **Filled:** Maroon gradient `#8B3A3A` to `#6B2C2C`
-  - **Height:** 6px
-  - **Label (Body Tiny):** "Progress: [X]%" (updates in real-time as user fills fields)
+- **Maroon (Primary):** `#8B3A3A`
+- **Gold (Accent):** `#D4AF37`
+- **Cream (Background):** `#F5EFE0`
+- **Charcoal (Text):** `#2C2C2C`
+- **Stone Gray (Secondary Text):** `#6B6B6B`
+- **Light Gray (Borders):** `#E8E8E8`
+- **White:** `#FFFFFF`
+- **Error Red:** `#F44336`
+- **Success Green:** `#4CAF50`
+- **Warning Orange:** `#FF9800`
 
----
+### Typography (from DESIGN_SYSTEM.md)
 
-## SECTION 1: ATHLETIC STATS
+- **Font Stack:** `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`
+- **H3 (Section headings):** 1.5rem (24px), weight 600, line-height 1.4
+- **Body Regular (Labels):** 1rem (16px), weight 400, line-height 1.6
+- **Body Small (Help text):** 0.875rem (14px), weight 400, line-height 1.5
 
-### Position Field
+### Spacing
 
-**Label:** "Position *" (required)
-**Input Type:** Dropdown (select)
-**Options:**
-- Select Position...
-- Quarterback
-- Running Back
-- Wide Receiver
-- Tight End
-- Offensive Lineman
-- Defensive Lineman
-- Linebacker
-- Defensive Back
-- Kicker
-- Punter
-- Other
-
-**Styling:**
-- Width: 100% (full width on all breakpoints)
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Font: 1rem, Charcoal
-- Focus state: `2px solid #8B3A3A` border outline
-
-**Validation:**
-- Required: Show error if empty on submit
-- Error message: "Please select a position"
+- **xs:** 4px
+- **sm:** 8px
+- **md:** 16px
+- **lg:** 24px
+- **xl:** 32px
 
 ---
 
-### Height Field
+## IMPLEMENTATION CHECKLIST
 
-**Label:** "Height"
-**Input Type:** Text input with unit selector
-**Format:** Height in feet-inches, e.g., "5'11""
-
-**Styling:**
-- Two inputs side-by-side (narrow)
-  - First input: Feet (e.g., "5") — 40px wide
-  - Second input: Inches (e.g., "11") — 40px wide
-  - Visual divider: " ' " between them
-- Font: 1rem, Charcoal
-- Border: `1px solid #D4D4D4`
-- Focus state: `2px solid #8B3A3A`
-
-**Placeholder:** "5" and "11" (examples)
-
-**Validation:**
-- Optional field
-- If provided, must be numeric and between 4'0" and 7'0"
-- Error message: "Please enter a valid height (e.g., 5'11"")"
+- [ ] All field definitions have `data-testid` attributes for Quin's test plan
+- [ ] High school autocomplete queries `hs_programs` in real-time with 300ms debounce
+- [ ] High school selection auto-populates `hs_lat` and `hs_lng`
+- [ ] All required fields marked with `aria-required="true"`
+- [ ] All error messages associated via `aria-describedby`
+- [ ] Form uses Supabase upsert on `profiles` table keyed by `user_id`
+- [ ] Client-side validation prevents submit until required fields valid
+- [ ] On save success, redirect to landing page after 1 second
+- [ ] On save error, show persistent error toast with Retry button
+- [ ] Mobile inputs use `font-size: 16px` to prevent iOS zoom
+- [ ] All buttons meet 44×44px touch target minimum on mobile
+- [ ] Focus indicators visible at `#8B3A3A` with 2px offset
+- [ ] Contrast ratios meet WCAG AA minimum (4.5:1 for text)
+- [ ] Privacy notice displays in Financial section with warning tint and lock icon
+- [ ] Form scrolls smoothly on mobile; no horizontal overflow
 
 ---
 
-### Weight Field
+## NEXT STEPS
 
-**Label:** "Weight"
-**Input Type:** Number input with unit
-**Format:** Weight in pounds, e.g., "215 lbs"
-
-**Styling:**
-- Width: 120px
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Unit label (Body Small): "lbs" inside input or to the right
-- Font: 1rem, Charcoal
-- Focus state: `2px solid #8B3A3A`
-
-**Placeholder:** "215"
-
-**Validation:**
-- Optional field
-- If provided, must be numeric and between 150–350 lbs
-- Error message: "Please enter a valid weight (150–350 lbs)"
+1. **Nova:** Build React component following this spec exactly
+2. **Patch:** Wire Supabase upsert operation on profiles table
+3. **Quill:** Visual design sign-off on form layout and styling
+4. **Quin:** Execute test plan from `quin_d3_test_plan.md` (if applicable) + create additional Profile Form test cases
+5. **Scout:** Compliance gate before implementation begins
 
 ---
 
-### 40-Yard Dash Field
-
-**Label:** "40-Yard Dash Time"
-**Input Type:** Decimal number input
-**Format:** Time in seconds, e.g., "4.75"
-
-**Styling:**
-- Width: 120px
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Unit label (Body Small): "seconds" to the right
-- Font: 1rem, Charcoal
-- Focus state: `2px solid #8B3A3A`
-
-**Placeholder:** "4.75"
-
-**Validation:**
-- Optional field
-- If provided, must be numeric and between 4.0–6.0 seconds
-- Error message: "Please enter a valid 40 time (4.0–6.0 seconds)"
-
----
-
-### Accolades Checkboxes
-
-**Label:** "Accolades" (optional, Body Small)
-
-**Checkbox Options (Grid, 2 columns):**
-```
-☐ Expected Starter      ☐ Captain
-☐ All-Conference        ☐ All-State
-```
-
-**Styling:**
-- Checkbox: 20px × 20px, rounded 4px
-- Unchecked: Light gray border, white background
-- Checked: Maroon background, white checkmark
-- Label text (Body Regular): "Expected Starter", "Captain", etc.
-- Spacing: 16px between checkbox pairs (horizontal), 8px vertical
-
-**Validation:**
-- Optional field
-- Multiple selections allowed
-
----
-
-## SECTION 2: ACADEMIC STATS
-
-### GPA Field
-
-**Label:** "GPA *" (required)
-**Input Type:** Decimal number input
-**Format:** Unweighted GPA on 4.0 scale, e.g., "3.85"
-
-**Styling:**
-- Width: 120px
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Font: 1rem, Charcoal
-- Focus state: `2px solid #8B3A3A`
-
-**Placeholder:** "3.85"
-
-**Validation:**
-- Required: Show error if empty
-- Must be numeric and between 0.0–4.0
-- Error messages:
-  - "GPA is required"
-  - "Please enter a valid GPA (0.0–4.0)"
-
----
-
-### SAT Score Field
-
-**Label:** "SAT Score (Optional)"
-**Input Type:** Number input
-**Format:** Total SAT score (out of 1600), e.g., "1480"
-
-**Styling:**
-- Width: 140px
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Font: 1rem, Charcoal
-- Focus state: `2px solid #8B3A3A`
-
-**Placeholder:** "1480"
-
-**Validation:**
-- Optional field
-- If provided, must be numeric and between 400–1600
-- Error message: "Please enter a valid SAT score (400–1600)"
-
-**Note:** If student has ACT instead, this field should accept ACT score with conversion. **For MVP: SAT only. ACT support = Phase 2.**
-
----
-
-### Graduation Year Field
-
-**Label:** "Graduation Year *" (required)
-**Input Type:** Dropdown (select)
-**Options:**
-- Select Year...
-- 2024
-- 2025
-- 2026
-- 2027
-- 2028
-- Later
-
-**Styling:**
-- Width: 140px
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Font: 1rem, Charcoal
-- Focus state: `2px solid #8B3A3A`
-
-**Validation:**
-- Required: Show error if not selected
-- Error message: "Please select your graduation year"
-
----
-
-## SECTION 3: LOCATION & HOME INFO
-
-### Home Location Fields
-
-**Label:** "Your Home Address (City, State)"
-**Input Type:** Two text inputs side-by-side
-- **City input:** Text input, full width
-- **State dropdown:** State selector (AL, AK, AZ, ..., WY)
-
-**Styling (City):**
-- Width: 60% (flex-grow on desktop)
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Placeholder: "City"
-- Focus state: `2px solid #8B3A3A`
-
-**Styling (State):**
-- Width: 35% (flex-grow on desktop)
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Font: 1rem, Charcoal
-- Focus state: `2px solid #8B3A3A`
-- Margin-left: 8px (gap between inputs)
-
-**Subtext (Body Tiny, Stone Gray):** "(Used to calculate distance to colleges)"
-
-**Validation:**
-- Optional fields
-- If one is filled, both should be provided
-- City: Text only (no numbers)
-- State: Must be valid US state abbreviation
-- Error message: "Please provide both city and state"
-
----
-
-## SECTION 4: HOUSEHOLD FINANCIAL INFO
-
-### Estimated Family Income (AGI) Field
-
-**Label:** "Estimated Family Income (AGI) *" (required)
-**Input Type:** Dropdown (select)
-**Options:**
-- Select Income Range...
-- < $40,000
-- $40,000–$60,000
-- $60,000–$80,000
-- $80,000–$100,000
-- $100,000–$150,000
-- $150,000–$200,000
-- > $200,000
-- Prefer not to say
-
-**Styling:**
-- Width: 100% (full width)
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Font: 1rem, Charcoal
-- Focus state: `2px solid #8B3A3A`
-
-**Validation:**
-- Required: Show error if not selected
-- Error message: "Please select an income range"
-
-**Subtext (Body Tiny, Stone Gray):** "(Used to estimate net cost and EFC)"
-
----
-
-### Number of Dependents Field
-
-**Label:** "Number of Dependents"
-**Input Type:** Number input
-**Format:** Integer, e.g., "2"
-
-**Styling:**
-- Width: 80px
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Font: 1rem, Charcoal
-- Focus state: `2px solid #8B3A3A`
-
-**Placeholder:** "2"
-
-**Validation:**
-- Optional field
-- If provided, must be numeric and 0–10
-- Error message: "Please enter a valid number (0–10)"
-
----
-
-## SECTION 5: SOCIAL & CONTACT (OPTIONAL)
-
-### Twitter Handle Field
-
-**Label:** "Twitter Handle"
-**Input Type:** Text input
-**Format:** Twitter handle without @, e.g., "johnsmith"
-
-**Styling:**
-- Width: 100% (full width)
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Placeholder: "johnsmith"
-- Prefix icon: "@" (grayed out)
-- Font: 1rem, Charcoal
-- Focus state: `2px solid #8B3A3A`
-
-**Validation:**
-- Optional field
-- If provided, must be valid Twitter handle (alphanumeric, underscores, hyphens)
-- Error message: "Please enter a valid Twitter handle"
-
----
-
-### Phone Number Field
-
-**Label:** "Phone Number"
-**Input Type:** Text input with auto-formatting
-**Format:** US phone number, e.g., "(555) 123-4567"
-
-**Styling:**
-- Width: 100% (full width)
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Placeholder: "(XXX) XXX-XXXX"
-- Font: 1rem, Charcoal, monospace
-- Focus state: `2px solid #8B3A3A`
-
-**Auto-formatting:**
-- As user types, format into (XXX) XXX-XXXX pattern
-- Example: User types "5551234567" → displays "(555) 123-4567"
-
-**Validation:**
-- Optional field
-- If provided, must be valid US phone number
-- Error message: "Please enter a valid phone number"
-
----
-
-### Parent/Guardian Email Field
-
-**Label:** "Parent/Guardian Email (Optional)" (new field, per RB-005)
-**Input Type:** Email input
-**Format:** Valid email address, e.g., "parent@example.com"
-
-**Styling:**
-- Width: 100% (full width)
-- Padding: 12px 16px
-- Border: `1px solid #D4D4D4`
-- Border-radius: 4px
-- Placeholder: "parent@example.com"
-- Font: 1rem, Charcoal
-- Focus state: `2px solid #8B3A3A`
-
-**Subtext (Body Tiny, Stone Gray):** "(Optional. This allows your parent/guardian to receive recruiting updates.)"
-
-**Validation:**
-- Optional field
-- If provided, must be valid email format
-- Error message: "Please enter a valid email address"
-
-**Note:** For MVP, this field is **informational only** — no emails are actually sent. Phase 2 will implement parent notifications.
-
----
-
-## FORM ACTIONS
-
-### Buttons (Bottom of Form)
-
-**Layout:**
-```
-[← Back]  [Submit & Calculate Matches ➜]
-```
-
-**Left Button: [← Back]**
-- **Label:** "← Back"
-- **Style:** Secondary button (outlined Maroon, Maroon text)
-- **Action:** Returns to previous step (landing page or dashboard)
-- **Width:** 120px
-- **Mobile:** Full-width button at bottom
-
-**Right Button: [Submit & Calculate Matches ➜]**
-- **Label:** "Submit & Calculate Matches ➜"
-- **Style:** Primary button (Maroon background, white text)
-- **Action:** Submit form and trigger GRIT FIT calculation
-- **Width:** Auto (min 200px)
-- **Mobile:** Full-width button, stacks below Back button
-
-### Button Behavior
-
-**On Submit Click:**
-1. Form validation runs (all required fields checked)
-2. If errors exist: Show error messages inline (red text below field)
-3. If valid:
-   - Button shows spinner + text changes to "Calculating..." (disabled state)
-   - Form becomes read-only (all inputs disabled)
-   - Request sent to server to:
-     - Save profile to `profiles` table
-     - Run GRIT FIT algorithm
-     - Return up to 30 matching schools
-   - On success: Navigate to `/grit-fit/results` (Map View)
-   - On error: Show error message (e.g., "Something went wrong. Please try again.")
-
----
-
-## FORM VALIDATION SUMMARY
-
-| Field | Required | Type | Rules |
-|---|---|---|---|
-| Position | Yes | Select | Must be selected |
-| Height | No | Text | If provided: valid height format 4'0"–7'0" |
-| Weight | No | Number | If provided: 150–350 lbs |
-| 40-Yard Dash | No | Decimal | If provided: 4.0–6.0 seconds |
-| Accolades | No | Checkboxes | Any combination allowed |
-| GPA | Yes | Decimal | 0.0–4.0 |
-| SAT Score | No | Number | If provided: 400–1600 |
-| Graduation Year | Yes | Select | Must be selected |
-| Home City | No | Text | Alphabetic only |
-| Home State | No | Select | Valid US state |
-| AGI | Yes | Select | Must be selected |
-| Dependents | No | Number | If provided: 0–10 |
-| Twitter Handle | No | Text | Valid Twitter format |
-| Phone Number | No | Text | Valid US phone format |
-| Parent Email | No | Email | Valid email format |
-
----
-
-## RESPONSIVE DESIGN
-
-### Desktop (1024px+)
-- **Form width:** 600px max, centered
-- **Sections:** Full width
-- **Field layout:** Single column per field
-- **City/State:** Side-by-side (60% / 35%)
-- **Buttons:** Side-by-side (Back left, Submit right)
-- **Padding:** 32px (xl) around form
-
-### Tablet (768px–1023px)
-- **Form width:** 90vw
-- **Sections:** Full width
-- **Field layout:** Single column
-- **City/State:** Side-by-side (55% / 40%)
-- **Buttons:** Stack vertically (Back on top, Submit below) **OR** side-by-side if space allows
-- **Padding:** 24px (lg)
-
-### Mobile (< 768px)
-- **Form width:** 100vw minus 16px padding
-- **Sections:** Full width
-- **Field layout:** Single column, full width per field
-- **City/State:** Stack vertically (100% each)
-- **Buttons:** Stack vertically, full width each (44px height for touch)
-- **Padding:** 16px (md)
-- **Progress bar:** Smaller text (Body Tiny)
-
----
-
-## EDITING THE PROFILE
-
-**Route:** `/profile/edit` (from student dashboard)
-
-**Behavior:**
-- Form pre-populates with current profile values
-- Header changes: "Update Your GRIT FIT Profile"
-- Submit button changes: "Update & Recalculate Matches"
-- On submit: Profile updated in database, GRIT FIT re-runs, shortlist flags update
-- After update: Return to student dashboard with success toast: "Profile updated and matches recalculated"
-
----
-
-## ACCESSIBILITY NOTES
-
-- **Screen readers:**
-  - Form fieldset with legend: "GRIT FIT Profile Form"
-  - Section headings: h3 role for each section
-  - Required indicator: aria-required="true" on required fields
-  - Error messages: aria-live="polite" and associated with field via aria-describedby
-- **Keyboard navigation:**
-  - Tab through all fields in logical order
-  - Enter or Space to check/uncheck checkboxes
-  - Arrow keys to navigate dropdowns
-  - Tab to reach Submit and Back buttons
-  - Escape to close any dropdowns
-- **Color contrast:** All labels and error text meet 4.5:1 minimum
-- **Focus indicators:** 2px Maroon outline on focused fields
-- **Error handling:** Errors displayed in red text below field with aria-live region for screen reader announcement
-
----
-
-## IMPLEMENTATION NOTES
-
-**Owner:** Nova (form component integration), Quill (design sign-off)
-
-**Dependencies:**
-- [ ] Form component (with validation)
-- [ ] Dropdown/select component
-- [ ] Text input component
-- [ ] Number input component
-- [ ] Checkbox component
-- [ ] Progress bar component
-- [ ] Error message handling
-- [ ] Auto-formatting for phone number
-
-**Reuse from existing codebase:**
-- [x] QuickListForm structure and fields (existing cfb-recruit-hub)
-- [x] GRIT FIT calculation logic (battle-tested)
-- [x] Validation rules
-
-**Key decisions for Nova:**
-1. Should form save draft as user fills fields, or only on submit? **Recommendation:** Only on submit for MVP
-2. Should all sections be collapsible, or always expanded? **Recommendation:** Always expanded for first-time users, but collapsible for editing
-3. Should height/weight have specific dropdown lists instead of free-text? **Recommendation:** Free-text with validation is simpler for MVP
-
----
-
-## APPROVAL GATE
-
-This spec requires sign-off from:
-- [ ] Quill (design consistency, layout, responsive behavior)
-- [ ] Nova (form component architecture and feasibility)
-- [ ] Chris (product confirmation of required fields and MVP scope)
-- [ ] Patch (data storage for AGI, dependents, parent email fields)
-
-Once signed off, Nova proceeds to implementation.
-
----
-
-*Profile Form Spec v1.0 — subject to revision based on stakeholder feedback and usability testing.*
+*Profile Form UX Spec v1.0 — subject to revision based on stakeholder feedback and accessibility testing.*

@@ -1,0 +1,394 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.jsx';
+import { supabase } from '../lib/supabaseClient.js';
+
+const POSITIONS = [
+  '', 'QB', 'RB', 'FB', 'WR', 'TE', 'OL', 'OT', 'OG', 'C',
+  'DL', 'DE', 'DT', 'LB', 'DB', 'CB', 'S', 'K', 'P', 'LS',
+];
+
+const US_STATES = [
+  '', 'AL','AK','AZ','AR','CA','CO','CT','DC','DE','FL','GA','HI','ID','IL','IN',
+  'IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH',
+  'NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT',
+  'VT','VA','WA','WV','WI','WY',
+];
+
+const currentYear = new Date().getFullYear();
+const GRAD_YEARS = ['', ...Array.from({ length: 5 }, (_, i) => String(currentYear + 1 + i))];
+
+const sectionStyle = { marginBottom: 32 };
+const headingStyle = { fontSize: '1.5rem', fontWeight: 600, color: '#2C2C2C', margin: '0 0 16px 0', lineHeight: 1.4 };
+const labelStyle = { display: 'block', fontSize: '1rem', color: '#2C2C2C', marginBottom: 4 };
+const helpStyle = { fontSize: '0.875rem', color: '#6B6B6B', marginTop: 4 };
+const inputBase = {
+  width: '100%', padding: '12px 16px', border: '1px solid #D4D4D4', borderRadius: 4,
+  fontSize: '1rem', color: '#2C2C2C', lineHeight: 1.5, backgroundColor: '#FFFFFF',
+  boxSizing: 'border-box', outline: 'none',
+};
+const errorMsgStyle = { fontSize: '0.875rem', color: '#F44336', marginTop: 4, display: 'block' };
+const fieldWrap = { marginBottom: 16 };
+const rowStyle = { display: 'flex', gap: 16, flexWrap: 'wrap' };
+const halfCol = { flex: '1 1 45%', minWidth: 200 };
+const thirdCol = { flex: '1 1 30%', minWidth: 150 };
+
+export default function ProfilePage() {
+  const navigate = useNavigate();
+  const { session } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [toast, setToast] = useState(null);
+
+  // Form state
+  const [form, setForm] = useState({
+    name: '', high_school: '', grad_year: '', state: '', email: '',
+    phone: '', twitter: '', position: '', height: '', weight: '',
+    speed_40: '', gpa: '', sat: '', agi: '', dependents: '',
+    expected_starter: false, captain: false, all_conference: false, all_state: false,
+    parent_guardian_email: '', hs_lat: null, hs_lng: null,
+  });
+
+  // Autocomplete state
+  const [hsQuery, setHsQuery] = useState('');
+  const [hsResults, setHsResults] = useState([]);
+  const [hsSelected, setHsSelected] = useState(false);
+
+  // Load existing profile
+  useEffect(() => {
+    if (!session) return;
+    setLoading(true);
+    supabase.from('profiles').select('*').eq('user_id', session.user.id).single()
+      .then(({ data }) => {
+        if (data) {
+          setForm(prev => ({
+            ...prev,
+            name: data.name || '',
+            high_school: data.high_school || '',
+            grad_year: data.grad_year ? String(data.grad_year) : '',
+            state: data.state || '',
+            email: data.email || session.user.email || '',
+            phone: data.phone || '',
+            twitter: data.twitter || '',
+            position: data.position || '',
+            height: data.height || '',
+            weight: data.weight ? String(data.weight) : '',
+            speed_40: data.speed_40 ? String(data.speed_40) : '',
+            gpa: data.gpa ? String(data.gpa) : '',
+            sat: data.sat ? String(data.sat) : '',
+            agi: data.agi ? String(data.agi) : '',
+            dependents: data.dependents != null ? String(data.dependents) : '',
+            expected_starter: data.expected_starter || false,
+            captain: data.captain || false,
+            all_conference: data.all_conference || false,
+            all_state: data.all_state || false,
+            parent_guardian_email: data.parent_guardian_email || '',
+            hs_lat: data.hs_lat, hs_lng: data.hs_lng,
+          }));
+          setHsQuery(data.high_school || '');
+          if (data.high_school) setHsSelected(true);
+        } else {
+          setForm(prev => ({ ...prev, email: session.user.email || '' }));
+        }
+        setLoading(false);
+      });
+  }, [session]);
+
+  // HS autocomplete with 300ms debounce
+  useEffect(() => {
+    if (hsSelected || hsQuery.length < 2) { setHsResults([]); return; }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from('hs_programs')
+        .select('id, school_name, city, state')
+        .ilike('school_name', `%${hsQuery}%`)
+        .limit(10);
+      setHsResults(data || []);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [hsQuery, hsSelected]);
+
+  const handleHsSelect = (school) => {
+    setForm(prev => ({ ...prev, high_school: school.school_name, hs_lat: null, hs_lng: null }));
+    setHsQuery(school.school_name);
+    setHsSelected(true);
+    setHsResults([]);
+  };
+
+  const set = useCallback((field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = 'Name is required';
+    if (!form.high_school.trim() || !hsSelected) e.high_school = 'Select a high school from the list';
+    if (form.gpa && (parseFloat(form.gpa) < 0 || parseFloat(form.gpa) > 4.0)) e.gpa = 'GPA must be 4.0 or lower';
+    if (form.sat && (parseInt(form.sat) < 400 || parseInt(form.sat) > 1600)) e.sat = 'SAT must be between 400-1600';
+    if (form.weight && (parseInt(form.weight) < 50 || parseInt(form.weight) > 400)) e.weight = 'Weight must be between 50-400 lbs';
+    if (form.speed_40 && (parseFloat(form.speed_40) < 4.0 || parseFloat(form.speed_40) > 7.0)) e.speed_40 = 'Time must be between 4.0-7.0 seconds';
+    if (form.agi && parseFloat(form.agi) < 0) e.agi = 'AGI must be a positive number';
+    if (form.dependents && (parseInt(form.dependents) < 0 || parseInt(form.dependents) > 10)) e.dependents = 'Dependents must be 0-10';
+    return e;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const v = validate();
+    setErrors(v);
+    if (Object.keys(v).length > 0) return;
+
+    setSaving(true);
+    const payload = {
+      user_id: session.user.id,
+      name: form.name.trim(),
+      high_school: form.high_school,
+      grad_year: form.grad_year ? parseInt(form.grad_year) : null,
+      state: form.state || null,
+      email: form.email,
+      phone: form.phone || null,
+      twitter: form.twitter || null,
+      position: form.position || null,
+      height: form.height || null,
+      weight: form.weight ? parseFloat(form.weight) : null,
+      speed_40: form.speed_40 ? parseFloat(form.speed_40) : null,
+      gpa: form.gpa ? parseFloat(form.gpa) : null,
+      sat: form.sat ? parseInt(form.sat) : null,
+      hs_lat: form.hs_lat, hs_lng: form.hs_lng,
+      agi: form.agi ? parseFloat(form.agi) : null,
+      dependents: form.dependents ? parseInt(form.dependents) : null,
+      expected_starter: form.expected_starter,
+      captain: form.captain,
+      all_conference: form.all_conference,
+      all_state: form.all_state,
+      parent_guardian_email: form.parent_guardian_email || null,
+    };
+
+    const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'user_id' });
+    setSaving(false);
+
+    if (error) {
+      setToast({ type: 'error', msg: 'Failed to save profile. Please try again.' });
+    } else {
+      setToast({ type: 'success', msg: 'Profile saved successfully' });
+      setTimeout(() => navigate('/'), 1000);
+    }
+  };
+
+  if (loading) return <div style={{ padding: 48, textAlign: 'center', color: '#6B6B6B' }}>Loading profile...</div>;
+
+  const renderInput = (field, label, testId, opts = {}) => (
+    <div style={fieldWrap} data-testid={`form-field-${field}`}>
+      <label data-testid={`label-${field}`} htmlFor={field} style={labelStyle}>
+        {label} {opts.required && <span style={{ color: '#F44336' }}>*</span>}
+      </label>
+      <input
+        id={field}
+        type={opts.type || 'text'}
+        data-testid={testId}
+        placeholder={opts.placeholder || ''}
+        value={form[field]}
+        onChange={(e) => set(field, e.target.value)}
+        disabled={opts.disabled}
+        aria-required={opts.required || false}
+        style={{
+          ...inputBase,
+          ...(errors[field] ? { border: '2px solid #F44336', backgroundColor: '#FFF5F5' } : {}),
+          ...(opts.disabled ? { backgroundColor: '#F5F5F5', border: '1px solid #E8E8E8', color: '#6B6B6B', cursor: 'not-allowed' } : {}),
+        }}
+      />
+      {opts.help && <span style={helpStyle}>{opts.help}</span>}
+      {errors[field] && <span data-testid={`error-${field}`} style={errorMsgStyle} aria-live="polite">{errors[field]}</span>}
+    </div>
+  );
+
+  const renderSelect = (field, label, testId, options, opts = {}) => (
+    <div style={fieldWrap} data-testid={`form-field-${field}`}>
+      <label data-testid={`label-${field}`} htmlFor={field} style={labelStyle}>{label}</label>
+      <select
+        id={field}
+        data-testid={testId}
+        value={form[field]}
+        onChange={(e) => set(field, e.target.value)}
+        style={{ ...inputBase, cursor: 'pointer' }}
+      >
+        {options.map(o => <option key={o} value={o}>{o || `Select ${label.toLowerCase()}`}</option>)}
+      </select>
+      {opts.help && <span style={helpStyle}>{opts.help}</span>}
+    </div>
+  );
+
+  const renderCheckbox = (field, label, testId) => (
+    <div style={{ ...fieldWrap, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <input
+        id={field}
+        type="checkbox"
+        data-testid={testId}
+        checked={form[field]}
+        onChange={(e) => set(field, e.target.checked)}
+        style={{ width: 20, height: 20, accentColor: '#8B3A3A', cursor: 'pointer' }}
+      />
+      <label htmlFor={field} style={{ fontSize: '1rem', color: '#2C2C2C', cursor: 'pointer' }}>{label}</label>
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#2C2C2C', margin: '0 0 24px 0' }}>Edit Your Profile</h2>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          padding: '8px 16px', borderRadius: 4, marginBottom: 16, fontSize: '0.875rem', color: '#FFFFFF',
+          backgroundColor: toast.type === 'success' ? '#4CAF50' : '#F44336',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <span>{toast.msg}</span>
+          {toast.type === 'error' && (
+            <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', fontWeight: 600 }}>Dismiss</button>
+          )}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        {/* Section 1: Personal Info */}
+        <section style={sectionStyle}>
+          <h3 style={headingStyle}>Personal Info</h3>
+          <hr style={{ border: 'none', borderTop: '1px solid #E8E8E8', marginBottom: 16 }} />
+
+          {renderInput('name', 'Full Name', 'input-name', { required: true, placeholder: 'John Smith' })}
+
+          {/* HS Autocomplete */}
+          <div style={fieldWrap} data-testid="form-field-high_school">
+            <label data-testid="label-high_school" htmlFor="high_school" style={labelStyle}>
+              High School <span style={{ color: '#F44336' }}>*</span>
+            </label>
+            <input
+              id="high_school"
+              type="text"
+              data-testid="input-high-school-autocomplete"
+              placeholder="Start typing... (e.g., 'Boston College High')"
+              value={hsQuery}
+              onChange={(e) => { setHsQuery(e.target.value); setHsSelected(false); set('high_school', ''); }}
+              aria-required={true}
+              style={{
+                ...inputBase,
+                ...(errors.high_school ? { border: '2px solid #F44336', backgroundColor: '#FFF5F5' } : {}),
+              }}
+            />
+            {hsResults.length > 0 && (
+              <div style={{
+                border: '1px solid #E8E8E8', borderRadius: 4, backgroundColor: '#FFFFFF',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)', maxHeight: 200, overflowY: 'auto', marginTop: 4,
+              }}>
+                {hsResults.map(s => (
+                  <div
+                    key={s.id}
+                    onClick={() => handleHsSelect(s)}
+                    style={{
+                      padding: '8px 16px', cursor: 'pointer', fontSize: '0.875rem', color: '#2C2C2C',
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#F5EFE0'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = '#FFFFFF'}
+                  >
+                    {s.school_name}, {s.city}, {s.state}
+                  </div>
+                ))}
+              </div>
+            )}
+            <span style={helpStyle}>(Required — allows coaches to find you)</span>
+            {errors.high_school && <span data-testid="error-high_school" style={errorMsgStyle} aria-live="polite">{errors.high_school}</span>}
+          </div>
+
+          <div style={rowStyle}>
+            <div style={halfCol}>{renderSelect('grad_year', 'Graduation Year', 'select-grad-year', GRAD_YEARS)}</div>
+            <div style={halfCol}>{renderSelect('state', 'State', 'select-state', US_STATES)}</div>
+          </div>
+
+          {renderInput('email', 'Email', 'input-email-readonly', { disabled: true, help: '(From your account — cannot edit here)' })}
+
+          <div style={rowStyle}>
+            <div style={halfCol}>{renderInput('phone', 'Phone', 'input-phone', { placeholder: '(123) 456-7890' })}</div>
+            <div style={halfCol}>{renderInput('twitter', 'Twitter/X Handle (Optional)', 'input-twitter', { placeholder: '@your_handle', help: '(Optional — helps coaches find you online)' })}</div>
+          </div>
+        </section>
+
+        {/* Section 2: Academic */}
+        <section style={sectionStyle}>
+          <h3 style={headingStyle}>Academic</h3>
+          <hr style={{ border: 'none', borderTop: '1px solid #E8E8E8', marginBottom: 16 }} />
+          <div style={rowStyle}>
+            <div style={halfCol}>{renderInput('gpa', 'High School GPA', 'input-gpa', { type: 'number', placeholder: '3.75', help: '(Unweighted preferred)' })}</div>
+            <div style={halfCol}>{renderInput('sat', 'SAT Score (Total)', 'input-sat', { type: 'number', placeholder: '1450', help: '(New SAT out of 1600)' })}</div>
+          </div>
+        </section>
+
+        {/* Section 3: Athletic */}
+        <section style={sectionStyle}>
+          <h3 style={headingStyle}>Athletic</h3>
+          <hr style={{ border: 'none', borderTop: '1px solid #E8E8E8', marginBottom: 16 }} />
+          {renderSelect('position', 'Football Position', 'select-position', POSITIONS)}
+          <div style={rowStyle}>
+            <div style={thirdCol}>{renderInput('height', 'Height', 'input-height', { placeholder: '5\'10"' })}</div>
+            <div style={thirdCol}>{renderInput('weight', 'Weight (lbs)', 'input-weight', { type: 'number', placeholder: '190', help: '(Pounds)' })}</div>
+            <div style={thirdCol}>{renderInput('speed_40', '40-Yard Dash (seconds)', 'input-speed-40', { type: 'number', placeholder: '4.65', help: '(Best time in seconds)' })}</div>
+          </div>
+          {renderCheckbox('expected_starter', 'Expect to start as a freshman?', 'checkbox-expected-starter')}
+          {renderCheckbox('captain', 'Team captain in high school?', 'checkbox-captain')}
+          {renderCheckbox('all_conference', 'All-conference selection?', 'checkbox-all-conference')}
+          {renderCheckbox('all_state', 'All-state selection?', 'checkbox-all-state')}
+        </section>
+
+        {/* Section 4: Financial */}
+        <section style={sectionStyle}>
+          <h3 style={headingStyle}>Financial</h3>
+          <hr style={{ border: 'none', borderTop: '1px solid #E8E8E8', marginBottom: 16 }} />
+          <div role="region" aria-label="Financial privacy notice" style={{
+            backgroundColor: '#FFF8DC', borderLeft: '3px solid #FF9800', padding: '12px 16px',
+            marginBottom: 16, fontSize: '0.875rem', color: '#6B6B6B', lineHeight: 1.5,
+          }}>
+            Financial Information is Private — Your AGI and family financial details are encrypted and only visible to you. College coaches cannot see this information — it powers our financial fit analysis only.
+          </div>
+          {renderInput('agi', 'Adjusted Gross Income (AGI) — Last Fiscal Year', 'input-agi', { type: 'number', placeholder: '75000', help: '(From parents\' or guardians\' most recent tax return. Used only for financial fit calculation.)' })}
+          <div style={rowStyle}>
+            <div style={halfCol}>{renderInput('dependents', 'Number of Dependents', 'input-dependents', { type: 'number', placeholder: '2', help: '(Including yourself)' })}</div>
+          </div>
+        </section>
+
+        {/* Section 5: Parent/Guardian */}
+        <section style={sectionStyle}>
+          <h3 style={headingStyle}>Parent/Guardian</h3>
+          <hr style={{ border: 'none', borderTop: '1px solid #E8E8E8', marginBottom: 16 }} />
+          {renderInput('parent_guardian_email', 'Parent/Guardian Email', 'input-parent-guardian-email', { type: 'email', placeholder: 'parent@email.com', help: '(Colleges may contact your parent/guardian directly)' })}
+        </section>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            data-testid="button-cancel"
+            onClick={() => navigate('/')}
+            style={{ background: 'transparent', border: 'none', color: '#8B3A3A', fontSize: '1rem', cursor: 'pointer', padding: '12px 16px' }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            data-testid="button-save-profile"
+            disabled={saving}
+            aria-busy={saving}
+            style={{
+              padding: '12px 32px', backgroundColor: saving ? '#E8E8E8' : '#8B3A3A',
+              color: saving ? '#6B6B6B' : '#FFFFFF', border: 'none', borderRadius: 4,
+              fontSize: '1rem', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)', minHeight: 44,
+            }}
+          >
+            {saving ? 'Saving...' : 'Save Profile'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

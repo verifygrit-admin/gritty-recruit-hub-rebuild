@@ -1,0 +1,50 @@
+name: Playwright Regression
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  playwright:
+    name: Run Playwright Suite
+    runs-on: ubuntu-latest
+
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      # Credential names must match regression.spec.js — TEST_EMAIL/TEST_PASSWORD removed
+      # (those were cfb-recruit-hub names and do not exist in this repo's secrets)
+      TEST_STUDENT_EMAIL: ${{ secrets.TEST_STUDENT_EMAIL }}
+      TEST_STUDENT_PASSWORD: ${{ secrets.TEST_STUDENT_PASSWORD }}
+      TEST_COACH_EMAIL: ${{ secrets.TEST_COACH_EMAIL }}
+      TEST_COACH_PASSWORD: ${{ secrets.TEST_COACH_PASSWORD }}
+      PLAYWRIGHT_BASE_URL: https://app.grittyfb.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: npx playwright test --reporter=list
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: playwright-report/
+          retention-days: 7
