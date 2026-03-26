@@ -318,17 +318,14 @@ describe('Schema: schools table population', () => {
 // ── file_uploads: column structure ─────────────────────────────────────────
 
 describe('Schema: file_uploads table structure', () => {
-  it('file_uploads table has user_id column (not said) as identity key', async () => {
+  it('file_uploads table has user_id column as identity key', async () => {
     if (skipIfNoClient()) return;
 
-    // If said column exists, this test fails — said was removed per Chris's direction
     const { data, error } = await supabase
       .from('file_uploads')
       .select('user_id, file_label, storage_path')
       .limit(0);
 
-    // If the query errors on said column: that is expected (said should not exist)
-    // If the query succeeds on user_id: table structure is correct
     expect(error).toBeNull();
   });
 

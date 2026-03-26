@@ -287,7 +287,7 @@ After student selects a school:
 - **[Next: Profile ➜]** (Primary, full-width)
   - On click: Validate school selection
   - If valid: Navigate to Step 3 (GRIT FIT Profile Form)
-  - Store school_id in session/form state (not saved to DB yet)
+  - Store hs_program_id in session/form state (not saved to DB yet)
 
 ---
 
@@ -305,11 +305,11 @@ After student selects a school:
 
 **Data Flow:**
 1. On submit:
-   - Form data + email + password + selected hs_program_id bundled (note: users table has no school_id column in v2 — A-06)
+   - Form data + email + password + selected hs_program_id bundled
    - POST to `/api/auth/register` endpoint
    - Server-side (Morty):
      - Create auth.users record (if not already created in Step 1) — user_id (Supabase Auth UUID) is assigned by Supabase
-     - Create users table record (user_type = 'student_athlete', account_status = 'active') — no school_id column; student-school linkage via hs_coach_students junction (A-06)
+     - Create users table record (user_type = 'student_athlete', account_status = 'active')
      - Create profiles table record (user_id, name, athletic/academic stats, etc.)
      - Run GRIT FIT algorithm
      - Return 30 schools (or fewer) as JSON
