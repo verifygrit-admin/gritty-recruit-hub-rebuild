@@ -181,7 +181,6 @@ export default function ProfilePage() {
     const { error } = await supabase.from('hs_coach_students').insert({
       coach_user_id: BC_HIGH_COACH.user_id,
       student_user_id: session.user.id,
-      hs_program_id: BC_HIGH_COACH.hs_program_id,
     });
     if (error) {
       if (error.code === '23505') {
