@@ -45,7 +45,7 @@ function formatMoney(v) {
 
 function formatPct(v) {
   if (v == null || isNaN(v)) return 'N/A';
-  return Math.round(v * 100) + '%';
+  return Math.round(v) + '%';
 }
 
 function buildPopupHtml(school) {
