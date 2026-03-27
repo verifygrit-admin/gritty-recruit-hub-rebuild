@@ -30,9 +30,11 @@ export default function Layout({ children }) {
           const name = data.high_school.toUpperCase();
           // Truncate if too long for header
           setSchoolName(name.length > 20 ? name.substring(0, 20) : name);
+        } else if (userType === 'hs_coach' || userType === 'hs_guidance_counselor') {
+          setSchoolName('BC HIGH');
         }
       });
-  }, [session]);
+  }, [session, userType]);
 
   const handleSignOut = async () => {
     await signOut();
