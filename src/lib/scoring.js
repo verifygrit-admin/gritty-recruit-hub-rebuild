@@ -236,10 +236,14 @@ export function runGritFitScoring(profile, schools) {
     // DROI
     const droi = (netCost != null && netCost > 0)
       ? adltvCalc / netCost
-      : (netCost === 0 ? 100 : null);
+      : (netCost != null ? 100 : null);
 
-    // Break-Even
-    const breakEven = netCost != null && netCost > 0 ? 40 / droi : (netCost === 0 ? 0.01 : null);
+    // Break-Even — floors to 0 when netCost <= 0 (full scholarship / athletic aid covers cost)
+    const breakEven = netCost == null
+      ? null
+      : netCost <= 0
+        ? 0
+        : Math.max(0, 40 / droi);
 
     return {
       ...school,
