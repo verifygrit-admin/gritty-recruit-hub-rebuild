@@ -29,7 +29,7 @@ const COLUMNS = [
   { key: 'conference', label: 'Conf', width: 100, sortType: 'string' },
   { key: 'state', label: 'State', width: 60, sortType: 'string' },
   { key: 'dist', label: 'Distance', width: 80, sortType: 'number' },
-  { key: 'adtlv', label: 'ADTLV', width: 100, sortType: 'number' },
+  { key: 'adltv', label: 'ADTLV', width: 100, sortType: 'number' },
   { key: 'netCost', label: 'Your Annual Cost', width: 130, sortType: 'number' },
 ];
 
@@ -113,7 +113,7 @@ export default function GritFitTableView({
               </p>
               <p style={{ margin: '2px 0', fontSize: '0.875rem' }}>Distance: {school.dist} mi</p>
               <p style={{ margin: '2px 0', fontSize: '0.875rem' }}>
-                ADTLV: {school.adtlv != null ? school.adtlv.toFixed(1) : 'N/A'}
+                ADTLV: {school.adltv != null ? school.adltv.toFixed(1) : 'N/A'}
               </p>
               <p style={{ margin: '2px 0 12px', fontSize: '0.875rem' }}>
                 Your Annual Cost: {formatMoney(school.netCost != null ? school.netCost / 4 : null)}
@@ -203,7 +203,7 @@ export default function GritFitTableView({
                   <td style={cellStyle}>{school.state || ''}</td>
                   <td style={cellStyle}>{school.dist != null ? school.dist + ' mi' : 'N/A'}</td>
                   <td style={cellStyle}>
-                    {school.adtlv != null ? school.adtlv.toFixed(1) : 'N/A'}
+                    {school.adltv != null ? school.adltv.toFixed(1) : 'N/A'}
                   </td>
                   <td style={cellStyle}>
                     {formatMoney(school.netCost != null ? school.netCost / 4 : null)}

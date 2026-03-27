@@ -14,11 +14,11 @@ const PANELS = [
     sort: (a, b) => a.netCost - b.netCost,
   },
   {
-    id: 'adtlv', title: 'Highest ADTLV', sub: 'Adjusted degree lifetime value',
-    key: 'adtlv', color: '#1976D2', inverted: false,
+    id: 'adltv', title: 'Highest ADTLV', sub: 'Adjusted degree lifetime value',
+    key: 'adltv', color: '#1976D2', inverted: false,
     fmt: v => '$' + Math.round(v / 1000) + 'K',
-    filter: s => s.adtlv != null && s.adtlv > 0,
-    sort: (a, b) => b.adtlv - a.adtlv,
+    filter: s => s.adltv != null && s.adltv > 0,
+    sort: (a, b) => b.adltv - a.adltv,
   },
   {
     id: 'payback', title: 'Fastest Payback', sub: 'Years to break even',
