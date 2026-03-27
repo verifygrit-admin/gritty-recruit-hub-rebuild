@@ -14,11 +14,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // Initial session check — use getSession() not getUser()
+    // Initial session check — set session only; onAuthStateChange handles fetchUserType
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      if (s) fetchUserType(s.user.id);
-      else setLoading(false);
+      if (!s) {
+        setSession(null);
+        setLoading(false);
+      }
     });
 
     // Listen for auth changes
