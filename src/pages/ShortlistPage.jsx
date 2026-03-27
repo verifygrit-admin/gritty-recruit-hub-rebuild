@@ -13,9 +13,66 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
+import { runGritFitScoring } from '../lib/scoring.js';
 import ShortlistFilters from '../components/ShortlistFilters.jsx';
 import ShortlistCard from '../components/ShortlistCard.jsx';
 import PreReadLibrary from '../components/PreReadLibrary.jsx';
+
+/**
+ * Re-runs GRIT FIT scoring and patches shortlist rows where scored fields are null.
+ */
+async function backfillScoredFields(userId, profile, allSchools, currentItems) {
+  const result = runGritFitScoring(profile, allSchools);
+
+  // Build unitid -> scored school lookup (includes matchRank/matchTier from ranking)
+  const scoredByUnitid = {};
+  for (const s of result.scored) {
+    scoredByUnitid[s.unitid] = s;
+  }
+
+  let updated = 0;
+  const errors = [];
+
+  for (const item of currentItems) {
+    const scored = scoredByUnitid[item.unitid];
+    if (!scored) continue;
+
+    const needsPatch =
+      item.break_even == null ||
+      item.match_rank == null ||
+      item.droi       == null ||
+      item.net_cost   == null;
+
+    if (!needsPatch) continue;
+
+    const patch = {
+      match_rank:  scored.matchRank  ?? null,
+      match_tier:  scored.matchTier  ?? null,
+      net_cost:    scored.netCost    ?? null,
+      droi:        scored.droi       ?? null,
+      break_even:  scored.breakEven  ?? null,
+      adltv:       scored.adltv      ?? null,
+      grad_rate:   scored.gradRate   ?? null,
+      coa:         scored.coa_out_of_state ? parseFloat(scored.coa_out_of_state) : null,
+      dist:        scored.dist       ?? null,
+      updated_at:  new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('short_list_items')
+      .update(patch)
+      .eq('id', item.id)
+      .eq('user_id', userId);
+
+    if (error) {
+      errors.push({ unitid: item.unitid, school_name: item.school_name, error });
+    } else {
+      updated++;
+    }
+  }
+
+  return { updated, errors };
+}
 import {
   uploadToLibrary,
   deleteFromLibrary,
@@ -366,11 +423,11 @@ export default function ShortlistPage() {
     setRefreshing(true);
 
     try {
-      // Re-run scoring: fetch profile + schools, then update shortlist statuses
       const userId = session.user.id;
+
       const [profileRes, schoolsRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('user_id', userId).single(),
-        supabase.from('schools').select('unitid'),
+        supabase.from('schools').select('*'),
       ]);
 
       if (profileRes.error || !profileRes.data) {
@@ -379,8 +436,28 @@ export default function ShortlistPage() {
         return;
       }
 
-      // For now, just reload the shortlist items to get any server-side updates
-      // Full GRIT FIT re-eval would require the scoring engine — that belongs to a status-refresh feature
+      if (schoolsRes.error || !schoolsRes.data) {
+        showToast('Could not load school data for refresh.', 'error');
+        setRefreshing(false);
+        return;
+      }
+
+      const profile = profileRes.data;
+      const allSchools = schoolsRes.data;
+
+      if (!profile.position || !profile.gpa) {
+        showToast('Complete your profile (position and GPA required) before refreshing.', 'error');
+        setRefreshing(false);
+        return;
+      }
+
+      const { updated, errors } = await backfillScoredFields(userId, profile, allSchools, items);
+
+      if (errors.length > 0) {
+        console.error('backfillScoredFields partial errors:', errors);
+      }
+
+      // Reload shortlist from DB to pick up patched values
       const { data: freshItems, error: fetchError } = await supabase
         .from('short_list_items')
         .select('*')
@@ -389,11 +466,16 @@ export default function ShortlistPage() {
 
       if (!fetchError && freshItems) {
         setItems(freshItems);
-        showToast('Status refreshed based on your latest profile', 'success');
+      }
+
+      if (updated > 0) {
+        showToast(`Updated GRIT FIT scores for ${updated} school${updated !== 1 ? 's' : ''}`, 'success');
+      } else {
+        showToast('All schools are already up to date', 'success');
       }
     } catch (err) {
-      showToast('Refresh failed.', 'error');
-      console.error('Refresh error:', err);
+      showToast('Refresh failed. Please try again.', 'error');
+      console.error('handleRefreshStatus error:', err);
     }
 
     setRefreshing(false);
