@@ -91,7 +91,7 @@ export const TIER_COLORS = {
   "FBS Ind":   "#ce93d8",
   "1-FCS":     "#81c784",
   "2-Div II":  "#ef9a9a",
-  "3-Div III": "#b0bec5",
+  "3-Div III": "#ce93d8",
 };
 
 export const TIER_LABELS = {
@@ -100,7 +100,7 @@ export const TIER_LABELS = {
   "FBS Ind":   { short:"Ind", color:"#ce93d8" },
   "1-FCS":     { short:"FCS", color:"#81c784" },
   "2-Div II":  { short:"D2",  color:"#ef9a9a" },
-  "3-Div III": { short:"D3",  color:"#b0bec5" },
+  "3-Div III": { short:"D3",  color:"#ce93d8" },
 };
 
 // US state geographic centroids for recruit-reach distance approximation

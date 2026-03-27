@@ -19,7 +19,6 @@ const LEGEND_ITEMS = [
   { label: 'Power 4', color: TIER_COLORS['Power 4'] },
   { label: 'G6', color: TIER_COLORS['G6'] },
   { label: '1-FCS', color: TIER_COLORS['1-FCS'] },
-  { label: 'FBS Ind', color: TIER_COLORS['FBS Ind'] },
   { label: '2-Div II', color: TIER_COLORS['2-Div II'] },
   { label: '3-Div III', color: TIER_COLORS['3-Div III'] },
 ];
