@@ -56,28 +56,21 @@ async function backfillScoredFields(userId, profile, allSchools, currentItems) {
     const labels = computeGritFitStatuses(scored, result.topTier, result.recruitReach);
     const primaryStatus = labels[0];
 
-    // Always write status labels; conditionally write numeric fields
-    const needsNumericPatch =
-      item.break_even == null ||
-      item.match_rank == null ||
-      item.droi       == null ||
-      item.net_cost   == null;
-
+    // Always write ALL scored fields — numeric fields are engine-derived and must
+    // stay in sync with the current profile. No null-gate: stale values are overwritten.
     const patch = {
-      grit_fit_status: primaryStatus,
-      grit_fit_labels: labels,
-      updated_at: new Date().toISOString(),
-      ...(needsNumericPatch ? {
-        match_rank:  scored.matchRank  ?? null,
-        match_tier:  scored.matchTier  ?? null,
-        net_cost:    scored.netCost    ?? null,
-        droi:        scored.droi       ?? null,
-        break_even:  scored.breakEven  ?? null,
-        adltv:       scored.adltv      ?? null,
-        grad_rate:   scored.gradRate   ?? null,
-        coa:         scored.coa_out_of_state ? parseFloat(scored.coa_out_of_state) : null,
-        dist:        scored.dist       ?? null,
-      } : {}),
+      grit_fit_status:  primaryStatus,
+      grit_fit_labels:  labels,
+      updated_at:       new Date().toISOString(),
+      match_rank:       scored.matchRank  ?? null,
+      match_tier:       scored.matchTier  ?? null,
+      net_cost:         scored.netCost    ?? null,
+      droi:             scored.droi       ?? null,
+      break_even:       scored.breakEven  ?? null,
+      adltv:            scored.adltv      ?? null,
+      grad_rate:        scored.gradRate   ?? null,
+      coa:              scored.coa_out_of_state ? parseFloat(scored.coa_out_of_state) : null,
+      dist:             scored.dist       ?? null,
     };
 
     const { error } = await supabase
@@ -173,6 +166,41 @@ export default function ShortlistPage() {
       // Library docs and shares
       if (!libraryRes.error) setLibraryDocs(libraryRes.data);
       if (!sharesRes.error) setShares(sharesRes.data);
+
+      // Auto-refresh: if profile was updated after the most recent shortlist scoring,
+      // re-run scoring in the background to keep labels and metrics current.
+      const loadedItems = itemsRes.data || [];
+      if (loadedItems.length > 0) {
+        try {
+          const profileRes = await supabase.from('profiles').select('updated_at').eq('user_id', userId).single();
+          if (profileRes.data?.updated_at) {
+            const profileTime = new Date(profileRes.data.updated_at).getTime();
+            const latestItemTime = Math.max(...loadedItems.map(i => new Date(i.updated_at).getTime()));
+            if (profileTime > latestItemTime) {
+              // Profile is newer — auto-backfill in background
+              const [pRes, sRes] = await Promise.all([
+                supabase.from('profiles').select('*').eq('user_id', userId).single(),
+                supabase.from('schools').select('*'),
+              ]);
+              if (pRes.data && sRes.data && pRes.data.position && pRes.data.gpa) {
+                const { updated } = await backfillScoredFields(userId, pRes.data, sRes.data, loadedItems);
+                if (updated > 0) {
+                  const { data: freshItems } = await supabase
+                    .from('short_list_items')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('added_at', { ascending: false });
+                  if (freshItems) setItems(freshItems);
+                  setToast({ msg: `Scores updated for ${updated} school${updated !== 1 ? 's' : ''} based on your latest profile`, type: 'success' });
+                  setTimeout(() => setToast(null), 4000);
+                }
+              }
+            }
+          }
+        } catch (autoErr) {
+          console.error('Auto-refresh error (non-blocking):', autoErr);
+        }
+      }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
       console.error('ShortlistPage loadData error:', err);
