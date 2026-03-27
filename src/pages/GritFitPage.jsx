@@ -148,6 +148,7 @@ export default function GritFitPage() {
       coach_link: school.coach_link,
       source: 'grit_fit',
       grit_fit_status: 'currently_recommended',
+      grit_fit_labels: ['currently_recommended'],
     };
 
     const { error } = await supabase.from('short_list_items').insert(payload);

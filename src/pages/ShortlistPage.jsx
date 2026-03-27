@@ -14,17 +14,17 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import { runGritFitScoring } from '../lib/scoring.js';
+import { computeGritFitStatuses } from '../lib/gritFitStatus.js';
 import ShortlistFilters from '../components/ShortlistFilters.jsx';
 import ShortlistCard from '../components/ShortlistCard.jsx';
 import PreReadLibrary from '../components/PreReadLibrary.jsx';
 
 /**
- * Re-runs GRIT FIT scoring and patches shortlist rows where scored fields are null.
+ * Re-runs GRIT FIT scoring and patches shortlist rows with scored fields and status labels.
  */
 async function backfillScoredFields(userId, profile, allSchools, currentItems) {
   const result = runGritFitScoring(profile, allSchools);
 
-  // Build unitid -> scored school lookup (includes matchRank/matchTier from ranking)
   const scoredByUnitid = {};
   for (const s of result.scored) {
     scoredByUnitid[s.unitid] = s;
@@ -35,27 +35,49 @@ async function backfillScoredFields(userId, profile, allSchools, currentItems) {
 
   for (const item of currentItems) {
     const scored = scoredByUnitid[item.unitid];
-    if (!scored) continue;
 
-    const needsPatch =
+    if (!scored) {
+      // School not in schools table — mark as not_evaluated
+      const { error } = await supabase
+        .from('short_list_items')
+        .update({
+          grit_fit_status: 'not_evaluated',
+          grit_fit_labels: ['not_evaluated'],
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', item.id)
+        .eq('user_id', userId);
+      if (!error) updated++;
+      else errors.push({ unitid: item.unitid, school_name: item.school_name, error });
+      continue;
+    }
+
+    // Compute multi-label status
+    const labels = computeGritFitStatuses(scored, result.topTier, result.recruitReach);
+    const primaryStatus = labels[0];
+
+    // Always write status labels; conditionally write numeric fields
+    const needsNumericPatch =
       item.break_even == null ||
       item.match_rank == null ||
       item.droi       == null ||
       item.net_cost   == null;
 
-    if (!needsPatch) continue;
-
     const patch = {
-      match_rank:  scored.matchRank  ?? null,
-      match_tier:  scored.matchTier  ?? null,
-      net_cost:    scored.netCost    ?? null,
-      droi:        scored.droi       ?? null,
-      break_even:  scored.breakEven  ?? null,
-      adltv:       scored.adltv      ?? null,
-      grad_rate:   scored.gradRate   ?? null,
-      coa:         scored.coa_out_of_state ? parseFloat(scored.coa_out_of_state) : null,
-      dist:        scored.dist       ?? null,
-      updated_at:  new Date().toISOString(),
+      grit_fit_status: primaryStatus,
+      grit_fit_labels: labels,
+      updated_at: new Date().toISOString(),
+      ...(needsNumericPatch ? {
+        match_rank:  scored.matchRank  ?? null,
+        match_tier:  scored.matchTier  ?? null,
+        net_cost:    scored.netCost    ?? null,
+        droi:        scored.droi       ?? null,
+        break_even:  scored.breakEven  ?? null,
+        adltv:       scored.adltv      ?? null,
+        grad_rate:   scored.gradRate   ?? null,
+        coa:         scored.coa_out_of_state ? parseFloat(scored.coa_out_of_state) : null,
+        dist:        scored.dist       ?? null,
+      } : {}),
     };
 
     const { error } = await supabase
@@ -486,7 +508,10 @@ export default function ShortlistPage() {
     let arr = [...items];
 
     if (filters.status) {
-      arr = arr.filter(i => i.grit_fit_status === filters.status);
+      arr = arr.filter(i =>
+        i.grit_fit_status === filters.status ||
+        (Array.isArray(i.grit_fit_labels) && i.grit_fit_labels.includes(filters.status))
+      );
     }
     if (filters.division) {
       arr = arr.filter(i => i.div === filters.division);

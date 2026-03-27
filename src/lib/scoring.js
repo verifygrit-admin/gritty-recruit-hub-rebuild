@@ -250,6 +250,8 @@ export function runGritFitScoring(profile, schools) {
       dist: Math.round(dist),
       eligible,
       acadScore,
+      schoolRigor,
+      athleteAcad,
       isTestOpt,
       athFitScore: athFit[school.type] || 0,
       efcEligible: efcResult.eligible,

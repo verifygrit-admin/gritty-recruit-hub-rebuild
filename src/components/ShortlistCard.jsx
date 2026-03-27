@@ -17,14 +17,24 @@ import RecruitingJourney from './RecruitingJourney.jsx';
 import DocumentsSection from './DocumentsSection.jsx';
 
 const STATUS_CONFIG = {
-  currently_recommended: { label: 'Currently Recommended', bg: '#4CAF50' },
-  below_academic_fit: { label: 'Below Academic Fit', bg: '#FF9800' },
-  out_of_academic_reach: { label: 'Out of Academic Reach', bg: '#F44336' },
-  out_of_athletic_reach: { label: 'Out of Athletic Reach', bg: '#F44336' },
-  below_athletic_fit: { label: 'Below Athletic Fit', bg: '#FF9800' },
-  outside_geographic_reach: { label: 'Outside Geographic Reach', bg: '#9C27B0' },
-  not_evaluated: { label: 'Not Evaluated', bg: '#6B6B6B' },
+  currently_recommended:   { label: 'Currently Recommended',   bg: '#4CAF50' },
+  below_academic_fit:      { label: 'Below Academic Fit',       bg: '#FF9800' },
+  out_of_academic_reach:   { label: 'Out of Academic Reach',    bg: '#FF9800' },
+  out_of_athletic_reach:   { label: 'Out of Athletic Reach',    bg: '#FF9800' },
+  below_athletic_fit:      { label: 'Below Athletic Fit',       bg: '#FF9800' },
+  outside_geographic_reach:{ label: 'Outside Geographic Reach', bg: '#9C27B0' },
+  not_evaluated:           { label: 'Not Evaluated',            bg: '#6B6B6B' },
 };
+
+const BADGE_ORDER = [
+  'currently_recommended',
+  'out_of_academic_reach',
+  'below_academic_fit',
+  'out_of_athletic_reach',
+  'below_athletic_fit',
+  'outside_geographic_reach',
+  'not_evaluated',
+];
 
 const cardStyle = {
   backgroundColor: '#FFFFFF',
@@ -58,7 +68,13 @@ export default function ShortlistCard({
   sharingSlot,
   onShareDoc,
 }) {
-  const status = STATUS_CONFIG[item.grit_fit_status] || STATUS_CONFIG.not_evaluated;
+  const rawStatuses = Array.isArray(item.grit_fit_labels) && item.grit_fit_labels.length > 0
+    ? item.grit_fit_labels
+    : [item.grit_fit_status || 'not_evaluated'];
+  const activeStatuses = BADGE_ORDER
+    .filter(key => rawStatuses.includes(key))
+    .map(key => STATUS_CONFIG[key]);
+  const statusLabelText = activeStatuses.map(s => s.label).join(', ');
   const steps = item.recruiting_journey_steps || [];
   const completedCount = steps.filter(s => s.completed).length;
   const addedDate = item.added_at
@@ -76,7 +92,7 @@ export default function ShortlistCard({
   return (
     <div
       data-testid={`shortlist-card-${item.unitid}`}
-      aria-label={`${item.school_name}, ${status.label}, ${completedCount} of ${steps.length} journey steps completed`}
+      aria-label={`${item.school_name}, ${statusLabelText}, ${completedCount} of ${steps.length} journey steps completed`}
       style={cardStyle}
       onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }}
       onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'; }}
@@ -92,22 +108,26 @@ export default function ShortlistCard({
         {metaParts.join(' | ')}
       </p>
 
-      {/* Status Badge */}
-      <span
-        data-testid="status-badge"
-        style={{
-          display: 'inline-block',
-          backgroundColor: status.bg,
-          color: '#FFFFFF',
-          fontSize: '0.8125rem',
-          fontWeight: 600,
-          padding: '4px 12px',
-          borderRadius: 16,
-          marginBottom: 16,
-        }}
-      >
-        {status.label}
-      </span>
+      {/* Status Badges */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+        {activeStatuses.map((s, idx) => (
+          <span
+            key={idx}
+            data-testid={idx === 0 ? 'status-badge' : `status-badge-${idx}`}
+            style={{
+              display: 'inline-block',
+              backgroundColor: s.bg,
+              color: '#FFFFFF',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              padding: '4px 12px',
+              borderRadius: 16,
+            }}
+          >
+            {s.label}
+          </span>
+        ))}
+      </div>
 
       {/* Key Metrics Row */}
       <div
