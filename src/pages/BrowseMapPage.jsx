@@ -7,6 +7,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { supabase } from '../lib/supabaseClient.js';
 import { TIER_COLORS } from '../lib/constants.js';
 
@@ -169,7 +172,25 @@ export default function BrowseMapPage() {
     const map = mapInstanceRef.current;
     if (!map || loading) return;
     if (markersLayerRef.current) map.removeLayer(markersLayerRef.current);
-    const layer = L.layerGroup();
+    const cluster = L.markerClusterGroup({
+      maxClusterRadius: 40,
+      iconCreateFunction: (c) => {
+        const n = c.getChildCount();
+        const sz = n < 10 ? 28 : n < 50 ? 34 : 40;
+        return L.divIcon({
+          html: `<div style="
+            width:${sz}px;height:${sz}px;border-radius:50%;
+            background:rgba(139,58,58,0.85);border:2px solid #8B3A3A;
+            display:flex;align-items:center;justify-content:center;
+            color:#FFFFFF;font-size:${sz < 34 ? 11 : 13}px;font-weight:bold;
+            font-family:var(--font-body);
+          ">${n}</div>`,
+          className: '',
+          iconSize: [sz, sz],
+          iconAnchor: [sz / 2, sz / 2],
+        });
+      },
+    });
     getFilteredSchools().forEach(school => {
       const lat = parseFloat(school.latitude);
       const lng = parseFloat(school.longitude);
@@ -179,10 +200,10 @@ export default function BrowseMapPage() {
       const color = TIER_COLORS[school.type] || '#8B3A3A';
       const marker = L.marker([lat, lng], { icon: makeSchoolIcon(color, initial), keyboard: true });
       marker.bindPopup(L.popup({ maxWidth: 360, minWidth: 320 }).setContent(buildPopupHtml(school)));
-      layer.addLayer(marker);
+      cluster.addLayer(marker);
     });
-    layer.addTo(map);
-    markersLayerRef.current = layer;
+    cluster.addTo(map);
+    markersLayerRef.current = cluster;
   }, [allSchools, divisionFilter, searchQuery, loading, getFilteredSchools]);
 
   const schoolCount = getFilteredSchools().length;
