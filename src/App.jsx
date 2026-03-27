@@ -9,6 +9,7 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import GritFitPage from './pages/GritFitPage.jsx';
 import ShortlistPage from './pages/ShortlistPage.jsx';
 import CoachDashboardPage from './pages/CoachDashboardPage.jsx';
+import BrowseMapPage from './pages/BrowseMapPage.jsx';
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
 
           {/* App screens — Layout wrapper */}
           <Route path="/" element={<Layout><LandingPage /></Layout>} />
+          <Route path="/browse-map" element={<Layout><BrowseMapPage /></Layout>} />
           <Route path="/profile" element={<Layout><ProtectedRoute><ProfilePage /></ProtectedRoute></Layout>} />
           <Route path="/gritfit" element={<Layout><ProtectedRoute><GritFitPage /></ProtectedRoute></Layout>} />
           <Route path="/shortlist" element={<Layout><ProtectedRoute><ShortlistPage /></ProtectedRoute></Layout>} />

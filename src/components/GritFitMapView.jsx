@@ -2,13 +2,15 @@
  * GRIT FIT Map View — Leaflet map showing up to 30 matched schools + 632 non-matched (muted).
  * UX Spec: COMPONENT 3 — Map View
  *
- * NOTE: leaflet.markercluster is NOT yet installed. If clustering is needed, run:
- *   npm install leaflet.markercluster
- * For now, individual markers are rendered without clustering to avoid a missing dependency error.
+ * Now with MarkerCluster for grouped zoom behavior.
+ * All schools are clickable — non-matched show out-of-match descriptors.
  */
 import { useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { TIER_COLORS, TIER_LABELS } from '../lib/constants.js';
 
 // Tier color legend items for the legend below the map
@@ -39,16 +41,48 @@ function makeMatchedIcon(color, initial) {
   });
 }
 
-function makeNonMatchedIcon() {
+function makeNonMatchedIcon(color) {
   return L.divIcon({
     className: '',
     html: `<div style="
-      width:14px;height:14px;border-radius:50%;
-      background:#CCCCCC;opacity:0.5;
+      width:16px;height:16px;border-radius:50%;
+      background:${color || '#CCCCCC'};opacity:0.4;
+      border:1px solid rgba(0,0,0,0.15);
+      cursor:pointer;
     "></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+    popupAnchor: [0, -10],
   });
+}
+
+function buildNonMatchPopup(school) {
+  const name = school.school_name || 'Unknown';
+  const tier = school.type || '';
+  const conf = school.conference || '';
+  const state = school.state || '';
+  const city = school.city || '';
+  const gradRate = school.graduation_rate != null ? Math.round(school.graduation_rate * 100) + '%' : 'N/A';
+  const acceptRate = school.admissions_rate != null ? Math.round(school.admissions_rate * 100) + '%' : 'N/A';
+
+  return `
+    <div style="font-family:var(--font-body);min-width:240px;">
+      <h3 style="margin:0 0 4px;color:#8B3A3A;font-size:1.1rem;">${name}</h3>
+      <p style="margin:0 0 8px;color:#6B6B6B;font-size:0.875rem;">${tier} | ${conf}</p>
+      <div style="padding:6px 10px;background:#FFF3E0;border-left:3px solid #FF9800;border-radius:0 4px 4px 0;margin-bottom:10px;font-size:0.8125rem;color:#E65100;">
+        Not in your current GRIT FIT matches. This school may not align with your athletic, academic, geographic, or financial profile.
+      </div>
+      <div style="font-size:0.875rem;line-height:1.8;color:#2C2C2C;">
+        <p style="margin:0;"><strong>Location:</strong> ${city}${city && state ? ', ' : ''}${state}</p>
+        <p style="margin:0;"><strong>Acceptance Rate:</strong> ${acceptRate}</p>
+        <p style="margin:0;"><strong>Graduation Rate:</strong> ${gradRate}</p>
+      </div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+        ${school.recruiting_q_link ? `<a href="${school.recruiting_q_link}" target="_blank" rel="noopener" style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:6px 12px;font-size:0.8rem;color:#8B3A3A;text-decoration:none;">Recruiting Questionnaire</a>` : ''}
+        ${school.coach_link ? `<a href="${school.coach_link}" target="_blank" rel="noopener" style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:6px 12px;font-size:0.8rem;color:#8B3A3A;text-decoration:none;">Contact Coaches</a>` : ''}
+      </div>
+    </div>
+  `;
 }
 
 function formatMoney(v) {
@@ -147,7 +181,7 @@ export default function GritFitMapView({
                data-testid="visit-profile-btn"
                style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:6px 12px;
                       font-size:0.8rem;color:#8B3A3A;text-decoration:none;">
-              Visit School Profile
+              Contact Coaches
             </a>
           ` : ''}
         </div>
@@ -165,24 +199,44 @@ export default function GritFitMapView({
       map.removeLayer(markersLayerRef.current);
     }
 
-    const layer = L.layerGroup();
+    // Use MarkerClusterGroup for zoom-based clustering
+    const cluster = L.markerClusterGroup({
+      maxClusterRadius: 40,
+      iconCreateFunction: (c) => {
+        const n = c.getChildCount();
+        const sz = n < 10 ? 28 : n < 50 ? 34 : 40;
+        return L.divIcon({
+          html: `<div style="
+            width:${sz}px;height:${sz}px;border-radius:50%;
+            background:rgba(139,58,58,0.85);border:2px solid #8B3A3A;
+            display:flex;align-items:center;justify-content:center;
+            color:#FFFFFF;font-size:${sz < 34 ? 11 : 13}px;font-weight:bold;
+            font-family:var(--font-body);
+          ">${n}</div>`,
+          className: '',
+          iconSize: [sz, sz],
+          iconAnchor: [sz / 2, sz / 2],
+        });
+      },
+    });
 
-    // Build set of matched unitids for quick lookup
     const matchedIds = new Set((matchedSchools || []).map(s => s.unitid));
 
-    // Non-matched schools (muted dots)
+    // ALL schools — non-matched are clickable with out-of-match descriptors
     if (allSchools) {
       allSchools.forEach(school => {
         if (matchedIds.has(school.unitid)) return;
         const lat = parseFloat(school.latitude);
         const lng = parseFloat(school.longitude);
         if (!lat || !lng) return;
-        const marker = L.marker([lat, lng], { icon: makeNonMatchedIcon(), interactive: false });
-        layer.addLayer(marker);
+        const color = TIER_COLORS[school.type] || '#CCCCCC';
+        const marker = L.marker([lat, lng], { icon: makeNonMatchedIcon(color) });
+        marker.bindPopup(L.popup({ maxWidth: 320, minWidth: 240 }).setContent(buildNonMatchPopup(school)));
+        cluster.addLayer(marker);
       });
     }
 
-    // Matched schools (colored, interactive)
+    // Matched schools (colored, interactive, with shortlist button)
     if (matchedSchools) {
       matchedSchools.forEach(school => {
         const lat = parseFloat(school.latitude);
@@ -190,26 +244,15 @@ export default function GritFitMapView({
         if (!lat || !lng) return;
 
         const name = school.school_name || '';
-        const initial = name.charAt(0).toUpperCase() || '?';
+        const initial = '\u2713'; // checkmark for matched schools
         const color = TIER_COLORS[school.type] || '#8B3A3A';
         const marker = L.marker([lat, lng], {
           icon: makeMatchedIcon(color, initial),
           keyboard: true,
         });
 
-        marker.setAttribute
-          ? null
-          : marker.options.alt = `${name}, ${school.type}, ${school.dist} miles away`;
+        marker.bindPopup(L.popup({ maxWidth: 320, minWidth: 260 }).setContent(buildPopupHtml(school)));
 
-        const popup = L.popup({
-          maxWidth: 320,
-          minWidth: 260,
-          className: 'gritfit-popup',
-        }).setContent(buildPopupHtml(school));
-
-        marker.bindPopup(popup);
-
-        // Handle shortlist button clicks inside popup
         marker.on('popupopen', () => {
           const popupEl = marker.getPopup().getElement();
           if (!popupEl) return;
@@ -226,12 +269,12 @@ export default function GritFitMapView({
           }
         });
 
-        layer.addLayer(marker);
+        cluster.addLayer(marker);
       });
     }
 
-    layer.addTo(map);
-    markersLayerRef.current = layer;
+    cluster.addTo(map);
+    markersLayerRef.current = cluster;
   }, [matchedSchools, allSchools, shortlistIds, buildPopupHtml, onAddToShortlist]);
 
   return (

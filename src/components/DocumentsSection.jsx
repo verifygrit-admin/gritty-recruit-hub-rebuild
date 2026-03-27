@@ -41,9 +41,10 @@ function formatFileSize(bytes) {
   return `${(bytes / 1048576).toFixed(1)} MB`;
 }
 
-export default function DocumentsSection({ files, unitid, userId, onUpload, onDelete, uploading }) {
+export default function DocumentsSection({ files, unitid, userId, onUpload, onDelete, onDownload, uploading }) {
   const [expanded, setExpanded] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
   const fileInputRef = useRef(null);
   const [pendingType, setPendingType] = useState(null);
 
@@ -67,6 +68,13 @@ export default function DocumentsSection({ files, unitid, userId, onUpload, onDe
   const handleDeleteConfirm = async (fileId, storagePath) => {
     await onDelete(fileId, storagePath);
     setConfirmDeleteId(null);
+  };
+
+  const handleDownloadClick = async (f) => {
+    if (!onDownload) return;
+    setDownloadingId(f.id);
+    try { await onDownload(f.storage_path, f.file_name); }
+    finally { setDownloadingId(null); }
   };
 
   return (
@@ -101,7 +109,7 @@ export default function DocumentsSection({ files, unitid, userId, onUpload, onDe
           {expanded ? '\u25B8' : '\u25BE'}
         </span>
         <span style={{ fontSize: '1rem', fontWeight: 600, color: '#2C2C2C' }}>
-          Documents
+          Pre-Read Documents
         </span>
         <span style={{ fontSize: '0.875rem', color: '#6B6B6B' }}>
           ({uploadedCount} uploaded)
@@ -139,6 +147,20 @@ export default function DocumentsSection({ files, unitid, userId, onUpload, onDe
                   )}
 
                   <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                    <button
+                      data-testid={`download-file-${f.id}`}
+                      onClick={() => handleDownloadClick(f)}
+                      disabled={downloadingId === f.id}
+                      style={{
+                        background: 'none', border: 'none', color: '#1976D2',
+                        fontSize: '0.75rem', fontWeight: 600,
+                        cursor: downloadingId === f.id ? 'default' : 'pointer',
+                        textDecoration: 'underline',
+                        opacity: downloadingId === f.id ? 0.5 : 1,
+                      }}
+                    >
+                      {downloadingId === f.id ? 'Opening...' : 'Download'}
+                    </button>
                     {confirmDeleteId === f.id ? (
                       <>
                         <span style={{ fontSize: '0.75rem', color: '#F44336' }}>Remove?</span>

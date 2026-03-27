@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { supabase } from '../lib/supabaseClient.js';
 
 const AuthContext = createContext(null);
@@ -7,6 +7,11 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [userType, setUserType] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileUpdatedAt, setProfileUpdatedAt] = useState(null);
+
+  const notifyProfileUpdate = useCallback(() => {
+    setProfileUpdatedAt(Date.now());
+  }, []);
 
   useEffect(() => {
     // Initial session check — use getSession() not getUser()
@@ -47,7 +52,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, userType, loading, signOut }}>
+    <AuthContext.Provider value={{ session, userType, loading, signOut, profileUpdatedAt, notifyProfileUpdate }}>
       {children}
     </AuthContext.Provider>
   );

@@ -50,6 +50,7 @@ export default function ShortlistCard({
   onRemove,
   onUploadFile,
   onDeleteFile,
+  onDownloadFile,
   updatingStep,
   uploadingDoc,
 }) {
@@ -121,13 +122,13 @@ export default function ShortlistCard({
           <Metric label="COA" value={formatMoney(item.coa)} />
         )}
         {item.net_cost != null && (
-          <Metric label="Net Cost" value={formatMoney(item.net_cost)} />
+          <Metric label="Annual Net Cost" value={formatMoney(item.net_cost)} />
         )}
         {item.droi != null && (
           <Metric label="DROI" value={`${Number(item.droi).toFixed(1)}x`} />
         )}
-        {item.grad_rate != null && (
-          <Metric label="Grad Rate" value={`${Math.round(Number(item.grad_rate))}%`} />
+        {item.break_even != null && (
+          <Metric label="Degree Payback (yrs)" value={`${Number(item.break_even).toFixed(1)}`} />
         )}
         {item.match_rank != null && (
           <Metric label="Match Rank" value={`#${item.match_rank}`} />
@@ -149,6 +150,7 @@ export default function ShortlistCard({
           userId={userId}
           onUpload={onUploadFile}
           onDelete={onDeleteFile}
+          onDownload={onDownloadFile}
           uploading={uploadingDoc}
         />
       </div>

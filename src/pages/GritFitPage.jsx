@@ -16,6 +16,8 @@ import { runGritFitScoring } from '../lib/scoring.js';
 import GritFitActionBar from '../components/GritFitActionBar.jsx';
 import GritFitMapView from '../components/GritFitMapView.jsx';
 import GritFitTableView from '../components/GritFitTableView.jsx';
+import GritFitScoreDashboard from '../components/GritFitScoreDashboard.jsx';
+import MoneyMap from '../components/MoneyMap.jsx';
 
 const toggleBtnBase = {
   padding: '8px 12px', border: '2px solid #8B3A3A', borderRadius: 4,
@@ -24,7 +26,7 @@ const toggleBtnBase = {
 };
 
 export default function GritFitPage() {
-  const { session } = useAuth();
+  const { session, profileUpdatedAt } = useAuth();
 
   // Data state
   const [profile, setProfile] = useState(null);
@@ -45,6 +47,12 @@ export default function GritFitPage() {
     if (!session) return;
     loadData();
   }, [session]);
+
+  // Auto-recalculate when profile is updated (e.g. from ProfilePage save)
+  useEffect(() => {
+    if (!profileUpdatedAt || !session || !allSchools.length) return;
+    handleRecalculate();
+  }, [profileUpdatedAt]);
 
   const loadData = async () => {
     setLoading(true);
@@ -253,6 +261,18 @@ export default function GritFitPage() {
         Showing {filteredResults.length} of {top30Count} schools matched to your profile
       </p>
 
+      {/* Score Dashboard */}
+      {scoringResult && (
+        <GritFitScoreDashboard
+          scores={{
+            athleticFit: scoringResult.athFit?.[scoringResult.topTier] ?? null,
+            academicRigor: scoringResult.acadRigorScore ?? null,
+            testOptional: scoringResult.acadTestOptScore ?? null,
+          }}
+          studentName={profile?.name?.split(' ')[0]}
+        />
+      )}
+
       {/* View Toggle */}
       <div data-testid="view-toggle-group" style={{ display: 'flex', marginBottom: 24 }}>
         <button
@@ -306,11 +326,14 @@ export default function GritFitPage() {
             onAddToShortlist={handleAddToShortlist}
           />
         ) : (
-          <GritFitTableView
-            results={filteredResults}
-            shortlistIds={shortlistIds}
-            onAddToShortlist={handleAddToShortlist}
-          />
+          <>
+            <MoneyMap schools={filteredResults} />
+            <GritFitTableView
+              results={filteredResults}
+              shortlistIds={shortlistIds}
+              onAddToShortlist={handleAddToShortlist}
+            />
+          </>
         )}
       </div>
 

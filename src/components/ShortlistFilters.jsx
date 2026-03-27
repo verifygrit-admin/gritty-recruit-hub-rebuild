@@ -41,6 +41,9 @@ const SORT_OPTIONS = [
   { value: 'added_oldest', label: 'Added (oldest first)' },
   { value: 'dist_asc', label: 'Distance (closest)' },
   { value: 'dist_desc', label: 'Distance (farthest)' },
+  { value: 'droi_desc', label: 'Degree ROI (highest)' },
+  { value: 'net_cost_asc', label: 'Annual Net Cost (lowest)' },
+  { value: 'payback_asc', label: 'Fastest Payback' },
 ];
 
 const selectStyle = {

@@ -1,0 +1,88 @@
+/* Global font system — Playfair Display (headings) + DM Sans (body) */
+:root {
+  --font-heading: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'DM Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+*, *::before, *::after {
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+input, select, button, textarea {
+  font-family: var(--font-body);
+}
+
+/* ── HELMET ANIMATION ───────────────────────────────────── */
+.helmet-anim {
+  position: fixed;
+  display: none;
+  pointer-events: none;
+  z-index: 9999;
+  width: 200px;
+  height: 250px;
+  transform-origin: center center;
+}
+.helmet-anim img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 36px rgba(0,0,0,0.3));
+}
+
+@keyframes helmetReveal {
+  0%   { transform: translateY(0px)   scale(0.08) rotate(-12deg); opacity: 0; }
+  18%  { transform: translateY(0px)   scale(1.08) rotate(2deg);   opacity: 1; }
+  26%  { transform: translateY(0px)   scale(1.00) rotate(0deg); }
+  38%  { transform: translateY(-32px) scale(1.00) rotate(0deg); }
+  48%  { transform: translateY(5px)   scale(1.05, 0.91) rotate(0deg); }
+  58%  { transform: translateY(-16px) scale(1.00) rotate(0deg); }
+  66%  { transform: translateY(2px)   scale(1.01, 0.98) rotate(0deg); }
+  74%  { transform: translateY(0px)   scale(1.00) rotate(0deg); }
+  100% { transform: translateY(0px)   scale(1.00) rotate(0deg); opacity: 1; }
+}
+
+/* ── LEAFLET POPUP OVERRIDES (light theme) ──────────────── */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+  padding: 0 !important;
+}
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: min(320px, calc(100vw - 40px)) !important;
+}
+.leaflet-popup-close-button {
+  color: #6B6B6B !important;
+  top: 8px !important;
+  right: 8px !important;
+  font-size: 18px !important;
+}
+.leaflet-popup-close-button:hover {
+  color: #2C2C2C !important;
+}
+
+/* ── MARKER CLUSTER OVERRIDES (light theme) ─────────────── */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background: rgba(139, 58, 58, 0.2) !important;
+}
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background: rgba(139, 58, 58, 0.85) !important;
+  color: #FFFFFF !important;
+  font-family: var(--font-body) !important;
+  font-weight: 700 !important;
+}

@@ -1,22 +1,38 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
+import { supabase } from '../lib/supabaseClient.js';
 
 const studentNavLinks = [
-  { to: '/', label: 'Home' },
-  { to: '/gritfit', label: 'GRIT FIT' },
-  { to: '/shortlist', label: 'Shortlist' },
-  { to: '/profile', label: 'Profile' },
+  { to: '/', label: 'HOME' },
+  { to: '/gritfit', label: 'MY GRIT FIT' },
+  { to: '/shortlist', label: 'SHORTLIST' },
+  { to: '/profile', label: 'PROFILE' },
 ];
 
 const coachNavLinks = [
-  { to: '/', label: 'Home' },
-  { to: '/coach', label: 'Dashboard' },
+  { to: '/', label: 'HOME' },
+  { to: '/coach', label: 'DASHBOARD' },
 ];
 
 export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { session, userType, signOut } = useAuth();
+  const [schoolName, setSchoolName] = useState('GRITTY');
+
+  useEffect(() => {
+    if (!session) return;
+    supabase.from('profiles').select('high_school').eq('user_id', session.user.id).single()
+      .then(({ data }) => {
+        if (data?.high_school) {
+          // Use short name: "Boston College High School" → "BC HIGH"
+          const name = data.high_school.toUpperCase();
+          // Truncate if too long for header
+          setSchoolName(name.length > 20 ? name.substring(0, 20) : name);
+        }
+      });
+  }, [session]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -39,9 +55,9 @@ export default function Layout({ children }) {
             color: '#FFFFFF',
             fontWeight: 700,
             fontSize: '1.25rem',
-            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+            fontFamily: "var(--font-heading)",
           }}>
-            GRITTY RECRUIT HUB
+            {schoolName} RECRUIT HUB
           </span>
         </Link>
 

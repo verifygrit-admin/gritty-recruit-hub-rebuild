@@ -1,5 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.jsx';
+import { supabase } from '../lib/supabaseClient.js';
+import HelmetAnim from '../components/HelmetAnim.jsx';
+import Tutorial from '../components/Tutorial.jsx';
 
 const helpItems = [
   {
@@ -18,9 +22,31 @@ const helpItems = [
 
 export default function LandingPage() {
   const [openHelp, setOpenHelp] = useState(null);
-  // TODO: wire AuthContext — get user profile, GRIT FIT status
-  const profileComplete = false;
-  const userName = 'Athlete';
+  const { session } = useAuth();
+  const [firstName, setFirstName] = useState('');
+  const [profileComplete, setProfileComplete] = useState(false);
+  const [showHelmet, setShowHelmet] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    if (!session) return;
+    supabase.from('profiles').select('name, position, gpa').eq('user_id', session.user.id).single()
+      .then(({ data }) => {
+        if (data) {
+          const first = (data.name || '').split(' ')[0];
+          setFirstName(first || 'Athlete');
+          setProfileComplete(!!(data.position && data.gpa));
+        }
+        // Show helmet animation on first visit per session
+        const helmetShown = sessionStorage.getItem('helmetShown');
+        if (!helmetShown) {
+          setShowHelmet(true);
+          sessionStorage.setItem('helmetShown', '1');
+        }
+      });
+  }, [session]);
+
+  const userName = firstName || 'Athlete';
 
   return (
     <div>
@@ -31,7 +57,7 @@ export default function LandingPage() {
           fontWeight: 700,
           color: '#2C2C2C',
           margin: '0 0 8px 0',
-          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+          fontFamily: "var(--font-heading)",
         }}>
           Welcome back, {userName}!
         </h2>
@@ -39,7 +65,7 @@ export default function LandingPage() {
         {profileComplete ? (
           <>
             <p style={{ fontSize: '1.125rem', color: '#6B6B6B', margin: '0 0 16px 0' }}>
-              Your GRIT FIT score: Calculated on —
+              Your results are in! Check out your GRIT FIT matches and update your college football Short List!
             </p>
             <div style={{ display: 'flex', gap: 8 }}>
               <Link to="/profile" style={{
@@ -135,7 +161,7 @@ export default function LandingPage() {
             <p style={{ color: '#6B6B6B', fontSize: '1rem', lineHeight: 1.6, marginBottom: 20 }}>
               Explore all 662 college football programs on an interactive map. No filtering. See the full landscape at a glance.
             </p>
-            <Link to="/gritfit" style={{
+            <Link to="/browse-map" style={{
               display: 'inline-block',
               padding: '10px 24px',
               border: '2px solid #D4AF37',
@@ -206,43 +232,51 @@ export default function LandingPage() {
 
       <hr style={{ border: 'none', borderTop: '1px solid #E8E8E8', margin: '32px 0' }} />
 
-      {/* Help section */}
-      <section>
-        <h4 style={{
-          fontSize: '1.25rem',
-          fontWeight: 600,
-          color: '#2C2C2C',
-          marginBottom: 16,
-        }}>
-          Need help?
-        </h4>
+      {/* Help section — collapsible with distinct shading */}
+      <section id="needHelpSection" style={{
+        backgroundColor: '#FFFFFF', border: '1px solid #E8E8E8', borderRadius: 8,
+        padding: '20px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+      }}>
+        <button
+          id="tutHelpBtn"
+          onClick={() => setShowTutorial(true)}
+          style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+            padding: 0, marginBottom: openHelp !== null ? 16 : 0,
+          }}
+        >
+          <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#8B3A3A', margin: 0 }}>
+            Need Help?
+          </h4>
+          <span style={{
+            padding: '6px 16px', backgroundColor: '#8B3A3A', color: '#FFFFFF',
+            borderRadius: 4, fontSize: '0.8125rem', fontWeight: 600,
+          }}>
+            Take the Tour
+          </span>
+        </button>
         {helpItems.map((item, i) => (
-          <div key={i} style={{ marginBottom: 8 }}>
+          <div key={i} style={{ marginBottom: 4 }}>
             <button
-              onClick={() => setOpenHelp(openHelp === i ? null : i)}
+              onClick={(e) => { e.stopPropagation(); setOpenHelp(openHelp === i ? null : i); }}
               style={{
-                background: 'none',
-                border: 'none',
-                color: '#6B6B6B',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                padding: '8px 0',
-                textAlign: 'left',
-                width: '100%',
+                background: 'none', border: 'none', color: '#6B6B6B', cursor: 'pointer',
+                fontSize: '0.9375rem', padding: '8px 0', textAlign: 'left', width: '100%',
                 fontFamily: 'inherit',
               }}
-              onMouseEnter={(e) => { e.target.style.color = '#8B3A3A'; e.target.style.textDecoration = 'underline'; }}
-              onMouseLeave={(e) => { e.target.style.color = '#6B6B6B'; e.target.style.textDecoration = 'none'; }}
+              onMouseEnter={(e) => { e.target.style.color = '#8B3A3A'; }}
+              onMouseLeave={(e) => { e.target.style.color = '#6B6B6B'; }}
               aria-expanded={openHelp === i}
             >
-              {openHelp === i ? '▾' : '▸'} {item.question}
+              {openHelp === i ? '\u25BE' : '\u25B8'} {item.question}
             </button>
             {openHelp === i && (
               <div style={{
-                padding: '8px 0 8px 20px',
-                color: '#6B6B6B',
-                fontSize: '0.875rem',
-                lineHeight: 1.6,
+                padding: '8px 0 8px 20px', color: '#6B6B6B',
+                fontSize: '0.875rem', lineHeight: 1.6,
+                backgroundColor: '#FAFAFA', borderRadius: 4, margin: '4px 0',
+                padding: '12px 16px',
               }}>
                 {item.answer}
               </div>
@@ -250,6 +284,16 @@ export default function LandingPage() {
           </div>
         ))}
       </section>
+
+      {/* Helmet Animation */}
+      {showHelmet && (
+        <HelmetAnim targetId="tutHelpBtn" onDone={() => setShowHelmet(false)} />
+      )}
+
+      {/* Tutorial Modal */}
+      {showTutorial && (
+        <Tutorial type="browse" onClose={() => setShowTutorial(false)} />
+      )}
     </div>
   );
 }

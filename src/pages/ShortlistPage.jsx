@@ -260,6 +260,19 @@ export default function ShortlistPage() {
     showToast('File deleted', 'success');
   }, [session]);
 
+  // ── File download ──
+  const handleDownloadFile = useCallback(async (storagePath, fileName) => {
+    const { data, error } = await supabase.storage
+      .from('recruit-files')
+      .createSignedUrl(storagePath, 60);
+    if (error || !data?.signedUrl) {
+      showToast('Failed to generate download link.', 'error');
+      console.error('Download URL error:', error);
+      return;
+    }
+    window.open(data.signedUrl, '_blank');
+  }, []);
+
   // ── Refresh GRIT FIT status ──
   const handleRefreshStatus = useCallback(async () => {
     if (refreshing || items.length === 0) return;
@@ -338,6 +351,15 @@ export default function ShortlistPage() {
         break;
       case 'dist_desc':
         arr.sort((a, b) => (b.dist ?? -Infinity) - (a.dist ?? -Infinity));
+        break;
+      case 'droi_desc':
+        arr.sort((a, b) => (b.droi ?? -Infinity) - (a.droi ?? -Infinity));
+        break;
+      case 'net_cost_asc':
+        arr.sort((a, b) => (a.net_cost ?? Infinity) - (b.net_cost ?? Infinity));
+        break;
+      case 'payback_asc':
+        arr.sort((a, b) => (a.break_even ?? Infinity) - (b.break_even ?? Infinity));
         break;
       default:
         break;
@@ -536,6 +558,7 @@ export default function ShortlistPage() {
             onRemove={(itemId) => setConfirmRemoveId(itemId)}
             onUploadFile={handleUploadFile}
             onDeleteFile={handleDeleteFile}
+            onDownloadFile={handleDownloadFile}
             updatingStep={updatingStep[item.id] || null}
             uploadingDoc={uploadingDoc[item.unitid] || null}
           />

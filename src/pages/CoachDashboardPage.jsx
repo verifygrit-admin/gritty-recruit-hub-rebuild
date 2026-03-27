@@ -18,6 +18,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import CoachStudentCard from '../components/CoachStudentCard.jsx';
 import CoachActivitySummary from '../components/CoachActivitySummary.jsx';
+import PlayerCard from '../components/PlayerCard.jsx';
 
 const ALLOWED_ROLES = ['hs_coach', 'hs_guidance_counselor'];
 
@@ -424,22 +425,48 @@ export default function CoachDashboardPage() {
         )}
       </div>
 
-      {/* Student Cards */}
-      <div data-testid="coach-student-roster">
-        {sortedStudents.map(student => (
-          <CoachStudentCard
-            key={student.user_id}
-            student={student}
-            shortlistItems={shortlistByStudent[student.user_id] || []}
-            expanded={expandedStudentId === student.user_id}
-            onToggleExpand={() =>
-              setExpandedStudentId(
+      {/* Student Cards — Player Card Grid */}
+      <div data-testid="coach-student-roster" style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: 14, padding: '8px 0',
+      }}>
+        {sortedStudents.map(student => {
+          const items = shortlistByStudent[student.user_id] || [];
+          const totalSteps = items.reduce((sum, it) => sum + (it.recruiting_journey_steps || []).length, 0);
+          const completedSteps = items.reduce((sum, it) => sum + (it.recruiting_journey_steps || []).filter(s => s.completed).length, 0);
+          return (
+            <PlayerCard
+              key={student.user_id}
+              player={{
+                id: student.user_id,
+                name: student.name || 'Unnamed Student',
+                position: student.position || '—',
+                classYear: student.grad_year ? String(student.grad_year) : '—',
+                email: student.email || null,
+                gpa: student.gpa,
+                shortlistCount: items.length,
+                recruitingProgress: totalSteps > 0 ? completedSteps / totalSteps : 0,
+                athleticFit: null,
+              }}
+              onCardClick={() => setExpandedStudentId(
                 expandedStudentId === student.user_id ? null : student.user_id
-              )
-            }
-          />
-        ))}
+              )}
+            />
+          );
+        })}
       </div>
+
+      {/* Expanded detail (existing CoachStudentCard) */}
+      {expandedStudentId && (
+        <div style={{ marginTop: 16 }}>
+          <CoachStudentCard
+            student={students.find(s => s.user_id === expandedStudentId)}
+            shortlistItems={shortlistByStudent[expandedStudentId] || []}
+            expanded={true}
+            onToggleExpand={() => setExpandedStudentId(null)}
+          />
+        </div>
+      )}
 
       {/* No results after filtering */}
       {sortedStudents.length === 0 && students.length > 0 && (
