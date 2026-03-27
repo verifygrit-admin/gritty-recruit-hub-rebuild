@@ -7,6 +7,7 @@ import {
   ATH_STANDARDS, RECRUIT_BUDGETS, TIER_ORDER,
   SAT_PERCENTILES, STATE_CENTROIDS, EFC_TABLE,
 } from './constants.js';
+import { GPA_DISTRIBUTIONS, GPA_DISTRIBUTIONS_TEST_OPT } from './gpaDistributions.js';
 
 /**
  * Determine the DB class-year label for a given gradYear.
@@ -83,7 +84,46 @@ export function getSATPercentile(sat) {
   return 0.01;
 }
 
-export function getGPAPercentile(gpa) {
+/**
+ * PERCENTRANK.INC — matches Google Sheets PERCENTRANK.INC behavior.
+ * count of values <= x, divided by (n - 1). Cap at 1 if x >= max.
+ */
+function percentRankINC(sortedArr, x) {
+  if (!sortedArr || sortedArr.length === 0) return 0;
+  if (x >= sortedArr[sortedArr.length - 1]) return 1;
+  if (x <= sortedArr[0]) return 0;
+  const countLE = sortedArr.filter(v => v <= x).length;
+  return countLE / (sortedArr.length - 1);
+}
+
+/**
+ * PERCENTRANK.EXC — matches Google Sheets PERCENTRANK.EXC behavior.
+ * (count of values < x + 1) / (n + 1).
+ */
+function percentRankEXC(sortedArr, x) {
+  if (!sortedArr || sortedArr.length === 0) return 0;
+  if (x >= sortedArr[sortedArr.length - 1]) return 1;
+  if (x <= sortedArr[0]) return 0;
+  const countLT = sortedArr.filter(v => v < x).length;
+  return (countLT + 1) / (sortedArr.length + 1);
+}
+
+/**
+ * GPA percentile ranked against school Min_GPA distribution for the class year.
+ * Falls back to linear approximation if distribution data is unavailable.
+ */
+export function getGPAPercentile(gpa, classLabel) {
+  const dist = GPA_DISTRIBUTIONS[classLabel];
+  if (dist && dist.length > 0) return percentRankINC(dist, gpa);
+  return Math.min(1, Math.max(0, (gpa - 1.0) / 2.7));
+}
+
+/**
+ * GPA percentile ranked against test-optional schools only (PERCENTRANK.EXC).
+ */
+export function getGPAPercentileTestOpt(gpa, classLabel) {
+  const dist = GPA_DISTRIBUTIONS_TEST_OPT[classLabel];
+  if (dist && dist.length > 0) return percentRankEXC(dist, gpa);
   return Math.min(1, Math.max(0, (gpa - 1.0) / 2.7));
 }
 
@@ -155,12 +195,13 @@ export function runGritFitScoring(profile, schools) {
   const topTier = TIER_ORDER.find(t => athFit[t] > 0.5) || null;
   const recruitReach = topTier ? RECRUIT_BUDGETS[topTier] : 450;
 
-  // Academic scores
+  // Academic scores — GPA percentile ranked against school distribution (matches Google Sheet)
   const satScore = sat ? +sat : 1000;
   const satAchieve = getSATPercentile(satScore);
-  const gpaPct = gpa ? getGPAPercentile(+gpa) : 0.3;
+  const gpaPct = gpa ? getGPAPercentile(+gpa, classLabel) : 0.3;
+  const gpaPctTestOpt = gpa ? getGPAPercentileTestOpt(+gpa, classLabel) : 0.3;
   const acadRigorScore = (satAchieve + gpaPct) / 2;
-  const acadTestOptScore = gpaPct;
+  const acadTestOptScore = gpaPctTestOpt;
 
   // Resolve lat/lng
   let refLat = hs_lat ? +hs_lat : 0;
