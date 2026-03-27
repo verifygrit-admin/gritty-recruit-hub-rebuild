@@ -44,7 +44,7 @@ export default function ProfilePage() {
   // Form state
   const [form, setForm] = useState({
     name: '', high_school: '', grad_year: '', state: '', email: '',
-    phone: '', twitter: '', position: '', height: '', weight: '',
+    phone: '', twitter: '', hudl_url: '', position: '', height: '', weight: '',
     speed_40: '', gpa: '', sat: '', agi: '', dependents: '',
     expected_starter: false, captain: false, all_conference: false, all_state: false,
     parent_guardian_email: '', hs_lat: null, hs_lng: null,
@@ -86,6 +86,7 @@ export default function ProfilePage() {
           email: data.email || session.user.email || '',
           phone: data.phone || '',
           twitter: data.twitter || '',
+          hudl_url: data.hudl_url || '',
           position: data.position || '',
           height: data.height || '',
           weight: data.weight ? String(data.weight) : '',
@@ -282,6 +283,7 @@ export default function ProfilePage() {
       email: form.email,
       phone: form.phone || null,
       twitter: form.twitter || null,
+      hudl_url: form.hudl_url || null,
       position: form.position || null,
       height: form.height || null,
       weight: form.weight ? parseFloat(form.weight) : null,
@@ -446,6 +448,8 @@ export default function ProfilePage() {
             <div style={halfCol}>{renderInput('phone', 'Phone', 'input-phone', { placeholder: '(123) 456-7890' })}</div>
             <div style={halfCol}>{renderInput('twitter', 'Twitter/X Handle (Optional)', 'input-twitter', { placeholder: '@your_handle', help: '(Optional — helps coaches find you online)' })}</div>
           </div>
+
+          {renderInput('hudl_url', 'Hudl Profile URL', 'input-hudl-url', { placeholder: 'https://www.hudl.com/profile/...', help: '(Optional — share your highlight film with coaches)' })}
         </section>
 
         {/* Section: Confirm Your Head Coach */}
