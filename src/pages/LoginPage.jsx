@@ -56,9 +56,9 @@ export default function LoginPage() {
         return;
       }
 
-      // MVP role routing: coaches/counselors → dashboard, students → landing
+      // MVP role routing: coaches/counselors → coach view, students → landing
       if (userData.user_type === 'hs_coach' || userData.user_type === 'hs_guidance_counselor') {
-        navigate('/dashboard');
+        navigate('/coach');
       } else {
         navigate('/');
       }
