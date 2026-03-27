@@ -57,7 +57,10 @@ SUPABASE_HEADERS = {
     "apikey":        SUPABASE_SERVICE_ROLE_KEY,
     "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
     "Content-Type":  "application/json",
-    "Prefer":        "return=minimal",
+    # resolution=merge-duplicates turns POST into an upsert on the unitid
+    # unique constraint — existing rows are updated in place, new rows are
+    # inserted. The table does not need to be cleared before running.
+    "Prefer":        "resolution=merge-duplicates",
 }
 
 # ---------------------------------------------------------------------------
@@ -132,24 +135,15 @@ def normalize_type(val):
     """
     Normalize sheet Type values to app tier labels.
 
-    Sheet col F uses raw NCAA division strings for non-FBS tiers:
-        "1-FCS"   -> "FCS"
-        "2-Div II"  -> "D2"
-        "3-Div III" -> "D3"
-    FBS tiers are already clean:
-        "Power 4"  -> "Power 4"  (unchanged)
-        "G6"       -> "G6"       (unchanged)
-        "G5"       -> "G6"       (DQ-002, confirmed 2026-03-26)
+    All values pass through unchanged except:
+        "G5" -> "G6"  (DQ-002, confirmed 2026-03-26)
 
-    Source: GrittyOS DB col F verified 2026-03-26 — unique values:
-        {'Power 4', 'G6', '1-FCS', '2-Div II', '3-Div III'}
+    The sheet already stores clean strings for all other tiers
+    (e.g. "FCS", "D2", "D3", "Power 4") — no short-code mapping needed.
     """
     s = to_text(val)
     _MAP = {
-        "G5":       "G6",
-        "1-FCS":    "FCS",
-        "2-Div II": "D2",
-        "3-Div III":"D3",
+        "G5": "G6",
     }
     return _MAP.get(s, s)
 
@@ -235,8 +229,13 @@ def map_row(headers, raw_row):
 # Supabase insert
 # ---------------------------------------------------------------------------
 
-def supabase_insert_batch(rows):
-    """Insert a list of row dicts into public.schools. Returns inserted count."""
+def supabase_upsert_batch(rows):
+    """Upsert a list of row dicts into public.schools. Returns upserted count.
+
+    Uses PostgREST resolution=merge-duplicates — existing rows matched by
+    the unitid unique constraint are updated; new rows are inserted. Safe
+    to run repeatedly without clearing the table first.
+    """
     url = f"{SUPABASE_URL}/rest/v1/schools"
     data = json.dumps(rows).encode()
     req = urllib.request.Request(url, data=data, headers=SUPABASE_HEADERS,
@@ -247,7 +246,7 @@ def supabase_insert_batch(rows):
             return len(rows)
     except urllib.error.HTTPError as e:
         body = e.read().decode()
-        print(f"  INSERT failed: HTTP {e.code} — {body[:500]}")
+        print(f"  UPSERT failed: HTTP {e.code} — {body[:500]}")
         raise
 
 # ---------------------------------------------------------------------------
@@ -305,7 +304,7 @@ def main():
     n_batches = math.ceil(len(mapped) / BATCH_SIZE)
     for i in range(n_batches):
         batch = mapped[i * BATCH_SIZE : (i + 1) * BATCH_SIZE]
-        count = supabase_insert_batch(batch)
+        count = supabase_upsert_batch(batch)
         total_inserted += count
         print(f"  Batch {i+1}/{n_batches}: inserted {count} rows "
               f"(running total: {total_inserted})")

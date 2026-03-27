@@ -4,8 +4,8 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 
 const POSITIONS = [
-  '', 'QB', 'RB', 'FB', 'WR', 'TE', 'OL', 'OT', 'OG', 'C',
-  'DL', 'DE', 'DT', 'LB', 'DB', 'CB', 'S', 'K', 'P', 'LS',
+  '', 'QB', 'RB', 'FB', 'TE', 'WR', 'OL', 'C', 'G', 'T',
+  'DL', 'DE', 'DT', 'EDGE', 'LB', 'CB', 'S',
 ];
 
 const US_STATES = [
