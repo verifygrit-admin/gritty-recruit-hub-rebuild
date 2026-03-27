@@ -91,42 +91,62 @@ export default function GritFitMapView({
   // Build popup HTML for a matched school
   const buildPopupHtml = useCallback((school) => {
     const name = school.school_name || 'Unknown';
-    const tier = school.type || '';
-    const conf = school.conference || '';
-    const score = school.acadScore ? Math.round(school.acadScore * 100) + '%' : 'N/A';
-    const dist = school.dist != null ? school.dist + ' miles' : 'N/A';
-    const cost = formatMoney(school.netCost != null ? school.netCost / 4 : null);
-    const droi = school.droi != null ? school.droi.toFixed(1) + 'x' : 'N/A';
-    const grad = formatPct(school.gradRate);
+    const division = school.type || 'N/A';
+    const conf = school.conference || 'N/A';
+    const city = school.city || '';
+    const state = school.state || '';
+    const location = city && state ? `${city}, ${state}` : city || state || 'N/A';
+    const selectivity = school.school_type || 'N/A';
+    const adltv = formatMoney(school.adltv);
+    const adltvRank = school.adltv_rank != null ? '#' + school.adltv_rank.toLocaleString() : 'N/A';
+    const admRate = formatPct(school.admissions_rate);
+    const gradRate = formatPct(school.graduation_rate);
     const inList = shortlistIds.has(school.unitid);
     const btnStyle = inList
       ? 'background:#E8E8E8;color:#6B6B6B;cursor:default;'
       : 'background:#D4AF37;color:#8B3A3A;cursor:pointer;';
+    const lbl = 'margin:0 0 4px;color:#6B6B6B;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;';
+    const val = 'margin:0 0 12px;';
 
     return `
-      <div data-testid="school-popup-${school.unitid}" style="font-family:'Segoe UI',sans-serif;min-width:260px;">
-        <h3 data-testid="popup-school-name" style="margin:0 0 4px;color:#8B3A3A;font-size:1.1rem;">${name}</h3>
-        <p data-testid="popup-school-meta" style="margin:0 0 12px;color:#6B6B6B;font-size:0.875rem;">${tier} | ${conf}</p>
-        <div data-testid="popup-metrics" style="font-size:0.875rem;line-height:1.8;color:#2C2C2C;">
-          <p style="margin:0;"><strong>Match Score:</strong> ${score}</p>
-          <p style="margin:0;"><strong>Distance:</strong> ${dist}</p>
-          <p style="margin:0;"><strong>Net Cost:</strong> ${cost}/year</p>
-          <p style="margin:0;"><strong>DROI:</strong> ${droi}</p>
-          <p style="margin:0;"><strong>Grad Rate:</strong> ${grad}</p>
+      <div data-testid="school-popup-${school.unitid}" style="font-family:'Segoe UI',sans-serif;min-width:320px;max-width:360px;padding:16px;box-sizing:border-box;">
+        <h3 data-testid="popup-school-name" style="margin:0 0 6px;color:#8B3A3A;font-size:1.1rem;font-weight:700;line-height:1.2;">${name}</h3>
+        <p data-testid="popup-school-meta" style="margin:0 0 14px;color:#6B6B6B;font-size:0.875rem;font-weight:500;">${division} | ${conf}</p>
+        <div data-testid="popup-metrics" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:14px;font-size:0.875rem;color:#2C2C2C;">
+          <div>
+            <p style="${lbl}">Location</p>
+            <p style="${val}">${location}</p>
+            <p style="${lbl}">Division</p>
+            <p style="${val}">${division}</p>
+            <p style="${lbl}">Adm. Selectivity</p>
+            <p style="margin:0;">${selectivity}</p>
+          </div>
+          <div>
+            <p style="${lbl}">ADLTV</p>
+            <p style="${val}">${adltv}</p>
+            <p style="${lbl}">ADLTV Rank</p>
+            <p style="${val}">${adltvRank}</p>
+            <p style="${lbl}">Admissions Rate</p>
+            <p style="margin:0;">${admRate}</p>
+          </div>
         </div>
-        <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px;">
+        <div style="margin-bottom:14px;font-size:0.875rem;">
+          <p style="${lbl}">Graduation Rate</p>
+          <p style="margin:0;color:#2C2C2C;">${gradRate}</p>
+        </div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
           <button
             data-testid="add-to-shortlist-btn"
             data-school-id="${school.unitid}"
             ${inList ? 'disabled' : ''}
-            style="border:none;border-radius:4px;padding:8px 16px;font-size:0.875rem;font-weight:600;${btnStyle}"
+            style="border:none;border-radius:4px;padding:10px 16px;font-size:0.875rem;font-weight:600;${btnStyle}"
           >
             ${inList ? '\u2713 In Shortlist' : '+ Add to Shortlist'}
           </button>
           ${school.recruiting_q_link ? `
             <a href="${school.recruiting_q_link}" target="_blank" rel="noopener"
                data-testid="rq-link-btn"
-               style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:6px 12px;
+               style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:8px 12px;
                       font-size:0.8rem;color:#8B3A3A;text-decoration:none;">
               \u2709 Recruiting Questionnaire
             </a>
@@ -134,7 +154,7 @@ export default function GritFitMapView({
           ${school.coach_link ? `
             <a href="${school.coach_link}" target="_blank" rel="noopener"
                data-testid="visit-profile-btn"
-               style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:6px 12px;
+               style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:8px 12px;
                       font-size:0.8rem;color:#8B3A3A;text-decoration:none;">
               Contact Coaches
             </a>
@@ -190,7 +210,7 @@ export default function GritFitMapView({
           keyboard: true,
         });
 
-        marker.bindPopup(L.popup({ maxWidth: 320, minWidth: 260 }).setContent(buildPopupHtml(school)));
+        marker.bindPopup(L.popup({ maxWidth: 360, minWidth: 320 }).setContent(buildPopupHtml(school)));
 
         marker.on('popupopen', () => {
           const popupEl = marker.getPopup().getElement();
