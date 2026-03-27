@@ -321,7 +321,6 @@ export default function GritFitPage() {
         {view === 'map' ? (
           <GritFitMapView
             matchedSchools={filteredResults}
-            allSchools={allSchools}
             shortlistIds={shortlistIds}
             onAddToShortlist={handleAddToShortlist}
           />
