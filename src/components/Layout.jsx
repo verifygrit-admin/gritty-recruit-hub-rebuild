@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
+import teamPhoto from '../assets/bchigh-team.jpg';
 
 const studentNavLinks = [
   { to: '/', label: 'HOME' },
@@ -238,11 +239,27 @@ export default function Layout({ children }) {
       {/* Main content */}
       <main style={{
         flex: 1,
-        backgroundColor: '#F5EFE0',
         display: 'flex',
         justifyContent: 'center',
+        position: 'relative',
+        ...(location.pathname !== '/browse-map' ? {
+          backgroundImage: `url(${teamPhoto})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+        } : {
+          backgroundColor: '#F5EFE0',
+        }),
       }}>
-        <div style={{ width: '100%', maxWidth: 1200, padding: 48 }}>
+        {location.pathname !== '/browse-map' && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(245, 239, 224, 0.9)',
+            pointerEvents: 'none',
+          }} />
+        )}
+        <div style={{ width: '100%', maxWidth: 1200, padding: 48, position: 'relative', zIndex: 1 }}>
           {children}
         </div>
       </main>
