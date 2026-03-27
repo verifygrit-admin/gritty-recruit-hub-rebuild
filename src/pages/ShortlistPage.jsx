@@ -15,6 +15,14 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import ShortlistFilters from '../components/ShortlistFilters.jsx';
 import ShortlistCard from '../components/ShortlistCard.jsx';
+import PreReadLibrary from '../components/PreReadLibrary.jsx';
+import {
+  uploadToLibrary,
+  deleteFromLibrary,
+  shareDocToSchool,
+  loadLibraryDocs,
+  loadSharesForUser,
+} from '../lib/preReadLibrary.js';
 
 export default function ShortlistPage() {
   const { session } = useAuth();
@@ -22,6 +30,8 @@ export default function ShortlistPage() {
   // Data state
   const [items, setItems] = useState([]);
   const [filesByUnitid, setFilesByUnitid] = useState({});
+  const [libraryDocs, setLibraryDocs] = useState([]);
+  const [shares, setShares] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -31,6 +41,9 @@ export default function ShortlistPage() {
   const [toast, setToast] = useState(null);
   const [updatingStep, setUpdatingStep] = useState({}); // { [itemId]: stepId }
   const [uploadingDoc, setUploadingDoc] = useState({}); // { [unitid]: docType }
+  const [uploadingLibrarySlot, setUploadingLibrarySlot] = useState(null);
+  const [deletingLibrarySlot, setDeletingLibrarySlot] = useState(null);
+  const [sharingSlot, setSharingSlot] = useState({});
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -47,8 +60,8 @@ export default function ShortlistPage() {
     try {
       const userId = session.user.id;
 
-      // Parallel fetch: shortlist items + file uploads
-      const [itemsRes, filesRes] = await Promise.all([
+      // Parallel fetch: shortlist items + file uploads + library docs + shares
+      const [itemsRes, filesRes, libraryRes, sharesRes] = await Promise.all([
         supabase
           .from('short_list_items')
           .select('*')
@@ -58,6 +71,8 @@ export default function ShortlistPage() {
           .from('file_uploads')
           .select('*')
           .eq('user_id', userId),
+        loadLibraryDocs(userId),
+        loadSharesForUser(userId),
       ]);
 
       if (itemsRes.error) {
@@ -75,6 +90,10 @@ export default function ShortlistPage() {
         grouped[f.unitid].push(f);
       }
       setFilesByUnitid(grouped);
+
+      // Library docs and shares
+      if (!libraryRes.error) setLibraryDocs(libraryRes.data);
+      if (!sharesRes.error) setShares(sharesRes.data);
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
       console.error('ShortlistPage loadData error:', err);
@@ -272,6 +291,74 @@ export default function ShortlistPage() {
     }
     window.open(data.signedUrl, '_blank');
   }, []);
+
+  // ── Library upload ──
+  const handleLibraryUpload = useCallback(async (documentType, slotNumber, file) => {
+    const slotKey = `${documentType}_${slotNumber}`;
+    setUploadingLibrarySlot(slotKey);
+
+    const { data: row, error: err } = await uploadToLibrary(
+      session.user.id, documentType, slotNumber, file
+    );
+
+    if (err) {
+      showToast('Failed to upload to library. Please try again.', 'error');
+      console.error('handleLibraryUpload error:', err);
+    } else {
+      setLibraryDocs(prev => {
+        const filtered = prev.filter(
+          d => !(d.document_type === documentType && d.slot_number === slotNumber)
+        );
+        return [...filtered, row];
+      });
+      showToast('Uploaded to library', 'success');
+    }
+
+    setUploadingLibrarySlot(null);
+  }, [session]);
+
+  // ── Library delete ──
+  const handleLibraryDelete = useCallback(async (libraryDocId, storagePath) => {
+    const doc = libraryDocs.find(d => d.id === libraryDocId);
+    const slotKey = doc ? `${doc.document_type}_${doc.slot_number}` : null;
+    if (slotKey) setDeletingLibrarySlot(slotKey);
+
+    const { error: err } = await deleteFromLibrary(session.user.id, libraryDocId, storagePath);
+
+    if (err) {
+      showToast('Failed to delete library document.', 'error');
+      console.error('handleLibraryDelete error:', err);
+    } else {
+      setLibraryDocs(prev => prev.filter(d => d.id !== libraryDocId));
+      setShares(prev => prev.filter(s => s.library_doc_id !== libraryDocId));
+      showToast('Document deleted from library', 'success');
+    }
+
+    setDeletingLibrarySlot(null);
+  }, [libraryDocs, session]);
+
+  // ── Share doc to school ──
+  const handleShareDoc = useCallback(async (libraryDocId, unitid, documentType, slotNumber) => {
+    const slotKey = `${documentType}_${slotNumber}`;
+    setSharingSlot(prev => ({ ...prev, [slotKey]: true }));
+
+    const { data: shareRow, error: err } = await shareDocToSchool(
+      session.user.id, libraryDocId, unitid
+    );
+
+    if (err) {
+      showToast('Failed to share document. Please try again.', 'error');
+      console.error('handleShareDoc error:', err);
+    } else if (shareRow) {
+      setShares(prev => {
+        const exists = prev.some(s => s.library_doc_id === libraryDocId && s.unitid === unitid);
+        return exists ? prev : [...prev, shareRow];
+      });
+      showToast('Document shared', 'success');
+    }
+
+    setSharingSlot(prev => ({ ...prev, [slotKey]: false }));
+  }, [session]);
 
   // ── Refresh GRIT FIT status ──
   const handleRefreshStatus = useCallback(async () => {
@@ -546,6 +633,16 @@ export default function ShortlistPage() {
         </div>
       )}
 
+      {/* Pre-Read Docs Library */}
+      <PreReadLibrary
+        userId={session.user.id}
+        libraryDocs={libraryDocs}
+        onUpload={handleLibraryUpload}
+        onDelete={handleLibraryDelete}
+        uploadingSlot={uploadingLibrarySlot}
+        deletingSlot={deletingLibrarySlot}
+      />
+
       {/* Cards */}
       <div data-testid="shortlist-cards">
         {sortedItems.map(item => (
@@ -561,6 +658,10 @@ export default function ShortlistPage() {
             onDownloadFile={handleDownloadFile}
             updatingStep={updatingStep[item.id] || null}
             uploadingDoc={uploadingDoc[item.unitid] || null}
+            libraryDocs={libraryDocs}
+            shares={shares}
+            sharingSlot={sharingSlot}
+            onShareDoc={handleShareDoc}
           />
         ))}
       </div>

@@ -53,6 +53,10 @@ export default function ShortlistCard({
   onDownloadFile,
   updatingStep,
   uploadingDoc,
+  libraryDocs,
+  shares,
+  sharingSlot,
+  onShareDoc,
 }) {
   const status = STATUS_CONFIG[item.grit_fit_status] || STATUS_CONFIG.not_evaluated;
   const steps = item.recruiting_journey_steps || [];
@@ -152,6 +156,10 @@ export default function ShortlistCard({
           onDelete={onDeleteFile}
           onDownload={onDownloadFile}
           uploading={uploadingDoc}
+          libraryDocs={libraryDocs}
+          shares={shares}
+          sharingSlot={sharingSlot}
+          onShareDoc={onShareDoc}
         />
       </div>
 

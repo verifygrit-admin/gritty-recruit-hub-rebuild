@@ -1,27 +1,26 @@
 /**
- * DocumentsSection — collapsible file upload/management per school.
- * UX Spec: UX_SPEC_SHORTLIST.md — Documents Section
+ * DocumentsSection — collapsible pre-read documents per school card.
+ * Buttons show share state (A/B/C/D) based on library and share records.
  *
  * Props:
  *   files: array of file_uploads rows for this school (user_id + unitid)
  *   unitid: number — the school's UNITID
  *   userId: string — authenticated user_id
- *   onUpload: (unitid, documentType, file) => Promise<void>
+ *   onUpload: (unitid, documentType, file) => Promise<void> — school-specific upload (legacy)
  *   onDelete: (fileId, storagePath) => Promise<void>
- *   uploading: string|null — document_type currently uploading
+ *   onDownload: (storagePath, fileName) => Promise<void>
+ *   uploading: string|null — document_type currently uploading (school-specific)
+ *   libraryDocs: document_library rows for this user
+ *   shares: document_shares rows for this user
+ *   sharingSlot: { [slotKey]: boolean } — in-flight share state
+ *   onShareDoc: (libraryDocId, unitid, documentType, slotNumber) => Promise<void>
  */
 import { useState, useRef } from 'react';
+import { DOCUMENT_TYPES } from '../lib/documentTypes.js';
+import { getButtonState, getLibraryDocId } from '../lib/buttonStateLogic.js';
+import SlotTooltip from './SlotTooltip.jsx';
 
-const DOCUMENT_TYPES = [
-  { type: 'transcript', label: 'Transcript', buttonLabel: '+ Upload Transcript' },
-  { type: 'senior_course_list', label: 'Course List', buttonLabel: '+ Upload Course List' },
-  { type: 'writing_example', label: 'Writing Sample', buttonLabel: '+ Upload Writing Sample' },
-  { type: 'student_resume', label: 'Resume', buttonLabel: '+ Upload Resume' },
-  { type: 'school_profile_pdf', label: 'School Profile', buttonLabel: '+ Upload School Profile' },
-  { type: 'sat_act_scores', label: 'Test Scores', buttonLabel: '+ Upload Test Scores' },
-];
-
-const uploadBtnStyle = {
+const shareBtnBase = {
   padding: '8px 16px',
   border: '2px solid #8B3A3A',
   borderRadius: 4,
@@ -32,6 +31,7 @@ const uploadBtnStyle = {
   cursor: 'pointer',
   transition: 'background-color 150ms',
   textAlign: 'center',
+  width: '100%',
 };
 
 function formatFileSize(bytes) {
@@ -41,29 +41,25 @@ function formatFileSize(bytes) {
   return `${(bytes / 1048576).toFixed(1)} MB`;
 }
 
-export default function DocumentsSection({ files, unitid, userId, onUpload, onDelete, onDownload, uploading }) {
+export default function DocumentsSection({
+  files,
+  unitid,
+  userId,
+  onUpload,
+  onDelete,
+  onDownload,
+  uploading,
+  libraryDocs = [],
+  shares = [],
+  sharingSlot = {},
+  onShareDoc,
+}) {
   const [expanded, setExpanded] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
-  const fileInputRef = useRef(null);
-  const [pendingType, setPendingType] = useState(null);
 
   const uploadedCount = (files || []).length;
-
-  const handleUploadClick = (docType) => {
-    setPendingType(docType);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleFileSelected = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !pendingType) return;
-    await onUpload(unitid, pendingType, file);
-    setPendingType(null);
-  };
+  const sharedCount = shares.filter(s => s.unitid === unitid).length;
 
   const handleDeleteConfirm = async (fileId, storagePath) => {
     await onDelete(fileId, storagePath);
@@ -77,17 +73,14 @@ export default function DocumentsSection({ files, unitid, userId, onUpload, onDe
     finally { setDownloadingId(null); }
   };
 
+  const handleShareClick = async (documentType, slotNumber) => {
+    const libraryDocId = getLibraryDocId(documentType, slotNumber, libraryDocs);
+    if (!libraryDocId || !onShareDoc) return;
+    await onShareDoc(libraryDocId, unitid, documentType, slotNumber);
+  };
+
   return (
     <div data-testid="documents-section">
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        style={{ display: 'none' }}
-        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
-        onChange={handleFileSelected}
-      />
-
       {/* Collapsed header */}
       <button
         data-testid="documents-toggle"
@@ -112,13 +105,13 @@ export default function DocumentsSection({ files, unitid, userId, onUpload, onDe
           Pre-Read Documents
         </span>
         <span style={{ fontSize: '0.875rem', color: '#6B6B6B' }}>
-          ({uploadedCount} uploaded)
+          ({sharedCount} shared{uploadedCount > 0 ? `, ${uploadedCount} uploaded` : ''})
         </span>
       </button>
 
       {expanded && (
         <div style={{ paddingLeft: 24, marginTop: 8 }}>
-          {/* Uploaded files list */}
+          {/* Existing uploaded files list */}
           {(files || []).length > 0 && (
             <div data-testid="uploaded-files-list" style={{ marginBottom: 16 }}>
               {files.map(f => (
@@ -186,18 +179,16 @@ export default function DocumentsSection({ files, unitid, userId, onUpload, onDe
                         </button>
                       </>
                     ) : (
-                      <>
-                        <button
-                          data-testid={`delete-file-${f.id}`}
-                          onClick={() => setConfirmDeleteId(f.id)}
-                          style={{
-                            background: 'none', border: 'none', color: '#F44336',
-                            fontSize: '0.75rem', cursor: 'pointer', textDecoration: 'underline',
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </>
+                      <button
+                        data-testid={`delete-file-${f.id}`}
+                        onClick={() => setConfirmDeleteId(f.id)}
+                        style={{
+                          background: 'none', border: 'none', color: '#F44336',
+                          fontSize: '0.75rem', cursor: 'pointer', textDecoration: 'underline',
+                        }}
+                      >
+                        Delete
+                      </button>
                     )}
                   </div>
                 </div>
@@ -205,37 +196,103 @@ export default function DocumentsSection({ files, unitid, userId, onUpload, onDe
             </div>
           )}
 
-          {/* Upload buttons grid */}
+          {/* Share buttons grid — state A/B/C/D per slot */}
           <div
-            data-testid="upload-buttons-grid"
+            data-testid="share-buttons-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
               gap: 8,
               marginBottom: 8,
             }}
           >
             {DOCUMENT_TYPES.map(dt => {
-              const isUploading = uploading === dt.type;
+              const slotKey = `${dt.type}_${dt.slot_number}`;
+              const state = getButtonState(
+                dt.type, dt.slot_number, libraryDocs, shares, unitid, sharingSlot
+              );
+
+              // State A: no library doc — disabled with tooltip
+              if (state === 'A') {
+                return (
+                  <SlotTooltip
+                    key={slotKey}
+                    message={`Oops! Looks like you are fresh out. Please upload your ${dt.libraryLabel} to the Pre-Read Docs Library at the top of this page first.`}
+                  >
+                    <button
+                      data-testid={`share-btn-${slotKey}`}
+                      disabled
+                      aria-label={`${dt.shareLabel} — not yet in library`}
+                      style={{
+                        ...shareBtnBase,
+                        opacity: 0.4,
+                        cursor: 'not-allowed',
+                        borderColor: '#9E9E9E',
+                        color: '#9E9E9E',
+                      }}
+                    >
+                      {dt.shareLabel}
+                    </button>
+                  </SlotTooltip>
+                );
+              }
+
+              // State B: library doc exists, not shared — enabled
+              if (state === 'B') {
+                return (
+                  <button
+                    key={slotKey}
+                    data-testid={`share-btn-${slotKey}`}
+                    aria-label={dt.shareLabel}
+                    onClick={() => handleShareClick(dt.type, dt.slot_number)}
+                    style={shareBtnBase}
+                  >
+                    {dt.shareLabel}
+                  </button>
+                );
+              }
+
+              // State C: already shared — maroon bg, gold text
+              if (state === 'C') {
+                return (
+                  <button
+                    key={slotKey}
+                    data-testid={`share-btn-${slotKey}`}
+                    disabled
+                    aria-label={`${dt.sharedLabel}`}
+                    style={{
+                      ...shareBtnBase,
+                      backgroundColor: '#8B3A3A',
+                      borderColor: '#8B3A3A',
+                      color: '#D4AF37',
+                      cursor: 'default',
+                      opacity: 1,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {dt.sharedLabel}
+                  </button>
+                );
+              }
+
+              // State D: sharing in progress
               return (
                 <button
-                  key={dt.type}
-                  data-testid={`upload-btn-${dt.type}`}
-                  aria-label={`Upload ${dt.label}`}
-                  disabled={isUploading}
-                  onClick={() => handleUploadClick(dt.type)}
+                  key={slotKey}
+                  data-testid={`share-btn-${slotKey}`}
+                  disabled
                   style={{
-                    ...uploadBtnStyle,
-                    opacity: isUploading ? 0.5 : 1,
+                    ...shareBtnBase,
+                    opacity: 0.5,
+                    cursor: 'default',
                   }}
                 >
-                  {isUploading ? 'Uploading...' : dt.buttonLabel}
+                  Sharing...
                 </button>
               );
             })}
           </div>
 
-          {/* Coach visibility note */}
           <p style={{ fontSize: '0.6875rem', color: '#6B6B6B', margin: '4px 0 0', fontStyle: 'italic' }}>
             Note: Coach cannot see Financial Aid Info documents
           </p>
