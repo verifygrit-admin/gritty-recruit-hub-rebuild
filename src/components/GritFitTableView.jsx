@@ -141,7 +141,10 @@ export default function GritFitTableView({
 
   // ── Desktop table layout ──
   return (
-    <div data-testid="grit-fit-results">
+    <div data-testid="grit-fit-results" style={{
+      width: '95vw',
+      marginLeft: 'calc(-1 * (95vw - 100%) / 2)',
+    }}>
       <div style={{ overflowX: 'auto' }}>
         <table
           data-testid="results-table"
