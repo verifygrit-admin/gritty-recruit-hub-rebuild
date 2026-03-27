@@ -573,6 +573,16 @@ export default function ShortlistPage() {
         </button>
       </div>
 
+      {/* Pre-Read Docs Library */}
+      <PreReadLibrary
+        userId={session.user.id}
+        libraryDocs={libraryDocs}
+        onUpload={handleLibraryUpload}
+        onDelete={handleLibraryDelete}
+        uploadingSlot={uploadingLibrarySlot}
+        deletingSlot={deletingLibrarySlot}
+      />
+
       {/* Filter Bar */}
       <ShortlistFilters
         items={items}
@@ -632,16 +642,6 @@ export default function ShortlistPage() {
           </div>
         </div>
       )}
-
-      {/* Pre-Read Docs Library */}
-      <PreReadLibrary
-        userId={session.user.id}
-        libraryDocs={libraryDocs}
-        onUpload={handleLibraryUpload}
-        onDelete={handleLibraryDelete}
-        uploadingSlot={uploadingLibrarySlot}
-        deletingSlot={deletingLibrarySlot}
-      />
 
       {/* Cards */}
       <div data-testid="shortlist-cards">

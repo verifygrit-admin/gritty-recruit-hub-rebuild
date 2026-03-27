@@ -131,9 +131,10 @@ export default function ShortlistCard({
         {item.droi != null && (
           <Metric label="DROI" value={`${Number(item.droi).toFixed(1)}x`} />
         )}
-        {item.break_even != null && (
-          <Metric label="Degree Payback (yrs)" value={`${Number(item.break_even).toFixed(1)}`} />
-        )}
+        <Metric
+          label="Fastest Payback"
+          value={item.break_even != null ? `${Number(item.break_even).toFixed(1)} yr` : 'N/A'}
+        />
         {item.match_rank != null && (
           <Metric label="Match Rank" value={`#${item.match_rank}`} />
         )}
