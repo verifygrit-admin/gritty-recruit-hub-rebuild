@@ -55,15 +55,27 @@ export default function ProfilePage() {
   const [hsResults, setHsResults] = useState([]);
   const [hsSelected, setHsSelected] = useState(false);
 
+  // Static BC High coach + counselor data (UUIDs never shown to user)
+  const BC_HIGH_COACH = {
+    user_id: '9177ba55-eb83-4bce-b4cd-01ce3078d4a3',
+    name: 'Paul Zukauskas',
+    title: 'Head Coach, Boston College High School',
+    email: 'pzukauskas@bchigh.edu',
+    hs_program_id: 'de54b9af-c03c-46b8-a312-b87585a06328',
+  };
+  const BC_HIGH_COUNSELORS = [
+    { user_id: '92dbdc93-18b6-4361-8925-2d0e1fbd68ad', name: 'Devon Balfour', email: 'dbalfour@bchigh.edu' },
+    { user_id: 'b80f1b4c-c5c3-4285-a88a-0cc39e650e02', name: "Caitlin O'Connell", email: 'coconnell@bchigh.edu' },
+    { user_id: 'e0c99343-e525-411a-b6a8-8691bdc31da7', name: 'Kyle Swords', email: 'kswords@bchigh.edu' },
+  ];
+
   // Coach/Counselor confirmation state
   const [selectedHsProgramId, setSelectedHsProgramId] = useState(null);
-  const [coaches, setCoaches] = useState([]);
   const [selectedCoachId, setSelectedCoachId] = useState('');
   const [coachConfirmed, setCoachConfirmed] = useState(false);
   const [coachConfirming, setCoachConfirming] = useState(false);
   const [coachError, setCoachError] = useState(null);
   const [confirmedCoachName, setConfirmedCoachName] = useState('');
-  const [counselors, setCounselors] = useState([]);
   const [selectedCounselorId, setSelectedCounselorId] = useState('');
   const [counselorConfirmed, setCounselorConfirmed] = useState(false);
   const [counselorConfirming, setCounselorConfirming] = useState(false);
@@ -114,24 +126,21 @@ export default function ProfilePage() {
         setForm(prev => ({ ...prev, email: session.user.email || '' }));
       }
 
-      // Check for existing coach confirmation
+      // Check for existing coach confirmation (static BC High only)
       const { data: existingCoachLinks } = await supabase
         .from('hs_coach_students').select('coach_user_id')
         .eq('student_user_id', session.user.id);
       if (existingCoachLinks && existingCoachLinks.length > 0) {
         setCoachConfirmed(true);
-        const { data: coachProfile } = await supabase
-          .from('profiles').select('name').eq('user_id', existingCoachLinks[0].coach_user_id).single();
-        setConfirmedCoachName(coachProfile?.name || 'Your head coach');
+        setConfirmedCoachName(BC_HIGH_COACH.name);
         // Check for existing counselor confirmation
         const { data: existingCounselorLinks } = await supabase
           .from('hs_counselor_students').select('counselor_user_id')
           .eq('student_user_id', session.user.id);
         if (existingCounselorLinks && existingCounselorLinks.length > 0) {
           setCounselorConfirmed(true);
-          const { data: counselorProfile } = await supabase
-            .from('profiles').select('name').eq('user_id', existingCounselorLinks[0].counselor_user_id).single();
-          setConfirmedCounselorName(counselorProfile?.name || 'Your counselor');
+          const matched = BC_HIGH_COUNSELORS.find(c => c.user_id === existingCounselorLinks[0].counselor_user_id);
+          setConfirmedCounselorName(matched?.name || 'Your counselor');
         }
       }
       setLoading(false);
@@ -153,51 +162,7 @@ export default function ProfilePage() {
     return () => clearTimeout(timer);
   }, [hsQuery, hsSelected]);
 
-  // Fetch coaches when hs_program_id is set
-  useEffect(() => {
-    if (!selectedHsProgramId || coachConfirmed) return;
-    const fetchCoaches = async () => {
-      const { data: coachSchoolLinks } = await supabase
-        .from('hs_coach_schools').select('coach_user_id, is_head_coach')
-        .eq('hs_program_id', selectedHsProgramId);
-      if (!coachSchoolLinks || coachSchoolLinks.length === 0) { setCoaches([]); return; }
-      const coachUserIds = coachSchoolLinks.map(c => c.coach_user_id);
-      const { data: coachProfiles } = await supabase
-        .from('profiles').select('user_id, name').in('user_id', coachUserIds);
-      const profileMap = {};
-      (coachProfiles || []).forEach(p => { profileMap[p.user_id] = p.name; });
-      const coachList = coachSchoolLinks.map(c => ({
-        coach_user_id: c.coach_user_id,
-        is_head_coach: c.is_head_coach,
-        name: profileMap[c.coach_user_id] || 'Unknown Coach',
-      }));
-      setCoaches(coachList);
-      const headCoaches = coachList.filter(c => c.is_head_coach);
-      if (headCoaches.length === 1) setSelectedCoachId(headCoaches[0].coach_user_id);
-    };
-    fetchCoaches();
-  }, [selectedHsProgramId, coachConfirmed]);
-
-  // Fetch counselors after coach confirmed
-  useEffect(() => {
-    if (!selectedHsProgramId || !coachConfirmed || counselorConfirmed) return;
-    const fetchCounselors = async () => {
-      const { data: counselorSchoolLinks } = await supabase
-        .from('hs_counselor_schools').select('counselor_user_id')
-        .eq('hs_program_id', selectedHsProgramId);
-      if (!counselorSchoolLinks || counselorSchoolLinks.length === 0) { setCounselors([]); return; }
-      const counselorUserIds = counselorSchoolLinks.map(c => c.counselor_user_id);
-      const { data: counselorProfiles } = await supabase
-        .from('profiles').select('user_id, name').in('user_id', counselorUserIds);
-      const profileMap = {};
-      (counselorProfiles || []).forEach(p => { profileMap[p.user_id] = p.name; });
-      setCounselors(counselorSchoolLinks.map(c => ({
-        counselor_user_id: c.counselor_user_id,
-        name: profileMap[c.counselor_user_id] || 'Unknown Counselor',
-      })));
-    };
-    fetchCounselors();
-  }, [selectedHsProgramId, coachConfirmed, counselorConfirmed]);
+  // Dynamic fetch useEffects removed — coach and counselor are now static BC High hardcodes.
 
   const handleHsSelect = (school) => {
     setForm(prev => ({ ...prev, high_school: school.school_name, hs_lat: null, hs_lng: null }));
@@ -207,27 +172,25 @@ export default function ProfilePage() {
     setSelectedHsProgramId(school.id);
     setCoachConfirmed(false); setCounselorConfirmed(false);
     setSelectedCoachId(''); setSelectedCounselorId('');
-    setCoaches([]); setCounselors([]);
     setCoachError(null); setCounselorError(null);
   };
 
   const handleConfirmCoach = async () => {
-    if (!selectedCoachId || !session) return;
+    if (!session) return;
     setCoachConfirming(true); setCoachError(null);
-    const assistantCoaches = coaches.filter(c => !c.is_head_coach && c.coach_user_id !== selectedCoachId);
-    const rows = [
-      { coach_user_id: selectedCoachId, student_user_id: session.user.id },
-      ...assistantCoaches.map(c => ({ coach_user_id: c.coach_user_id, student_user_id: session.user.id })),
-    ];
-    const { error } = await supabase.from('hs_coach_students').insert(rows);
+    const { error } = await supabase.from('hs_coach_students').insert({
+      coach_user_id: BC_HIGH_COACH.user_id,
+      student_user_id: session.user.id,
+      hs_program_id: BC_HIGH_COACH.hs_program_id,
+    });
     if (error) {
       if (error.code === '23505') {
         setCoachConfirmed(true);
-        setConfirmedCoachName(coaches.find(c => c.coach_user_id === selectedCoachId)?.name || 'Your head coach');
+        setConfirmedCoachName(BC_HIGH_COACH.name);
       } else { setCoachError('Failed to confirm coach. Please try again.'); }
     } else {
       setCoachConfirmed(true);
-      setConfirmedCoachName(coaches.find(c => c.coach_user_id === selectedCoachId)?.name || 'Your head coach');
+      setConfirmedCoachName(BC_HIGH_COACH.name);
     }
     setCoachConfirming(false);
   };
@@ -241,11 +204,11 @@ export default function ProfilePage() {
     if (error) {
       if (error.code === '23505') {
         setCounselorConfirmed(true);
-        setConfirmedCounselorName(counselors.find(c => c.counselor_user_id === selectedCounselorId)?.name || 'Your counselor');
+        setConfirmedCounselorName(BC_HIGH_COUNSELORS.find(c => c.user_id === selectedCounselorId)?.name || 'Your counselor');
       } else { setCounselorError('Failed to confirm counselor. Please try again.'); }
     } else {
       setCounselorConfirmed(true);
-      setConfirmedCounselorName(counselors.find(c => c.counselor_user_id === selectedCounselorId)?.name || 'Your counselor');
+      setConfirmedCounselorName(BC_HIGH_COUNSELORS.find(c => c.user_id === selectedCounselorId)?.name || 'Your counselor');
     }
     setCounselorConfirming(false);
   };
@@ -452,7 +415,7 @@ export default function ProfilePage() {
           {renderInput('hudl_url', 'Hudl Profile URL', 'input-hudl-url', { placeholder: 'https://www.hudl.com/profile/...', help: '(Optional — share your highlight film with coaches)' })}
         </section>
 
-        {/* Section: Confirm Your Head Coach */}
+        {/* Section: Confirm Your Head Coach — static BC High */}
         {selectedHsProgramId && (
           <section style={sectionStyle} data-testid="section-coach-confirm">
             <h3 style={headingStyle}>Confirm Your Head Coach</h3>
@@ -465,31 +428,22 @@ export default function ProfilePage() {
               }}>
                 Confirmed: {confirmedCoachName}
               </div>
-            ) : coaches.filter(c => c.is_head_coach).length === 0 ? (
-              <p style={{ fontSize: '0.95rem', color: '#6B6B6B' }} data-testid="no-coaches-message">
-                No coaches are registered at this school yet. You can skip this step and confirm later.
-              </p>
             ) : (
               <div>
-                <div style={fieldWrap}>
-                  <label htmlFor="coach-select" style={labelStyle}>Select your head coach</label>
-                  <select id="coach-select" data-testid="select-head-coach" value={selectedCoachId}
-                    onChange={(e) => setSelectedCoachId(e.target.value)} style={{ ...inputBase, cursor: 'pointer' }}>
-                    <option value="">-- Select head coach --</option>
-                    {coaches.filter(c => c.is_head_coach).map(c => (
-                      <option key={c.coach_user_id} value={c.coach_user_id}>{c.name} (Head Coach)</option>
-                    ))}
-                  </select>
-                  <span style={helpStyle}>
-                    Confirming your coach grants them access to view your profile and recruiting activity.
-                  </span>
+                <div style={{ ...fieldWrap, padding: '12px 16px', backgroundColor: '#F9F9F9', border: '1px solid #E8E8E8', borderRadius: 4 }}>
+                  <div style={{ fontSize: '1rem', fontWeight: 600, color: '#2C2C2C' }}>{BC_HIGH_COACH.name}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6B6B6B', marginTop: 2 }}>{BC_HIGH_COACH.title}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6B6B6B', marginTop: 2 }}>{BC_HIGH_COACH.email}</div>
                 </div>
-                <button type="button" data-testid="button-confirm-coach" disabled={!selectedCoachId || coachConfirming}
+                <span style={{ ...helpStyle, display: 'block', marginBottom: 12 }}>
+                  Confirming your coach grants them access to view your profile and recruiting activity.
+                </span>
+                <button type="button" data-testid="button-confirm-coach" disabled={coachConfirming}
                   onClick={handleConfirmCoach} style={{
-                    padding: '10px 24px', backgroundColor: (!selectedCoachId || coachConfirming) ? '#E8E8E8' : '#4CAF50',
-                    color: (!selectedCoachId || coachConfirming) ? '#6B6B6B' : '#FFFFFF',
+                    padding: '10px 24px', backgroundColor: coachConfirming ? '#E8E8E8' : '#4CAF50',
+                    color: coachConfirming ? '#6B6B6B' : '#FFFFFF',
                     border: 'none', borderRadius: 4, fontSize: '0.95rem', fontWeight: 600,
-                    cursor: (!selectedCoachId || coachConfirming) ? 'not-allowed' : 'pointer',
+                    cursor: coachConfirming ? 'not-allowed' : 'pointer',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.15)', minHeight: 40,
                   }}>
                   {coachConfirming ? 'Confirming...' : 'Confirm Coach'}
@@ -500,7 +454,7 @@ export default function ProfilePage() {
           </section>
         )}
 
-        {/* Section: Confirm Your Guidance Counselor (after coach confirmed) */}
+        {/* Section: Confirm Your Guidance Counselor — static BC High, radio buttons */}
         {coachConfirmed && selectedHsProgramId && (
           <section style={sectionStyle} data-testid="section-counselor-confirm">
             <h3 style={headingStyle}>Confirm Your Guidance Counselor</h3>
@@ -513,25 +467,33 @@ export default function ProfilePage() {
               }}>
                 Confirmed: {confirmedCounselorName}
               </div>
-            ) : counselors.length === 0 ? (
-              <p style={{ fontSize: '0.95rem', color: '#6B6B6B' }} data-testid="no-counselors-message">
-                No guidance counselors are registered at this school yet. You can skip this step and confirm later.
-              </p>
             ) : (
               <div>
-                <div style={fieldWrap}>
-                  <label htmlFor="counselor-select" style={labelStyle}>Select your guidance counselor</label>
-                  <select id="counselor-select" data-testid="select-counselor" value={selectedCounselorId}
-                    onChange={(e) => setSelectedCounselorId(e.target.value)} style={{ ...inputBase, cursor: 'pointer' }}>
-                    <option value="">-- Select counselor --</option>
-                    {counselors.map(c => (
-                      <option key={c.counselor_user_id} value={c.counselor_user_id}>{c.name}</option>
-                    ))}
-                  </select>
-                  <span style={helpStyle}>
-                    Confirming your counselor grants them access to view your profile, recruiting activity, and financial aid documents.
-                  </span>
+                <div style={{ ...fieldWrap }}>
+                  {BC_HIGH_COUNSELORS.map(c => (
+                    <label key={c.user_id} style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                      marginBottom: 8, border: `1px solid ${selectedCounselorId === c.user_id ? '#4CAF50' : '#E8E8E8'}`,
+                      borderRadius: 4, cursor: 'pointer', backgroundColor: selectedCounselorId === c.user_id ? '#F1FAF2' : '#FAFAFA',
+                    }}>
+                      <input
+                        type="radio"
+                        name="counselor"
+                        value={c.user_id}
+                        checked={selectedCounselorId === c.user_id}
+                        onChange={() => setSelectedCounselorId(c.user_id)}
+                        style={{ accentColor: '#4CAF50', width: 18, height: 18 }}
+                      />
+                      <span>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2C2C2C' }}>{c.name}</span>
+                        <span style={{ fontSize: '0.875rem', color: '#6B6B6B', marginLeft: 8 }}>{c.email}</span>
+                      </span>
+                    </label>
+                  ))}
                 </div>
+                <span style={{ ...helpStyle, display: 'block', marginBottom: 12 }}>
+                  Confirming your counselor grants them access to view your profile, recruiting activity, and financial aid documents.
+                </span>
                 <button type="button" data-testid="button-confirm-counselor" disabled={!selectedCounselorId || counselorConfirming}
                   onClick={handleConfirmCounselor} style={{
                     padding: '10px 24px', backgroundColor: (!selectedCounselorId || counselorConfirming) ? '#E8E8E8' : '#4CAF50',

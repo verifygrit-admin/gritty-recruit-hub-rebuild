@@ -109,7 +109,7 @@ export default function GritFitTableView({
                 Rank {school.matchRank}. {school.school_name}
               </h3>
               <p style={{ margin: '0 0 12px', fontSize: '0.875rem', color: '#6B6B6B' }}>
-                {school.conference || ''} | {TIER_LABELS[school.type] || school.type}
+                {school.conference || ''} | {TIER_LABELS[school.type]?.short || school.type}
               </p>
               <p style={{ margin: '2px 0', fontSize: '0.875rem' }}>Distance: {school.dist} mi</p>
               <p style={{ margin: '2px 0', fontSize: '0.875rem' }}>
@@ -197,7 +197,7 @@ export default function GritFitTableView({
                     </span>
                   </td>
                   <td data-testid="division-cell" style={cellStyle}>
-                    {TIER_LABELS[school.type] || school.type}
+                    {TIER_LABELS[school.type]?.short || school.type}
                   </td>
                   <td style={cellStyle}>{school.conference || ''}</td>
                   <td style={cellStyle}>{school.state || ''}</td>
