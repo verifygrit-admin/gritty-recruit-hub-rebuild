@@ -21,18 +21,30 @@ const LEGEND_ITEMS = [
   { label: '3-Div III', color: TIER_COLORS['3-Div III'] },
 ];
 
-function makeMatchedIcon(color, initial) {
+/** Darken a hex color by a percentage (0–1). */
+function darkenColor(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.max(0, Math.round(((num >> 16) & 0xff) * (1 - amount)));
+  const g = Math.max(0, Math.round(((num >> 8) & 0xff) * (1 - amount)));
+  const b = Math.max(0, Math.round((num & 0xff) * (1 - amount)));
+  return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+}
+
+function makeMatchedIcon(color, initial, inShortlist) {
+  const bg = inShortlist ? darkenColor(color, 0.3) : color;
+  const icon = inShortlist ? '\u2713' : '\uD83C\uDFC6';
+  const fontSize = inShortlist ? '11px' : '13px';
   return L.divIcon({
     className: '',
     html: `<div style="
       width:24px;height:24px;border-radius:50%;
-      background:${color};border:1px solid rgba(139,58,58,0.5);
+      background:${bg};border:${inShortlist ? '2px solid #FFFFFF' : '1px solid rgba(139,58,58,0.5)'};
       box-shadow:0 1px 4px rgba(0,0,0,0.2);
       display:flex;align-items:center;justify-content:center;
-      color:#FFFFFF;font-size:11px;font-weight:700;
+      color:#FFFFFF;font-size:${fontSize};font-weight:700;
       font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
       cursor:pointer;transition:transform 150ms;
-    ">${initial}</div>`,
+    ">${icon}</div>`,
     iconSize: [24, 24],
     iconAnchor: [12, 12],
     popupAnchor: [0, -14],
@@ -202,10 +214,10 @@ export default function GritFitMapView({
         if (!lat || !lng) return;
 
         const name = school.school_name || '';
-        const initial = '\u2713'; // checkmark for matched schools
+        const inShortlist = shortlistIds && shortlistIds.has(school.unitid);
         const color = TIER_COLORS[school.type] || '#8B3A3A';
         const marker = L.marker([lat, lng], {
-          icon: makeMatchedIcon(color, initial),
+          icon: makeMatchedIcon(color, null, inShortlist),
           keyboard: true,
         });
 
