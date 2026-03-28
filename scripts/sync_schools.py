@@ -31,6 +31,9 @@ import sys
 import urllib.request
 import urllib.error
 
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
