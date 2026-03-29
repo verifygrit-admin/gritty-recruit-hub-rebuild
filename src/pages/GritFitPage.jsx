@@ -93,6 +93,18 @@ export default function GritFitPage() {
       if (profileData.position && profileData.gpa) {
         const result = runGritFitScoring(profileData, schoolsData);
         setScoringResult(result);
+
+        // Write zero-match tracking to profiles (Item 3 — coach visibility)
+        supabase
+          .from('profiles')
+          .update({
+            last_grit_fit_run_at: new Date().toISOString(),
+            last_grit_fit_zero_match: result.top30.length === 0,
+          })
+          .eq('user_id', session.user.id)
+          .then(({ error: writeErr }) => {
+            if (writeErr) console.error('GRIT FIT profile write error:', writeErr);
+          });
       } else {
         setError('Your profile needs at least a position and GPA to generate GRIT FIT results.');
       }
@@ -122,6 +134,19 @@ export default function GritFitPage() {
     setProfile(freshProfile);
     const result = runGritFitScoring(freshProfile, allSchools);
     setScoringResult(result);
+
+    // Write zero-match tracking to profiles (Item 3 — coach visibility)
+    supabase
+      .from('profiles')
+      .update({
+        last_grit_fit_run_at: new Date().toISOString(),
+        last_grit_fit_zero_match: result.top30.length === 0,
+      })
+      .eq('user_id', session.user.id)
+      .then(({ error: writeErr }) => {
+        if (writeErr) console.error('GRIT FIT profile write error:', writeErr);
+      });
+
     setFilters({ conference: '', division: '', state: '', search: '' });
     showToast('Results updated with your latest profile', 'success');
     setRecalculating(false);

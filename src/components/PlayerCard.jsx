@@ -20,6 +20,18 @@ export default function PlayerCard({ player, onCardClick }) {
       {/* Top accent bar */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: '#8B3A3A' }} />
 
+      {/* Zero-match badge */}
+      {player.isZeroMatch && (
+        <span style={{
+          position: 'absolute', top: 10, right: 10,
+          background: '#D4AF37', color: '#2C2C2C', fontSize: '0.625rem',
+          textTransform: 'uppercase', letterSpacing: 0.5, padding: '4px 8px',
+          borderRadius: 12, fontWeight: 600, zIndex: 1,
+        }}>
+          No GRIT FIT Matches
+        </span>
+      )}
+
       {/* Avatar + Name */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
         <div style={{
@@ -41,6 +53,27 @@ export default function PlayerCard({ player, onCardClick }) {
           </div>
           {player.email && (
             <div style={{ fontSize: '0.68rem', color: '#6B6B6B' }}>{player.email}</div>
+          )}
+          {/* Offer badges */}
+          {(player.hasVerbalOffer || player.hasWrittenOffer) && (
+            <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+              {player.hasVerbalOffer && (
+                <span style={{
+                  background: '#D4AF37', color: '#2C2C2C', fontSize: '0.75rem',
+                  fontWeight: 600, padding: '4px 10px', borderRadius: 12,
+                }}>
+                  Verbal Offer
+                </span>
+              )}
+              {player.hasWrittenOffer && (
+                <span style={{
+                  background: '#8B3A3A', color: '#FFFFFF', fontSize: '0.75rem',
+                  fontWeight: 600, padding: '4px 10px', borderRadius: 12,
+                }}>
+                  Written Offer
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>

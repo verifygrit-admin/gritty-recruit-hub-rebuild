@@ -241,8 +241,26 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
                       }}
                     >
                       <div style={{ flex: '1 1 180px', minWidth: 0 }}>
-                        <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#2C2C2C' }}>
-                          {item.school_name || `UNITID ${item.unitid}`}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#2C2C2C' }}>
+                            {item.school_name || `UNITID ${item.unitid}`}
+                          </span>
+                          {steps.find(s => s.step_id === 14 && s.completed) && (
+                            <span style={{
+                              background: '#D4AF37', color: '#2C2C2C', fontSize: '0.625rem',
+                              fontWeight: 600, padding: '2px 6px', borderRadius: 12,
+                            }}>
+                              Verbal
+                            </span>
+                          )}
+                          {steps.find(s => s.step_id === 15 && s.completed) && (
+                            <span style={{
+                              background: '#8B3A3A', color: '#FFFFFF', fontSize: '0.625rem',
+                              fontWeight: 600, padding: '2px 6px', borderRadius: 12,
+                            }}>
+                              Written
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: '#6B6B6B' }}>
                           {[item.div, item.conference].filter(Boolean).join(' \u2022 ')}
