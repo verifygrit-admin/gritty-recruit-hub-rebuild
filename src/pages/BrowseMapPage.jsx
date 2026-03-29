@@ -13,14 +13,14 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { supabase } from '../lib/supabaseClient.js';
 import { TIER_COLORS } from '../lib/constants.js';
 
-const DIVISION_OPTIONS = ['All Divisions', 'Power 4', 'G6', '1-FCS', 'FBS Ind', '2-Div II', '3-Div III'];
+const DIVISION_OPTIONS = ['All Divisions', 'Power 4', 'G6', 'FCS', 'D2', 'D3'];
 
 const LEGEND_ITEMS = [
   { label: 'Power 4', color: TIER_COLORS['Power 4'] },
   { label: 'G6', color: TIER_COLORS['G6'] },
-  { label: '1-FCS', color: TIER_COLORS['1-FCS'] },
-  { label: '2-Div II', color: TIER_COLORS['2-Div II'] },
-  { label: '3-Div III', color: TIER_COLORS['3-Div III'] },
+  { label: 'FCS', color: TIER_COLORS['FCS'] },
+  { label: 'D2', color: TIER_COLORS['D2'] },
+  { label: 'D3', color: TIER_COLORS['D3'] },
 ];
 
 function makeSchoolIcon(color, initial) {

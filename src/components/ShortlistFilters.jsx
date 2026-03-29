@@ -24,12 +24,13 @@ const STATUS_OPTIONS = [
   { value: 'not_evaluated', label: 'Not Evaluated' },
 ];
 
+// Values must match what is stored in short_list_items.div
+// (written from schools.type — the 5-way tier taxonomy: Power 4, G6, FCS, D2, D3).
 const DIVISION_OPTIONS = [
   { value: '', label: 'All Divisions' },
   { value: 'Power 4', label: 'Power 4' },
   { value: 'G6', label: 'G6' },
   { value: 'FCS', label: 'FCS' },
-  { value: 'FBS Ind', label: 'FBS Ind' },
   { value: 'D2', label: 'D2' },
   { value: 'D3', label: 'D3' },
 ];

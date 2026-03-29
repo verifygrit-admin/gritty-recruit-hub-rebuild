@@ -27,7 +27,7 @@ const BROWSE_SLIDES = [
     title: 'Filtering & Browsing',
     body: 'Use the filter bar above the map to narrow your search:',
     list: [
-      'Division Tier (Power 4, G6, FBS Ind, FCS, D2, D3)',
+      'Division Tier (Power 4, G6, FCS, D2, D3)',
       'Conference',
       'State',
       'Search by school name or city',

@@ -132,7 +132,7 @@ export default function GritFitPage() {
       user_id: session.user.id,
       unitid: school.unitid,
       school_name: school.school_name,
-      div: school.ncaa_division,
+      div: school.type,  // schools.type is the 5-way tier (Power 4, G6, FCS, D2, D3)
       conference: school.conference,
       state: school.state,
       match_rank: school.matchRank,

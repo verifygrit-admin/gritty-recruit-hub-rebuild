@@ -16,9 +16,9 @@ import { TIER_COLORS, TIER_LABELS } from '../lib/constants.js';
 const LEGEND_ITEMS = [
   { label: 'Power 4', color: TIER_COLORS['Power 4'] },
   { label: 'G6', color: TIER_COLORS['G6'] },
-  { label: '1-FCS', color: TIER_COLORS['1-FCS'] },
-  { label: '2-Div II', color: TIER_COLORS['2-Div II'] },
-  { label: '3-Div III', color: TIER_COLORS['3-Div III'] },
+  { label: 'FCS', color: TIER_COLORS['FCS'] },
+  { label: 'D2', color: TIER_COLORS['D2'] },
+  { label: 'D3', color: TIER_COLORS['D3'] },
 ];
 
 /** Darken a hex color by a percentage (0–1). */
