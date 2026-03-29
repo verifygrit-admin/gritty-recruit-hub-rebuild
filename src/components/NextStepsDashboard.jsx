@@ -431,11 +431,11 @@ function StayGrittyFocus({ weakestMetric, closestTier, isBCHigh }) {
   let tips = weakestMetric === 'height' ? HEIGHT_TIPS
     : weakestMetric === 'weight' ? WEIGHT_TIPS : SPEED_TIPS;
 
-  // BC High: append Coach Kiely & McClune reference to compound lifts tip
+  // BC High: customize compound lifts tip — remove stronglifts.com plug, add S&C coaches
   if (isBCHigh && weakestMetric === 'weight') {
     tips = tips.map(tip =>
       tip.title === 'Compound lifts 3–4x per week'
-        ? { ...tip, text: tip.text + ' At BC High, your best resources are Director of Strength & Conditioning Coach Kiely and Assistant Strength & Conditioning Coach McClune — reach out to them directly or find their contact info in the bchigh.edu directory.' }
+        ? { ...tip, text: tip.text.replace(' (free at stronglifts.com)', '') + ' At BC High, your best resources are Director of Strength & Conditioning Coach Kiely and Assistant Strength & Conditioning Coach McClune — reach out to them directly or find their contact info in the bchigh.edu directory.' }
         : tip
     );
   }
