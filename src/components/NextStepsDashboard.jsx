@@ -641,6 +641,41 @@ export default function NextStepsDashboard({ scoringResult, profile, onEditProfi
         athletic strengths as a prospect. Here's what to focus on next:
       </p>
 
+      {/* D3 positive framing — athletic reason + D3 closest tier */}
+      {reason === 'athletic' && closestTier === 'D3' && (
+        <p style={styles.bodySmall}>
+          Division III is not a consolation — it's a competitive advantage. D3 programs include
+          some of the country's most prestigious academic institutions (NESCAC, SCIAC, Johns Hopkins,
+          WashU) where coaches can advocate directly for your admission and financial aid package.
+          Because D3 schools don't offer athletic scholarships, they often compensate with generous
+          merit-based and need-based aid that can exceed what D1 or D2 programs provide. For many
+          student-athletes, a D3 match delivers the strongest combination of education, playing time,
+          and long-term earning potential available anywhere in college football.
+        </p>
+      )}
+
+      {/* Sophomore growth spurt encouragement — low height + weight */}
+      {classLabel === 'Soph' && hScore <= 0.40 && wScore <= 0.40 && (
+        <p style={styles.bodySmall}>
+          At your age, your body is still changing. Many student-athletes experience significant
+          growth spurts between sophomore and junior year that completely transform their height,
+          weight, and athletic profile. A player who measures below the median today can be at or
+          above it in 12 months. Don't let today's numbers define your ceiling — keep training,
+          keep competing, and update your profile when your measurables change.
+        </p>
+      )}
+
+      {/* Junior growth spurt encouragement — low height + weight */}
+      {classLabel === 'Junior' && hScore <= 0.40 && wScore <= 0.40 && (
+        <p style={styles.bodySmall}>
+          Your body is still developing. Many student-athletes experience a final growth spurt
+          between junior and senior year that meaningfully changes their height, weight, and
+          athletic profile. A player who measures below the median today can close that gap in
+          as little as 6 months. Don't let today's numbers define your ceiling — keep training,
+          keep competing, and update your profile when your measurables change.
+        </p>
+      )}
+
       {reason === 'academic' && (
         <p style={styles.diagnosisText}>
           Your current GPA is {gpa.toFixed(2)} but most college programs require at least a{' '}
