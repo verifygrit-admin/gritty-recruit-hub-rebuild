@@ -146,7 +146,7 @@ const styles = {
   },
   sectionLabelGold: {
     fontSize: 12,
-    color: '#D4AF37',
+    color: '#8B3A3A',
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginBottom: 10,
@@ -425,11 +425,20 @@ function TipsList({ tips, header }) {
   );
 }
 
-function StayGrittyFocus({ weakestMetric, closestTier }) {
+function StayGrittyFocus({ weakestMetric, closestTier, isBCHigh }) {
   const metricLabel = weakestMetric === 'height' ? 'Height'
     : weakestMetric === 'weight' ? 'Weight' : '40-Yard Dash';
-  const tips = weakestMetric === 'height' ? HEIGHT_TIPS
+  let tips = weakestMetric === 'height' ? HEIGHT_TIPS
     : weakestMetric === 'weight' ? WEIGHT_TIPS : SPEED_TIPS;
+
+  // BC High: append Coach Kiely & McClune reference to compound lifts tip
+  if (isBCHigh && weakestMetric === 'weight') {
+    tips = tips.map(tip =>
+      tip.title === 'Compound lifts 3–4x per week'
+        ? { ...tip, text: tip.text + ' At BC High, your best resources are Director of Strength & Conditioning Coach Kiely and Assistant Strength & Conditioning Coach McClune — reach out to them directly or find their contact info in the bchigh.edu directory.' }
+        : tip
+    );
+  }
 
   return (
     <div>
@@ -487,15 +496,21 @@ function AlternativePositions({ position, height, weight, speed40, closestTier }
   );
 }
 
+/** Exclude maritime, coast guard, and military-service-requirement schools */
+const MILITARY_SCHOOL_PATTERN = /maritime|coast guard|military|merchant marine|naval academy|west point|air force academy|citadel|vmi|virginia military/i;
+
 function AspirationalSchools({ scored, closestTier }) {
   if (!closestTier || !scored?.length) return null;
+
+  const isNotMilitary = (s) => !MILITARY_SCHOOL_PATTERN.test(s.school_name || '');
 
   // Schools that pass distance + academic gates but fail athletic gate
   let aspirational = scored.filter(s =>
     s.type === closestTier &&
     s.dist <= (RECRUIT_BUDGETS[closestTier] || 450) &&
     s.acadScore > 0 &&
-    (s.athFitScore || 0) < 0.5
+    (s.athFitScore || 0) < 0.5 &&
+    isNotMilitary(s)
   );
 
   // Sort by ADLTV descending
@@ -505,7 +520,8 @@ function AspirationalSchools({ scored, closestTier }) {
   if (aspirational.length < 3) {
     aspirational = scored.filter(s =>
       s.type === closestTier &&
-      s.dist <= (RECRUIT_BUDGETS[closestTier] || 450)
+      s.dist <= (RECRUIT_BUDGETS[closestTier] || 450) &&
+      isNotMilitary(s)
     );
     aspirational.sort((a, b) => (b.adltv || 0) - (a.adltv || 0));
   }
@@ -569,6 +585,7 @@ export default function NextStepsDashboard({ scoringResult, profile, onEditProfi
   const weightNum = profile.weight ? +profile.weight : 0;
   const speedNum = profile.speed_40 ? +profile.speed_40 : 0;
   const position = profile.position || '';
+  const isBCHigh = /bc\s*high|boston\s*college\s*high/i.test(profile.high_school || '');
 
   // Closest tier — use topTier if available, otherwise find closest
   const closestTier = scoringResult.topTier ||
@@ -580,6 +597,16 @@ export default function NextStepsDashboard({ scoringResult, profile, onEditProfi
   const closestFit = scoringResult.athFit?.[closestTier] || 0;
   const closestPct = Math.round(closestFit * 100);
   const gap = Math.max(0, 50 - closestPct);
+
+  // Time remaining until Feb 1st of senior year
+  const gradYear = profile.grad_year ? +profile.grad_year : new Date().getFullYear() + 1;
+  const seniorFeb1 = new Date(gradYear, 1, 1); // Feb 1 of grad year
+  const now = new Date();
+  const msRemaining = seniorFeb1 - now;
+  const yearsRemaining = Math.max(0, Math.round((msRemaining / (1000 * 60 * 60 * 24 * 365)) * 10) / 10);
+  const timeLabel = yearsRemaining >= 1
+    ? `${Math.floor(yearsRemaining)} year${Math.floor(yearsRemaining) !== 1 ? 's' : ''}`
+    : `${Math.max(1, Math.round(yearsRemaining * 12))} month${Math.round(yearsRemaining * 12) !== 1 ? 's' : ''}`;
 
   // Per-metric scores for WOW callouts and weakest metric
   const { hScore, wScore, sScore } = getMetricScores(position, heightInches, weightNum, speedNum, closestTier);
@@ -605,9 +632,13 @@ export default function NextStepsDashboard({ scoringResult, profile, onEditProfi
 
       {/* ── Section 1: Header + Diagnosis ── */}
       <h2 style={styles.title}>Stay Gritty, {firstName}!</h2>
-      <p style={styles.subtitle}>
-        We couldn't find qualifying schools for you right now — but you're
-        closer than you think. Here's what the data shows and where to focus next.
+      <p style={styles.diagnosisText}>
+        As a <span style={styles.boldMaroon}>{position}</span>, your Athletic Fit scores at
+        the <span style={styles.boldMaroon}>{closestPct}th percentile</span> of
+        the {closestTier} level — just <span style={styles.boldGold}>{gap}%</span> from
+        acquiring a likely offer. You're closer than you think and you still
+        have <span style={styles.boldGold}>{timeLabel}</span> to build your academic and
+        athletic strengths as a prospect. Here's what to focus on next:
       </p>
 
       {reason === 'academic' && (
@@ -616,22 +647,6 @@ export default function NextStepsDashboard({ scoringResult, profile, onEditProfi
           <span style={styles.boldGold}>{requiredGpa.toFixed(2)}</span> for a{' '}
           <span style={styles.boldGold}>{classLabel}</span> to be academically eligible. This is fixable — and
           the steps to get there don't cost anything.
-        </p>
-      )}
-
-      {reason === 'athletic' && (
-        <p style={styles.diagnosisText}>
-          As a {position}, you scored <span style={styles.boldMaroon}>{closestPct}%</span> at the {closestTier} level —{' '}
-          <span style={styles.boldGold}>{gap}%</span> from qualifying. You're closer than you think.
-          Here's where to focus.
-        </p>
-      )}
-
-      {reason === 'combined' && (
-        <p style={styles.diagnosisText}>
-          As a {position}, your closest fit is {closestTier} — but no schools in that tier
-          fall within your geographic reach or match your academic profile right now.
-          Both are improvable.
         </p>
       )}
 
@@ -654,7 +669,7 @@ export default function NextStepsDashboard({ scoringResult, profile, onEditProfi
       ))}
 
       {/* ── Section 5: Stay Gritty Focus + Training Tips ── */}
-      <StayGrittyFocus weakestMetric={weakestMetric} closestTier={closestTier} />
+      <StayGrittyFocus weakestMetric={weakestMetric} closestTier={closestTier} isBCHigh={isBCHigh} />
 
       {/* ── Section 6: Academic Improvement Strategies ── */}
       {showAcademicStrategies && (
