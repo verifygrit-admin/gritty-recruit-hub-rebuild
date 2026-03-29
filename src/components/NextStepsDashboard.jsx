@@ -31,12 +31,15 @@ function getMetricScores(position, height, weight, speed40, tier) {
   return { hScore, wScore, sScore, std };
 }
 
-/** NCAA approximate minimum GPA by class year */
-const NCAA_MIN_GPA = {
-  Senior: 2.3,
-  Junior: 2.5,
-  Soph: 2.5,
-  Freshman: 2.8,
+/** Effective cluster floor GPA by class year — derived from acad_rigor distributions.
+ *  These are the second-lowest distinct Min_GPA values across all 662 schools.
+ *  Below these values, ~75% of schools' academic gates fail immediately.
+ *  Used as a warning threshold in the dashboard — not a hard scoring gate. */
+const ACAD_CLUSTER_FLOOR = {
+  Senior: 2.50,
+  Junior: 2.50,
+  Soph: 2.40,
+  Freshman: 2.30,
 };
 
 /** Position suggestion pools — analogous positions by group */
@@ -62,7 +65,7 @@ const SUGGESTION_POOLS = {
 /** Derive zero-match reason from scoring result and profile */
 function deriveReason(scoringResult, profile, classLabel) {
   const { topTier, gates } = scoringResult;
-  const requiredGpa = NCAA_MIN_GPA[classLabel] || 2.3;
+  const requiredGpa = ACAD_CLUSTER_FLOOR[classLabel] || 2.3;
   const gpa = profile.gpa ? +profile.gpa : 0;
 
   if (!topTier) return 'athletic';
@@ -290,9 +293,9 @@ function AcademicSnapshot({ gpa, classLabel, requiredGpa, reason }) {
             WHY IT MATTERS
           </div>
           <div style={styles.bodySmall}>
-            The NCAA requires a minimum GPA to certify initial academic eligibility — without it,
-            no program can offer you a spot. The good news: GPA is one of the most improvable
-            metrics, and the best strategies are free.
+            Most college programs set a minimum GPA threshold for academic eligibility — falling
+            below it means no program can match with you. The good news: GPA is one of the most
+            improvable metrics, and the best strategies are free.
           </div>
         </div>
       )}
@@ -558,7 +561,7 @@ function AspirationalSchools({ scored, closestTier }) {
 
 export default function NextStepsDashboard({ scoringResult, profile, onEditProfile, onBrowseAllSchools }) {
   const classLabel = getClassLabel(profile.grad_year);
-  const requiredGpa = NCAA_MIN_GPA[classLabel] || 2.3;
+  const requiredGpa = ACAD_CLUSTER_FLOOR[classLabel] || 2.3;
   const reason = deriveReason(scoringResult, profile, classLabel);
   const firstName = profile.name ? profile.name.split(' ')[0] : 'Athlete';
   const gpa = profile.gpa ? +profile.gpa : 0;
@@ -609,9 +612,9 @@ export default function NextStepsDashboard({ scoringResult, profile, onEditProfi
 
       {reason === 'academic' && (
         <p style={styles.diagnosisText}>
-          Your current GPA is {gpa.toFixed(2)} but the NCAA requires a minimum of{' '}
+          Your current GPA is {gpa.toFixed(2)} but most college programs require at least a{' '}
           <span style={styles.boldGold}>{requiredGpa.toFixed(2)}</span> for a{' '}
-          <span style={styles.boldGold}>{classLabel}</span> to be eligible. This is fixable — and
+          <span style={styles.boldGold}>{classLabel}</span> to be academically eligible. This is fixable — and
           the steps to get there don't cost anything.
         </p>
       )}
