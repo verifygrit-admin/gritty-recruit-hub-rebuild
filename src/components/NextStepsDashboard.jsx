@@ -101,7 +101,10 @@ const styles = {
   container: {
     maxWidth: 800,
     margin: '0 auto',
-    padding: '0 12px',
+    padding: '24px',
+    background: '#F5EFE0',
+    borderRadius: 12,
+    border: '1px solid #E8E8E8',
   },
   title: {
     fontSize: '2rem',
@@ -319,7 +322,7 @@ function MetricBar({ name, score, yours, median, unit, isWeakest }) {
         </div>
         <span style={{ fontSize: 14, fontWeight: 700, color: barColor, width: 36, textAlign: 'right' }}>{pct}%</span>
       </div>
-      <div style={{ fontSize: 12, color: '#3A5A3E', paddingLeft: 88 }}>
+      <div style={{ fontSize: 12, color: '#4A4A4A', paddingLeft: 88 }}>
         Yours: {yours}{unit} · Tier median: {median}{unit}
       </div>
     </div>
@@ -407,10 +410,10 @@ function TipsList({ tips, header }) {
       <div style={styles.sectionLabelGold}>{header}</div>
       {tips.map((tip, i) => (
         <div key={i} style={{ paddingLeft: 12, borderLeft: '2px solid #2E6B18', marginBottom: 10 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#F5EFE0', marginBottom: 2 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#2C2C2C', marginBottom: 2 }}>
             {tip.title}
           </div>
-          <div style={{ fontSize: 12, color: '#6B8C72', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: '#4A4A4A', lineHeight: 1.5 }}>
             {tip.text}
           </div>
         </div>
@@ -537,7 +540,7 @@ function AspirationalSchools({ scored, closestTier }) {
           <tbody>
             {aspirational.map((s, i) => (
               <tr key={s.unitid || i} style={{ background: i % 2 === 0 ? 'transparent' : '#F5F5F5' }}>
-                <td style={{ padding: '6px 10px', color: '#E8EDF0' }}>{s.school_name}</td>
+                <td style={{ padding: '6px 10px', color: '#2C2C2C' }}>{s.school_name}</td>
                 <td style={{ padding: '6px 10px', color: '#6B6B6B' }}>{s.state}</td>
                 <td style={{ padding: '6px 10px', color: '#6B6B6B' }}>{formatMoney(s.adltv)}</td>
                 <td style={{ padding: '6px 10px', color: '#6B6B6B' }}>#{i + 1}</td>

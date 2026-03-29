@@ -174,7 +174,8 @@ Both are improvable.
 ```
 
 **Styling:**
-- **Container:** Background Cream (#F5EFE0), border 1px Light Gray (#E8E8E8), border-radius 8px, padding 16px
+- **Outer Container:** Background Cream (#F5EFE0), padding 24px, border-radius 12px, border 1px solid #E8E8E8 (solid modal frame)
+- **Internal sections:** Background #FFFFFF, border 1px Light Gray (#E8E8E8), border-radius 8px, padding 16px
 - **Label row:** "ACADEMIC ELIGIBILITY SNAPSHOT" — Body Tiny (12px), Stone Gray, uppercase, letter-spacing 2px, 10px margin-bottom
 - **Content grid:** 3 columns (mobile: stack), gap 24px
   - **Your GPA:** Current GPA left, value right in **bold Maroon** (#8B3A3A), 28px font size
@@ -248,7 +249,7 @@ Yours: 4.62s · Tier median: 4.55s
   - **Filled:** Green (#4CAF50) if score ≥ 50%, Red (#F44336) if < 50%
   - **Width:** `Math.min(100, score * 100)%`
 - **Percentage (right):** Body Small, bold, 36px width, color matches bar (green or red), right-aligned
-- **Footnote line:** Body Tiny (12px), Stone Gray (#3A5A3E), below each metric — "Yours: [measurement] · [Tier] median: [measurement]"
+- **Footnote line:** Body Tiny (12px), Dark Gray (#4A4A4A), below each metric — "Yours: [measurement] · [Tier] median: [measurement]"
 - **Margin bottom:** 8px between metrics
 
 ---
@@ -329,8 +330,8 @@ HOW TO IMPROVE YOUR [METRIC NAME]
 - **Tips header:** "HOW TO IMPROVE YOUR [METRIC]" — Body Tiny, Gold (#D4AF37), uppercase, margin-bottom 10px
 - **Tips list:**
   - Each tip is a bullet point (•)
-  - **Tip title:** Bold, Body Small (12px), Cream (#F5EFE0), margin-bottom 2px
-  - **Tip description:** Body Small (12px), Stone Gray (#6B8C72), line-height 1.5
+  - **Tip title:** Bold, Body Small (12px), Charcoal (#2C2C2C), margin-bottom 2px
+  - **Tip description:** Body Small (12px), Dark Gray (#4A4A4A), line-height 1.5
   - **Margin between tips:** 10px
   - **Left padding:** 12px with 2px solid left border (#2E6B18 dark green)
 
@@ -480,7 +481,7 @@ Based on your current measurables, you score above 50% at the
   - **Header row:** Background #F5F5F5, border-bottom 1px Light Gray, padding 6px 10px
     - **Text:** Body Tiny (10px), Stone Gray, uppercase, letter-spacing 1.5px, font-weight 600
   - **Data rows:** Padding 6px 10px, alternating background (transparent / #F5F5F5)
-    - **School name:** Body Regular, Charcoal (#E8EDF0)
+    - **School name:** Body Regular, Charcoal (#2C2C2C)
     - **Other columns:** Body Small, Stone Gray
   - **Overflow:** Horizontal scroll on mobile if needed
   - **Max schools shown:** 5
@@ -753,4 +754,8 @@ The NextStepsDashboard is **never punitive**. Every section starts with data (th
 
 ---
 
-*NextStepsDashboard spec — Version 1.0. Ready for Nova implementation. Questions to Quill.*
+---
+
+**Version 1.1 — Readability fixes applied 2026-03-29.** Cream container frame (24px padding, 12px radius, 1px border), darkened tip titles/descriptions (#2C2C2C Charcoal for titles, #4A4A4A Dark Gray for descriptions), aspirational school names, and metric footnotes for improved contrast on light backgrounds.
+
+*NextStepsDashboard spec — Ready for Nova implementation. Questions to Quill.*
