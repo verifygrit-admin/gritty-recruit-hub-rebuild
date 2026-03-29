@@ -10,6 +10,7 @@
  *   5. Render in Map View (default) or Table View
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import { runGritFitScoring } from '../lib/scoring.js';
@@ -18,6 +19,7 @@ import GritFitMapView from '../components/GritFitMapView.jsx';
 import GritFitTableView from '../components/GritFitTableView.jsx';
 import GritFitScoreDashboard from '../components/GritFitScoreDashboard.jsx';
 import MoneyMap from '../components/MoneyMap.jsx';
+import NextStepsDashboard from '../components/NextStepsDashboard.jsx';
 
 const toggleBtnBase = {
   padding: '8px 12px', border: '2px solid #8B3A3A', borderRadius: 4,
@@ -27,6 +29,7 @@ const toggleBtnBase = {
 
 export default function GritFitPage() {
   const { session, profileUpdatedAt } = useAuth();
+  const navigate = useNavigate();
 
   // Data state
   const [profile, setProfile] = useState(null);
@@ -229,6 +232,18 @@ export default function GritFitPage() {
   }
 
   const top30Count = scoringResult?.top30?.length || 0;
+
+  // Zero-match state — render NextStepsDashboard instead of map/table
+  if (scoringResult && top30Count === 0) {
+    return (
+      <NextStepsDashboard
+        scoringResult={scoringResult}
+        profile={profile}
+        onEditProfile={() => navigate('/profile')}
+        onBrowseAllSchools={() => navigate('/')}
+      />
+    );
+  }
 
   return (
     <div data-testid="grit-fit-results">
