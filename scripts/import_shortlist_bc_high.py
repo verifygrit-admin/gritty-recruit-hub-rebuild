@@ -37,14 +37,14 @@ STEP MAPPING  (Pre-Offer Tracking 0-indexed column -> step_id : label)
   step 1  "Added to shortlist"                   — always TRUE
   step 2  "Completed recruiting questionnaire"   — col 10 (Recruiting Q Complete)
   step 3  "Completed admissions info form"        — col 11 (Adm. Form Complete)
-  step 4  "Contacted coach via email"             — col 12 (Follow Up Email Sent)
-  step 5  "Contacted coach via social media"      — col 17 (X DM Sent)
-  step 6  "Received junior day invite"            — col 20 (Jr Day Info)
-  step 7  "Received visit invite"                 — col 21 (Campus Visit Invite)
-  step 8  "Received prospect camp invite"         — col 22 (Camp Invite)
-  step 9  "School contacted student via text"     — NO MATCH -> FALSE
-  step 10 "Head coach contacted student"          — col 24 (HC Contact)
-  step 11 "Assistant coach contacted student"     — col 19 (Sucessful Hand-Off)
+  step 4  "Assistant coach contacted student"    — col 19 (Sucessful Hand-Off)
+  step 5  "Contacted coach via email"             — col 12 (Follow Up Email Sent)
+  step 6  "Contacted coach via social media"      — col 17 (X DM Sent)
+  step 7  "Received junior day invite"            — col 20 (Jr Day Info)
+  step 8  "Received visit invite"                 — col 21 (Campus Visit Invite)
+  step 9  "Received prospect camp invite"         — col 22 (Camp Invite)
+  step 10 "Coach contacted student via text"      — NO MATCH -> FALSE
+  step 11 "Head coach contacted student"          — col 24 (HC Contact)
   step 12 "School requested transcript"           — NO MATCH -> FALSE
   step 13 "School requested financial info"       — col 25 (FA Info Submit)
   step 14 "Received verbal offer"                 — col 26 (Offer Made)
@@ -202,14 +202,14 @@ STEP_DEFINITIONS = [
     {"step_id": 1,  "label": "Added to shortlist"},
     {"step_id": 2,  "label": "Completed recruiting questionnaire"},
     {"step_id": 3,  "label": "Completed admissions info form"},
-    {"step_id": 4,  "label": "Contacted coach via email"},
-    {"step_id": 5,  "label": "Contacted coach via social media"},
-    {"step_id": 6,  "label": "Received junior day invite"},
-    {"step_id": 7,  "label": "Received visit invite"},
-    {"step_id": 8,  "label": "Received prospect camp invite"},
-    {"step_id": 9,  "label": "School contacted student via text"},
-    {"step_id": 10, "label": "Head coach contacted student"},
-    {"step_id": 11, "label": "Assistant coach contacted student"},
+    {"step_id": 4,  "label": "Assistant coach contacted student"},
+    {"step_id": 5,  "label": "Contacted coach via email"},
+    {"step_id": 6,  "label": "Contacted coach via social media"},
+    {"step_id": 7,  "label": "Received junior day invite"},
+    {"step_id": 8,  "label": "Received visit invite"},
+    {"step_id": 9,  "label": "Received prospect camp invite"},
+    {"step_id": 10, "label": "Coach contacted student via text"},
+    {"step_id": 11, "label": "Head coach contacted student"},
     {"step_id": 12, "label": "School requested transcript"},
     {"step_id": 13, "label": "School requested financial info"},
     {"step_id": 14, "label": "Received verbal offer"},
@@ -222,14 +222,14 @@ POT_STEP_COLUMN_MAP = {
     1:  None,   # always True
     2:  10,     # Recruiting Q Complete
     3:  11,     # Adm. Form Complete
-    4:  12,     # Follow Up Email Sent
-    5:  17,     # X DM Sent
-    6:  20,     # Jr Day Info
-    7:  21,     # Campus Visit Invite
-    8:  22,     # Camp Invite
-    9:  None,   # no match -> False
-    10: 24,     # HC Contact
-    11: 19,     # Sucessful Hand-Off
+    4:  19,     # Sucessful Hand-Off (Assistant coach contacted student)
+    5:  12,     # Follow Up Email Sent
+    6:  17,     # X DM Sent
+    7:  20,     # Jr Day Info
+    8:  21,     # Campus Visit Invite
+    9:  22,     # Camp Invite
+    10: None,   # no match -> False (Coach contacted student via text)
+    11: 24,     # HC Contact
     12: None,   # no match -> False
     13: 25,     # FA Info Submit
     14: 26,     # Offer Made
@@ -254,19 +254,19 @@ def build_journey_steps_from_pot(pot_row: list) -> list[dict]:
       9  HOLD Until Coach Interest
       10 Recruiting Q Complete       -> step 2
       11 Adm. Form Complete          -> step 3
-      12 Follow Up Email Sent        -> step 4
+      12 Follow Up Email Sent        -> step 5
       13 Coach Replied via Email
       14 Followed on X
       15 Follows You on X
       16 X DMs Open
-      17 X DM Sent                   -> step 5
+      17 X DM Sent                   -> step 6
       18 Replied in X DM
-      19 Sucessful Hand-Off          -> step 11
-      20 Jr Day Info                 -> step 6
-      21 Campus Visit Invite         -> step 7
-      22 Camp Invite                 -> step 8
+      19 Sucessful Hand-Off          -> step 4
+      20 Jr Day Info                 -> step 7
+      21 Campus Visit Invite         -> step 8
+      22 Camp Invite                 -> step 9
       23 Pre-Read Invite
-      24 HC Contact                  -> step 10
+      24 HC Contact                  -> step 11
       25 FA Info Submit              -> step 13
       26 Offer Made                  -> step 14
     """

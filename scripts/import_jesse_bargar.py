@@ -285,27 +285,27 @@ def build_journey_steps(po_row):
     Build the recruiting_journey_steps JSONB array from Pre-Offer Tracking row.
     Maps boolean columns to the 15-step schema defined in migration 0009.
 
-    Step mapping (confirmed per FIELD_MAPPING_SPEC.md and migration 0009):
+    Step mapping (updated — migration 0024, step reorder):
       Step 1  = Added to shortlist (always completed=true)
       Step 2  = Completed recruiting questionnaire -> col K (index 10)
       Step 3  = Completed admissions info form -> col L (index 11)
-      Step 4  = Contacted coach via email -> col M (index 12)
-      Step 5  = Contacted coach via social media -> col O (index 14) [Followed on X]
-      Step 6  = Received junior day invite -> col U (index 20)
-      Step 7  = Received visit invite -> col V (index 21)
-      Step 8  = Received prospect camp invite -> col W (index 22)
-      Step 9  = School contacted student via text -> no workbook column (default false)
-      Step 10 = Head coach contacted student -> col Y (index 24)
-      Step 11 = Assistant coach contacted student -> no workbook column (default false)
+      Step 4  = Assistant coach contacted student -> no workbook column (default false)
+      Step 5  = Contacted coach via email -> col M (index 12)
+      Step 6  = Contacted coach via social media -> col O (index 14) [Followed on X]
+      Step 7  = Received junior day invite -> col U (index 20)
+      Step 8  = Received visit invite -> col V (index 21)
+      Step 9  = Received prospect camp invite -> col W (index 22)
+      Step 10 = Coach contacted student via text -> no workbook column (default false)
+      Step 11 = Head coach contacted student -> col Y (index 24)
       Step 12 = School requested transcript [Pre-Read Invite] -> col X (index 23) [Decision 2]
       Step 13 = School requested financial info [FA Info Submit] -> col Z (index 25) [Decision 2]
       Step 14 = Received verbal offer -> no workbook column (default false)
       Step 15 = Received written offer -> no workbook column (default false)
 
     NOTE: X DM Sent (col R, index 17) has no distinct step ID in the migration 0009 schema.
-    The migration defines one step 5 ("Contacted coach via social media"). X DM Sent is
+    The migration defines one step 6 ("Contacted coach via social media"). X DM Sent is
     tracked in the workbook but cannot be mapped to a separate step without a schema change.
-    Mapped Followed on X -> step 5. X DM Sent is not imported. Flagged for Phase 2 review.
+    Mapped Followed on X -> step 6. X DM Sent is not imported. Flagged for Phase 2 review.
     """
 
     def safe_bool(row, idx):
@@ -317,14 +317,14 @@ def build_journey_steps(po_row):
         {"step_id": 1,  "label": "Added to shortlist",                        "completed": True,               "completed_at": None},
         {"step_id": 2,  "label": "Completed recruiting questionnaire",         "completed": safe_bool(po_row, 10), "completed_at": None},
         {"step_id": 3,  "label": "Completed admissions info form",             "completed": safe_bool(po_row, 11), "completed_at": None},
-        {"step_id": 4,  "label": "Contacted coach via email",                  "completed": safe_bool(po_row, 12), "completed_at": None},
-        {"step_id": 5,  "label": "Contacted coach via social media",           "completed": safe_bool(po_row, 14), "completed_at": None},
-        {"step_id": 6,  "label": "Received junior day invite",                 "completed": safe_bool(po_row, 20), "completed_at": None},
-        {"step_id": 7,  "label": "Received visit invite",                      "completed": safe_bool(po_row, 21), "completed_at": None},
-        {"step_id": 8,  "label": "Received prospect camp invite",              "completed": safe_bool(po_row, 22), "completed_at": None},
-        {"step_id": 9,  "label": "School contacted student via text",          "completed": False,              "completed_at": None},
-        {"step_id": 10, "label": "Head coach contacted student",               "completed": safe_bool(po_row, 24), "completed_at": None},
-        {"step_id": 11, "label": "Assistant coach contacted student",          "completed": False,              "completed_at": None},
+        {"step_id": 4,  "label": "Assistant coach contacted student",          "completed": False,              "completed_at": None},
+        {"step_id": 5,  "label": "Contacted coach via email",                  "completed": safe_bool(po_row, 12), "completed_at": None},
+        {"step_id": 6,  "label": "Contacted coach via social media",           "completed": safe_bool(po_row, 14), "completed_at": None},
+        {"step_id": 7,  "label": "Received junior day invite",                 "completed": safe_bool(po_row, 20), "completed_at": None},
+        {"step_id": 8,  "label": "Received visit invite",                      "completed": safe_bool(po_row, 21), "completed_at": None},
+        {"step_id": 9,  "label": "Received prospect camp invite",              "completed": safe_bool(po_row, 22), "completed_at": None},
+        {"step_id": 10, "label": "Coach contacted student via text",           "completed": False,              "completed_at": None},
+        {"step_id": 11, "label": "Head coach contacted student",               "completed": safe_bool(po_row, 24), "completed_at": None},
         {"step_id": 12, "label": "School requested transcript",                "completed": safe_bool(po_row, 23), "completed_at": None},
         {"step_id": 13, "label": "School requested financial info",            "completed": safe_bool(po_row, 25), "completed_at": None},
         {"step_id": 14, "label": "Received verbal offer",                      "completed": False,              "completed_at": None},

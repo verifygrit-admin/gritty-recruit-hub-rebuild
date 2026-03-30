@@ -165,8 +165,10 @@ export default function RecruitingJourney({ steps, onToggleStep, updating, readO
                     Step {step.step_id}: {step.label}
                   </span>
                   <div style={{ fontSize: '0.75rem', color: '#6B6B6B', marginTop: 2 }}>
-                    {step.completed && step.completed_at
-                      ? `Completed: ${new Date(step.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                    {step.completed
+                      ? step.completed_at
+                        ? `Completed: ${new Date(step.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                        : 'Completed'
                       : 'Not yet completed'}
                   </div>
                 </div>
