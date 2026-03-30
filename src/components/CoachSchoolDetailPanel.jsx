@@ -70,7 +70,7 @@ const CLOSE_BTN = {
   top: 0,
   zIndex: 2,
   display: 'flex',
-  justifyContent: 'flex-end',
+  justifyContent: 'flex-start',
   padding: '12px 16px 0',
   backgroundColor: '#FFFFFF',
 };
