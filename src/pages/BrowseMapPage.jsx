@@ -74,21 +74,27 @@ function buildPopupHtml(school, { isStudent = false, inShortlist = false } = {})
         <div>
           <p style="${lbl}">Location</p>
           <p style="${val}">${location}</p>
-          <p style="${lbl}">Adm. Selectivity</p>
-          <p style="margin:0;">${selectivity}</p>
         </div>
         <div>
           <p style="${lbl}">ADLTV</p>
           <p style="${val}">${adltv}</p>
+        </div>
+        <div>
+          <p style="${lbl}">Adm. Selectivity</p>
+          <p style="${val}">${selectivity}</p>
+        </div>
+        <div>
           <p style="${lbl}">ADLTV Rank</p>
           <p style="${val}">${adltvRank}</p>
+        </div>
+        <div>
           <p style="${lbl}">Admissions Rate</p>
           <p style="margin:0;">${admRate}</p>
         </div>
-      </div>
-      <div style="margin-bottom:14px;font-size:0.875rem;">
-        <p style="${lbl}">Graduation Rate</p>
-        <p style="margin:0;color:#2C2C2C;">${gradRate}</p>
+        <div>
+          <p style="${lbl}">Graduation Rate</p>
+          <p style="margin:0;">${gradRate}</p>
+        </div>
       </div>
       <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
         ${school.recruiting_q_link ? `
