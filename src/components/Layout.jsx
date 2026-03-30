@@ -3,6 +3,55 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import teamPhoto from '../assets/bchigh-team.jpg';
+import HudlLogo from './HudlLogo.jsx';
+
+/**
+ * AvatarBadge — renders a circular avatar for the header.
+ *
+ * Fallback chain:
+ *   1. Photo from Supabase Storage (avatar_storage_path set)
+ *   2. Hudl logo SVG mark (hudl_url set but no storage path / image error)
+ *   3. First-letter circle (name initial, always available)
+ */
+function AvatarBadge({ storagePath, hudlUrl, name, size = 32, avatarError, onError }) {
+  let avatarUrl = null;
+  if (storagePath && !avatarError) {
+    const { data } = supabase.storage.from('avatars').getPublicUrl(storagePath);
+    avatarUrl = data?.publicUrl || null;
+  }
+
+  const initial = name ? name.charAt(0).toUpperCase() : '?';
+
+  return (
+    <div style={{
+      width: size,
+      height: size,
+      borderRadius: '50%',
+      overflow: 'hidden',
+      border: '2px solid rgba(255,255,255,0.5)',
+      flexShrink: 0,
+      backgroundColor: '#7A3232',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={name}
+          onError={onError}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        />
+      ) : hudlUrl ? (
+        <HudlLogo size={size * 0.75} withBg={false} style={{ flexShrink: 0 }} />
+      ) : (
+        <span style={{ color: '#FFFFFF', fontSize: size * 0.45, fontWeight: 700, lineHeight: 1 }}>
+          {initial}
+        </span>
+      )}
+    </div>
+  );
+}
 
 const studentNavLinks = [
   { to: '/', label: 'HOME' },
@@ -22,18 +71,32 @@ export default function Layout({ children }) {
   const { session, userType, signOut } = useAuth();
   const [schoolName, setSchoolName] = useState('GRITTY');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [studentName, setStudentName] = useState('');
+  const [avatarStoragePath, setAvatarStoragePath] = useState(null);
+  const [hudlUrl, setHudlUrl] = useState(null);
+  const [avatarError, setAvatarError] = useState(false);
 
   useEffect(() => {
     if (!session) return;
-    supabase.from('profiles').select('high_school').eq('user_id', session.user.id).single()
+    // Students: fetch name, school, avatar_storage_path, hudl_url
+    // Coaches/counselors: only need school label
+    const isStudent = userType !== 'hs_coach' && userType !== 'hs_guidance_counselor';
+    const selectFields = isStudent
+      ? 'high_school, name, avatar_storage_path, hudl_url'
+      : 'high_school';
+
+    supabase.from('profiles').select(selectFields).eq('user_id', session.user.id).single()
       .then(({ data }) => {
         if (data?.high_school) {
-          // Use short name: "Boston College High School" → "BC HIGH"
           const name = data.high_school.toUpperCase();
-          // Truncate if too long for header
           setSchoolName(name.length > 20 ? name.substring(0, 20) : name);
         } else if (userType === 'hs_coach' || userType === 'hs_guidance_counselor') {
           setSchoolName('BC HIGH');
+        }
+        if (isStudent && data) {
+          if (data.name) setStudentName(data.name.split(' ')[0]); // first name only
+          setAvatarStoragePath(data.avatar_storage_path || null);
+          setHudlUrl(data.hudl_url || null);
         }
       });
   }, [session, userType]);
@@ -114,11 +177,22 @@ export default function Layout({ children }) {
           </nav>
 
           {/* Desktop user/sign-out */}
-          <div className="layout-user-desktop" style={{ alignItems: 'center', gap: 16 }}>
+          <div className="layout-user-desktop" style={{ alignItems: 'center', gap: 12 }}>
             {session ? (
               <>
-                <span style={{ color: '#FFFFFF', fontSize: '0.75rem' }}>
-                  {session.user.email}
+                {/* Avatar — students only */}
+                {(userType !== 'hs_coach' && userType !== 'hs_guidance_counselor') && (
+                  <AvatarBadge
+                    storagePath={avatarStoragePath}
+                    hudlUrl={hudlUrl}
+                    name={studentName || session.user.email}
+                    size={32}
+                    avatarError={avatarError}
+                    onError={() => setAvatarError(true)}
+                  />
+                )}
+                <span style={{ color: '#FFFFFF', fontSize: '0.75rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {studentName || session.user.email}
                 </span>
                 <button
                   data-testid="signout-btn"
@@ -208,9 +282,21 @@ export default function Layout({ children }) {
             })}
             {session ? (
               <div style={{ padding: '12px 24px', borderTop: '1px solid rgba(255,255,255,0.15)', marginTop: 8 }}>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', display: 'block', marginBottom: 8 }}>
-                  {session.user.email}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  {(userType !== 'hs_coach' && userType !== 'hs_guidance_counselor') && (
+                    <AvatarBadge
+                      storagePath={avatarStoragePath}
+                      hudlUrl={hudlUrl}
+                      name={studentName || session.user.email}
+                      size={36}
+                      avatarError={avatarError}
+                      onError={() => setAvatarError(true)}
+                    />
+                  )}
+                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem' }}>
+                    {studentName || session.user.email}
+                  </span>
+                </div>
                 <button
                   onClick={handleSignOut}
                   style={{

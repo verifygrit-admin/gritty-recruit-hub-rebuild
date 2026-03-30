@@ -2,7 +2,12 @@
  * PlayerCard — student-athlete card for coach/counselor dashboard.
  * Light theme adaptation from hs-fbcoach-dash.
  */
+import { useState } from 'react';
+import { supabase } from '../lib/supabaseClient.js';
+import HudlLogo from './HudlLogo.jsx';
+
 export default function PlayerCard({ player, onCardClick }) {
+  const [imgError, setImgError] = useState(false);
   const progressPct = Math.round((player.recruitingProgress || 0) * 100);
 
   return (
@@ -39,10 +44,27 @@ export default function PlayerCard({ player, onCardClick }) {
           border: '2px solid #E8E8E8', display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '1.1rem', fontWeight: 800, color: '#8B3A3A', flexShrink: 0, overflow: 'hidden',
         }}>
-          {player.hudlProfileUrl
-            ? <img src={player.hudlProfileUrl} alt={player.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-            : player.name?.charAt(0).toUpperCase()
-          }
+          {(() => {
+            // Fallback chain: Storage photo > Hudl logo > initial letter
+            if (player.avatarStoragePath && !imgError) {
+              const { data } = supabase.storage.from('avatars').getPublicUrl(player.avatarStoragePath);
+              const url = data?.publicUrl;
+              if (url) {
+                return (
+                  <img
+                    src={url}
+                    alt={player.name}
+                    onError={() => setImgError(true)}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                );
+              }
+            }
+            if (player.hudlUrl) {
+              return <HudlLogo size={28} withBg={true} />;
+            }
+            return player.name?.charAt(0).toUpperCase() || '?';
+          })()}
         </div>
         <div>
           <div style={{ fontSize: '1rem', fontWeight: 700, color: '#2C2C2C', lineHeight: 1.2, fontFamily: 'var(--font-heading)' }}>

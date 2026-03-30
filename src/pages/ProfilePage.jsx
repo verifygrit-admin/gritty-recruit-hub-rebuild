@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
+import HudlLogo from '../components/HudlLogo.jsx';
 
 const POSITIONS = [
   '', 'QB', 'RB', 'FB', 'TE', 'WR', 'OL', 'C', 'G', 'T',
@@ -69,6 +70,10 @@ export default function ProfilePage() {
     { user_id: 'e0c99343-e525-411a-b6a8-8691bdc31da7', name: 'Kyle Swords', email: 'kswords@bchigh.edu' },
   ];
 
+  // Track avatar state
+  const [avatarStoragePath, setAvatarStoragePath] = useState(null);
+  const prevHudlUrl = useRef(null);
+
   // Coach/Counselor confirmation state
   const [selectedHsProgramId, setSelectedHsProgramId] = useState(null);
   const [selectedCoachId, setSelectedCoachId] = useState('');
@@ -89,6 +94,8 @@ export default function ProfilePage() {
     const loadProfile = async () => {
       const { data } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).single();
       if (data) {
+        setAvatarStoragePath(data.avatar_storage_path || null);
+        prevHudlUrl.current = data.hudl_url || null;
         setForm(prev => ({
           ...prev,
           name: data.name || '',
@@ -270,6 +277,29 @@ export default function ProfilePage() {
     } else {
       notifyProfileUpdate();
       setToast({ type: 'success', msg: 'Profile saved — updating your GRIT FIT results...' });
+
+      // Fire-and-forget avatar fetch when hudl_url is set and changed (or first set)
+      const newHudlUrl = form.hudl_url?.trim() || null;
+      if (newHudlUrl && newHudlUrl !== prevHudlUrl.current) {
+        prevHudlUrl.current = newHudlUrl;
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        // Use anon key + user JWT — Edge Function will call service role internally
+        const { data: sessionData } = await supabase.auth.getSession();
+        const jwt = sessionData?.session?.access_token;
+        fetch(`${supabaseUrl}/functions/v1/fetch-hudl-avatar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwt}`,
+            'apikey': anonKey,
+          },
+          body: JSON.stringify({ user_id: session.user.id, hudl_url: newHudlUrl }),
+        }).catch(() => {
+          // Fire-and-forget — silently ignore network failures
+        });
+      }
+
       setTimeout(() => navigate('/gritfit'), 1000);
     }
   };
@@ -331,9 +361,39 @@ export default function ProfilePage() {
     </div>
   );
 
+  // Derive avatar URL for display on the profile page
+  const profileAvatarUrl = (() => {
+    if (!avatarStoragePath) return null;
+    const { data } = supabase.storage.from('avatars').getPublicUrl(avatarStoragePath);
+    return data?.publicUrl || null;
+  })();
+
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#2C2C2C', margin: '0 0 24px 0' }}>Edit Your Profile</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+        {/* Profile avatar */}
+        <div style={{
+          width: 72, height: 72, borderRadius: '50%', overflow: 'hidden',
+          border: '3px solid #E8E8E8', backgroundColor: '#F5EFE0',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          {profileAvatarUrl ? (
+            <img
+              src={profileAvatarUrl}
+              alt={form.name || 'Profile photo'}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          ) : form.hudl_url ? (
+            <HudlLogo size={48} withBg={true} />
+          ) : (
+            <span style={{ fontSize: '2rem', fontWeight: 800, color: '#8B3A3A' }}>
+              {form.name ? form.name.charAt(0).toUpperCase() : '?'}
+            </span>
+          )}
+        </div>
+        <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#2C2C2C', margin: 0 }}>Edit Your Profile</h2>
+      </div>
 
       {/* Toast */}
       {toast && (

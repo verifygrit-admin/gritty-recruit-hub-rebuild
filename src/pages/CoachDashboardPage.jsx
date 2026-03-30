@@ -88,7 +88,7 @@ export default function CoachDashboardPage() {
       const [profilesRes, shortlistRes] = await Promise.all([
         supabase
           .from('profiles')
-          .select('user_id, name, position, grad_year, high_school, gpa, sat, state, email, last_grit_fit_run_at, last_grit_fit_zero_match')
+          .select('user_id, name, position, grad_year, high_school, gpa, sat, state, email, last_grit_fit_run_at, last_grit_fit_zero_match, hudl_url, avatar_storage_path')
           .in('user_id', studentUserIds),
         supabase
           .from('short_list_items')
@@ -110,6 +110,7 @@ export default function CoachDashboardPage() {
           user_id: uid, name: null, position: null, grad_year: null,
           high_school: null, gpa: null, sat: null, state: null,
           email: null, last_grit_fit_run_at: null, last_grit_fit_zero_match: false,
+          hudl_url: null, avatar_storage_path: null,
         }
       );
 

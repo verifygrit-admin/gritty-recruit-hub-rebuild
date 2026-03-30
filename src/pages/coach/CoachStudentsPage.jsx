@@ -193,6 +193,8 @@ export default function CoachStudentsPage({ students, shortlistByStudent }) {
                 hasVerbalOffer: offers.hasVerbal,
                 hasWrittenOffer: offers.hasWritten,
                 isZeroMatch: student.last_grit_fit_zero_match === true && student.last_grit_fit_run_at != null,
+                hudlUrl: student.hudl_url || null,
+                avatarStoragePath: student.avatar_storage_path || null,
               }}
               onCardClick={() => setExpandedStudentId(
                 expandedStudentId === student.user_id ? null : student.user_id
