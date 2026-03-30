@@ -74,8 +74,6 @@ function buildPopupHtml(school, { isStudent = false, inShortlist = false } = {})
         <div>
           <p style="${lbl}">Location</p>
           <p style="${val}">${location}</p>
-          <p style="${lbl}">Division</p>
-          <p style="${val}">${division}</p>
           <p style="${lbl}">Adm. Selectivity</p>
           <p style="margin:0;">${selectivity}</p>
         </div>
