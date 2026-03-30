@@ -32,7 +32,7 @@ function darkenColor(hex, amount) {
 
 function makeMatchedIcon(color, initial, inShortlist) {
   const bg = inShortlist ? darkenColor(color, 0.3) : color;
-  const icon = inShortlist ? '\u2713' : '\uD83C\uDFC6';
+  const icon = inShortlist ? '\u2713' : '\u2605';
   const fontSize = inShortlist ? '11px' : '13px';
   return L.divIcon({
     className: '',
@@ -294,6 +294,31 @@ export default function GritFitMapView({
             <span style={{ fontSize: '0.875rem', color: '#2C2C2C' }}>{item.label}</span>
           </div>
         ))}
+
+        <span style={{ borderLeft: '1px solid #D4D4D4', height: 20, margin: '0 4px' }} />
+
+        <span style={{ fontWeight: 600, color: '#2C2C2C', fontSize: '0.875rem', marginRight: 8 }}>
+          Icons:
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{
+            width: 16, height: 16, borderRadius: '50%',
+            backgroundColor: '#8B3A3A', border: '1px solid rgba(0,0,0,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#FFFFFF', fontSize: '10px', fontWeight: 700,
+          }}>{'\u2605'}</div>
+          <span style={{ fontSize: '0.875rem', color: '#2C2C2C' }}>GRIT FIT Match</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{
+            width: 16, height: 16, borderRadius: '50%',
+            backgroundColor: '#5a2828', border: '2px solid #FFFFFF',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#FFFFFF', fontSize: '10px', fontWeight: 700,
+            boxShadow: '0 0 0 1px rgba(0,0,0,0.15)',
+          }}>{'\u2713'}</div>
+          <span style={{ fontSize: '0.875rem', color: '#2C2C2C' }}>In Shortlist</span>
+        </div>
       </div>
     </div>
   );
