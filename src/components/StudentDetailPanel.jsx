@@ -61,14 +61,15 @@ export default function StudentDetailPanel({
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  if (!student) return null;
-
   // Close on Escape key
   useEffect(() => {
+    if (!onClose) return;
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
+
+  if (!student) return null;
 
   return (
     <div data-testid="student-detail-panel-overlay" style={OVERLAY_STYLE}>

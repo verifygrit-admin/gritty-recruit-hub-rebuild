@@ -94,7 +94,23 @@ function Metric({ label, value }) {
 }
 
 export default function CoachSchoolDetailPanel({ item, student, counselorEmail, onClose }) {
+  // Lock body scroll
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!onClose) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   if (!item || !student) return null;
+
   const steps = item.recruiting_journey_steps || [];
   const completedCount = steps.filter(s => s.completed).length;
 
@@ -120,20 +136,6 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
   // We check recruiting_journey_steps for document-related steps as a proxy,
   // but the real signal is the document_shares table which we don't have here.
   // For now, we show all doc types with a "status unknown" approach and mailto for all.
-
-  // Lock body scroll
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, []);
-
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
 
   const studentFirstName = student.name ? student.name.split(' ')[0] : 'Student';
 
