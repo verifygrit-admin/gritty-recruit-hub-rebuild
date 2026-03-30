@@ -7,40 +7,11 @@
  * alternative positions, aspirational schools, and encouragement.
  *
  * Nova reads scoring.js/constants.js read-only (DEC-CFBRB-042).
- * All derived logic lives here.
+ * Derived logic extracted to nextStepsUtils.js (Item 5 Decision 3, 2026-03-29).
  */
 import { ATH_STANDARDS, TIER_ORDER, RECRUIT_BUDGETS } from '../lib/constants.js';
 import { getClassLabel, calcAthleticFit } from '../lib/scoring.js';
-
-// ── Helpers (cannot modify scoring.js per DEC-CFBRB-042) ──────────────────────
-
-function normCDF(z) {
-  const x = Math.abs(z) / Math.SQRT2;
-  const t = 1 / (1 + 0.3275911 * x);
-  const erfc = ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
-  return z >= 0 ? 1 - erfc / 2 : erfc / 2;
-}
-
-/** Decompose athletic fit into per-metric scores for display */
-function getMetricScores(position, height, weight, speed40, tier) {
-  const std = ATH_STANDARDS[tier]?.[position];
-  if (!std) return { hScore: 0, wScore: 0, sScore: 0 };
-  const hScore = normCDF((height - std.h50) / 1.5);
-  const wScore = normCDF((weight - std.w50) / (std.w50 * 0.05));
-  const sScore = 1 - normCDF((speed40 - std.s50) / 0.15);
-  return { hScore, wScore, sScore, std };
-}
-
-/** Effective cluster floor GPA by class year — derived from acad_rigor distributions.
- *  These are the second-lowest distinct Min_GPA values across all 662 schools.
- *  Below these values, ~75% of schools' academic gates fail immediately.
- *  Used as a warning threshold in the dashboard — not a hard scoring gate. */
-const ACAD_CLUSTER_FLOOR = {
-  Senior: 2.50,
-  Junior: 2.50,
-  Soph: 2.40,
-  Freshman: 2.30,
-};
+import { deriveReason, getMetricScores, ACAD_CLUSTER_FLOOR } from '../lib/nextStepsUtils.js';
 
 /** Position suggestion pools — analogous positions by group */
 const SUGGESTION_POOLS = {
@@ -61,18 +32,6 @@ const SUGGESTION_POOLS = {
   CB:   ['S', 'WR', 'RB', 'LB'],
   S:    ['CB', 'LB', 'WR', 'RB'],
 };
-
-/** Derive zero-match reason from scoring result and profile */
-function deriveReason(scoringResult, profile, classLabel) {
-  const { topTier, gates } = scoringResult;
-  const requiredGpa = ACAD_CLUSTER_FLOOR[classLabel] || 2.3;
-  const gpa = profile.gpa ? +profile.gpa : 0;
-
-  if (!topTier) return 'athletic';
-  if (gpa < requiredGpa) return 'academic';
-  if (gates.passAll === 0) return 'combined';
-  return 'combined';
-}
 
 function parseMoney(v) {
   if (v == null || v === '') return 0;
