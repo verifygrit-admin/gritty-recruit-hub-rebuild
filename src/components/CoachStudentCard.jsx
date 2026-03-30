@@ -264,7 +264,7 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
                           <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#2C2C2C' }}>
                             {item.school_name || `UNITID ${item.unitid}`}
                           </span>
-                          {steps.find(s => s.step_id === 14 && s.completed) && (
+                          {(item.recruiting_journey_steps || []).find(s => s.step_id === 14 && s.completed) && (
                             <span style={{
                               background: '#D4AF37', color: '#2C2C2C', fontSize: '0.625rem',
                               fontWeight: 600, padding: '2px 6px', borderRadius: 12,
@@ -272,7 +272,7 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
                               Verbal
                             </span>
                           )}
-                          {steps.find(s => s.step_id === 15 && s.completed) && (
+                          {(item.recruiting_journey_steps || []).find(s => s.step_id === 15 && s.completed) && (
                             <span style={{
                               background: '#8B3A3A', color: '#FFFFFF', fontSize: '0.625rem',
                               fontWeight: 600, padding: '2px 6px', borderRadius: 12,
