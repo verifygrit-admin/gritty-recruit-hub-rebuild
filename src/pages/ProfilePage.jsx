@@ -543,7 +543,7 @@ export default function ProfilePage() {
               </span>
             ), 'input-speed-40', { type: 'number', placeholder: '4.65', help: '(Best time in seconds — missing 40 time scores as worst-case)' })}</div>
           </div>
-          {renderCheckbox('expected_starter', 'Expect to start as a freshman?', 'checkbox-expected-starter')}
+          {renderCheckbox('expected_starter', 'Expect to start next year?', 'checkbox-expected-starter')}
           {renderCheckbox('captain', 'Team captain in high school?', 'checkbox-captain')}
           {renderCheckbox('all_conference', 'All-conference selection?', 'checkbox-all-conference')}
           {renderCheckbox('all_state', 'All-state selection?', 'checkbox-all-state')}
