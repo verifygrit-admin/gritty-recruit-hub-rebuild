@@ -121,7 +121,7 @@ function buildPopupHtml(school, { isStudent = false, inShortlist = false } = {})
 
 export default function BrowseMapPage() {
   const { session, userType } = useAuth();
-  const isStudent = !!session && (!userType || userType === 'student');
+  const isStudent = !!session && (!userType || userType === 'student_athlete');
   const [allSchools, setAllSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
