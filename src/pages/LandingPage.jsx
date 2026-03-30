@@ -51,7 +51,7 @@ export default function LandingPage() {
   return (
     <div>
       {/* Welcome section */}
-      <section style={{ marginBottom: 32 }}>
+      <section style={{ marginBottom: 32, textAlign: 'center' }}>
         <h2 style={{
           fontSize: '2rem',
           fontWeight: 700,
@@ -67,7 +67,7 @@ export default function LandingPage() {
             <p style={{ fontSize: '1.125rem', color: '#6B6B6B', margin: '0 0 16px 0' }}>
               Your results are in! Check out your GRIT FIT matches and update your college football Short List!
             </p>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
               <Link to="/profile" style={{
                 display: 'inline-block',
                 padding: '10px 24px',
@@ -96,7 +96,7 @@ export default function LandingPage() {
             <p style={{ fontSize: '1.125rem', color: '#6B6B6B', margin: '0 0 16px 0' }}>
               Almost there! Complete your profile to see your personalized matches.
             </p>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
               <Link to="/profile" style={{
                 display: 'inline-block',
                 padding: '10px 24px',
@@ -149,6 +149,7 @@ export default function LandingPage() {
             borderRadius: 8,
             padding: 24,
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            textAlign: 'center',
           }}>
             <h3 style={{
               fontSize: '1.5rem',
@@ -183,6 +184,7 @@ export default function LandingPage() {
             borderRadius: 8,
             padding: 24,
             boxShadow: '0 4px 12px rgba(139,58,58,0.15)',
+            textAlign: 'center',
           }}>
             <h3 style={{
               fontSize: '1.5rem',
@@ -242,6 +244,7 @@ export default function LandingPage() {
           onClick={() => setShowTutorial(true)}
           style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            flexWrap: 'wrap', gap: 12,
             width: '100%', background: 'none', border: 'none', cursor: 'pointer',
             padding: 0, marginBottom: openHelp !== null ? 16 : 0,
           }}
@@ -250,8 +253,10 @@ export default function LandingPage() {
             Need Help?
           </h4>
           <span style={{
-            padding: '6px 16px', backgroundColor: '#8B3A3A', color: '#FFFFFF',
-            borderRadius: 4, fontSize: '0.8125rem', fontWeight: 600,
+            padding: '10px 24px', backgroundColor: '#8B3A3A', color: '#FFFFFF',
+            borderRadius: 6, fontSize: '0.9375rem', fontWeight: 700,
+            border: '2px solid #D4AF37',
+            boxShadow: '0 4px 12px rgba(212,175,55,0.35)',
           }}>
             Take the Tour
           </span>
