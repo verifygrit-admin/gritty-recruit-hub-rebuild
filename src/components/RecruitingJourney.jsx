@@ -43,7 +43,7 @@ const progressBarTrack = {
   marginTop: 8,
 };
 
-export default function RecruitingJourney({ steps, onToggleStep, updating }) {
+export default function RecruitingJourney({ steps, onToggleStep, updating, readOnly = false }) {
   const [expanded, setExpanded] = useState(false);
 
   const completedCount = (steps || []).filter(s => s.completed).length;
@@ -119,24 +119,41 @@ export default function RecruitingJourney({ steps, onToggleStep, updating }) {
                 }}
               >
                 {/* Checkbox */}
-                <button
-                  data-testid={`step-checkbox-${step.step_id}`}
-                  aria-label={`Step ${step.step_id}: ${step.label}, ${step.completed ? 'completed' : 'not completed'}`}
-                  aria-checked={step.completed}
-                  role="checkbox"
-                  disabled={isUpdating}
-                  onClick={() => onToggleStep(step.step_id, !step.completed)}
-                  style={{
-                    ...checkboxBase,
-                    backgroundColor: step.completed ? '#8B3A3A' : '#FFFFFF',
-                    color: step.completed ? '#FFFFFF' : 'transparent',
-                    border: step.completed ? 'none' : '2px solid #D4D4D4',
-                    opacity: isUpdating ? 0.5 : 1,
-                    transform: isUpdating ? 'scale(0.9)' : 'scale(1)',
-                  }}
-                >
-                  {isUpdating ? '\u23F3' : step.completed ? '\u2713' : ''}
-                </button>
+                {readOnly ? (
+                  <div
+                    data-testid={`step-checkbox-${step.step_id}`}
+                    aria-label={`Step ${step.step_id}: ${step.label}, ${step.completed ? 'completed' : 'not completed'}`}
+                    role="img"
+                    style={{
+                      ...checkboxBase,
+                      backgroundColor: step.completed ? '#8B3A3A' : '#FFFFFF',
+                      color: step.completed ? '#FFFFFF' : 'transparent',
+                      border: step.completed ? 'none' : '2px solid #D4D4D4',
+                      cursor: 'default',
+                    }}
+                  >
+                    {step.completed ? '\u2713' : ''}
+                  </div>
+                ) : (
+                  <button
+                    data-testid={`step-checkbox-${step.step_id}`}
+                    aria-label={`Step ${step.step_id}: ${step.label}, ${step.completed ? 'completed' : 'not completed'}`}
+                    aria-checked={step.completed}
+                    role="checkbox"
+                    disabled={isUpdating}
+                    onClick={() => onToggleStep(step.step_id, !step.completed)}
+                    style={{
+                      ...checkboxBase,
+                      backgroundColor: step.completed ? '#8B3A3A' : '#FFFFFF',
+                      color: step.completed ? '#FFFFFF' : 'transparent',
+                      border: step.completed ? 'none' : '2px solid #D4D4D4',
+                      opacity: isUpdating ? 0.5 : 1,
+                      transform: isUpdating ? 'scale(0.9)' : 'scale(1)',
+                    }}
+                  >
+                    {isUpdating ? '\u23F3' : step.completed ? '\u2713' : ''}
+                  </button>
+                )}
 
                 {/* Label + date */}
                 <div style={{ flex: 1 }}>

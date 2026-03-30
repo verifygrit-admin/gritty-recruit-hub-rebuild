@@ -6,8 +6,9 @@
  *   students, shortlistByStudent
  */
 import { useState, useMemo } from 'react';
-import CoachStudentCard from '../../components/CoachStudentCard.jsx';
 import PlayerCard from '../../components/PlayerCard.jsx';
+import StudentDetailPanel from '../../components/StudentDetailPanel.jsx';
+import CoachSchoolDetailPanel from '../../components/CoachSchoolDetailPanel.jsx';
 
 // ── Offer badge utilities ─────────────────────────────────────────────────────
 
@@ -23,8 +24,9 @@ function getOfferStatus(shortlistItems) {
   return { hasVerbal, hasWritten };
 }
 
-export default function CoachStudentsPage({ students, shortlistByStudent }) {
-  const [expandedStudentId, setExpandedStudentId] = useState(null);
+export default function CoachStudentsPage({ students, shortlistByStudent, counselorByStudent }) {
+  const [panelStudentId, setPanelStudentId] = useState(null);
+  const [panelSchoolItem, setPanelSchoolItem] = useState(null);
   const [filterGradYear, setFilterGradYear] = useState('');
   const [filterName, setFilterName] = useState('');
   const [sortBy, setSortBy] = useState('name_asc');
@@ -196,24 +198,36 @@ export default function CoachStudentsPage({ students, shortlistByStudent }) {
                 hudlUrl: student.hudl_url || null,
                 avatarStoragePath: student.avatar_storage_path || null,
               }}
-              onCardClick={() => setExpandedStudentId(
-                expandedStudentId === student.user_id ? null : student.user_id
-              )}
+              onCardClick={() => {
+                setPanelSchoolItem(null);
+                setPanelStudentId(
+                  panelStudentId === student.user_id ? null : student.user_id
+                );
+              }}
             />
           );
         })}
       </div>
 
-      {/* Expanded detail */}
-      {expandedStudentId && (
-        <div style={{ marginTop: 16 }}>
-          <CoachStudentCard
-            student={students.find(s => s.user_id === expandedStudentId)}
-            shortlistItems={shortlistByStudent[expandedStudentId] || []}
-            expanded={true}
-            onToggleExpand={() => setExpandedStudentId(null)}
-          />
-        </div>
+      {/* Panel 1 — Student Detail Slide-Out */}
+      {panelStudentId && (
+        <StudentDetailPanel
+          student={students.find(s => s.user_id === panelStudentId)}
+          shortlistItems={shortlistByStudent[panelStudentId] || []}
+          counselorEmail={(counselorByStudent || {})[panelStudentId] || null}
+          onClose={() => { setPanelStudentId(null); setPanelSchoolItem(null); }}
+          onSchoolClick={(item) => setPanelSchoolItem(item)}
+        />
+      )}
+
+      {/* Panel 2 — School Detail Slide-Out (nested) */}
+      {panelStudentId && panelSchoolItem && (
+        <CoachSchoolDetailPanel
+          item={panelSchoolItem}
+          student={students.find(s => s.user_id === panelStudentId)}
+          counselorEmail={(counselorByStudent || {})[panelStudentId] || null}
+          onClose={() => setPanelSchoolItem(null)}
+        />
       )}
 
       {/* No results after filtering */}

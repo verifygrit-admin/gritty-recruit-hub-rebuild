@@ -31,6 +31,7 @@ export default function CoachDashboardPage() {
   // Data state
   const [students, setStudents] = useState([]);
   const [shortlistByStudent, setShortlistByStudent] = useState({});
+  const [counselorByStudent, setCounselorByStudent] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -122,6 +123,32 @@ export default function CoachDashboardPage() {
         if (grouped[item.user_id]) grouped[item.user_id].push(item);
       }
       setShortlistByStudent(grouped);
+
+      // Step 3: Fetch counselor emails for each student (for coach Panel 2 mailto)
+      const counselorMap = {};
+      try {
+        const { data: counselorLinks } = await supabase
+          .from('hs_counselor_students')
+          .select('student_user_id, counselor_user_id')
+          .in('student_user_id', studentUserIds);
+
+        if (counselorLinks && counselorLinks.length > 0) {
+          const counselorIds = [...new Set(counselorLinks.map(l => l.counselor_user_id))];
+          const { data: counselorProfiles } = await supabase
+            .from('profiles')
+            .select('user_id, email')
+            .in('user_id', counselorIds);
+
+          const counselorEmailMap = {};
+          for (const cp of (counselorProfiles || [])) { counselorEmailMap[cp.user_id] = cp.email; }
+          for (const link of counselorLinks) {
+            counselorMap[link.student_user_id] = counselorEmailMap[link.counselor_user_id] || null;
+          }
+        }
+      } catch (_) {
+        // Non-critical — Panel 2 mailto for counselor will just not render
+      }
+      setCounselorByStudent(counselorMap);
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
       console.error('CoachDashboard loadData error:', err);
@@ -258,6 +285,7 @@ export default function CoachDashboardPage() {
         <CoachStudentsPage
           students={students}
           shortlistByStudent={shortlistByStudent}
+          counselorByStudent={counselorByStudent}
         />
       )}
       {activeTab === 'reports' && (

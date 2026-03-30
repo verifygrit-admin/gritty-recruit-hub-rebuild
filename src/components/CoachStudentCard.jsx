@@ -7,6 +7,7 @@
  *   shortlistItems: array of short_list_items for this student
  *   expanded: boolean
  *   onToggleExpand: () => void
+ *   onSchoolClick: (item) => void — opens Panel 2 for this school (optional)
  */
 
 const STATUS_LABELS = {
@@ -48,7 +49,7 @@ function getJourneyProgress(items) {
   };
 }
 
-export default function CoachStudentCard({ student, shortlistItems, expanded, onToggleExpand }) {
+export default function CoachStudentCard({ student, shortlistItems, expanded, onToggleExpand, onSchoolClick }) {
   const itemCount = shortlistItems.length;
   const journey = getJourneyProgress(shortlistItems);
 
@@ -220,16 +221,29 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
                 Shortlisted Schools
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {shortlistItems.map(item => {
-                  const steps = item.recruiting_journey_steps || [];
-                  const done = steps.filter(s => s.completed).length;
-                  const total = steps.length;
+                {[...shortlistItems]
+                  .map(item => {
+                    const steps = item.recruiting_journey_steps || [];
+                    const done = steps.filter(s => s.completed).length;
+                    const total = steps.length;
+                    const completionPct = total > 0 ? done / total : 0;
+                    return { ...item, _done: done, _total: total, _pct: completionPct };
+                  })
+                  .sort((a, b) => b._pct - a._pct || (a.school_name || '').localeCompare(b.school_name || ''))
+                  .map(item => {
+                  const done = item._done;
+                  const total = item._total;
                   const itemPct = total > 0 ? Math.round((done / total) * 100) : 0;
+                  const isClickable = !!onSchoolClick;
 
                   return (
                     <div
                       key={item.id}
                       data-testid={`student-school-${item.id}`}
+                      onClick={isClickable ? () => onSchoolClick(item) : undefined}
+                      role={isClickable ? 'button' : undefined}
+                      tabIndex={isClickable ? 0 : undefined}
+                      onKeyDown={isClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSchoolClick(item); } } : undefined}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -238,7 +252,11 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
                         backgroundColor: '#F5EFE0',
                         borderRadius: 4,
                         flexWrap: 'wrap',
+                        cursor: isClickable ? 'pointer' : 'default',
+                        transition: 'background-color 150ms',
                       }}
+                      onMouseEnter={isClickable ? (e) => { e.currentTarget.style.backgroundColor = '#EDE5D0'; } : undefined}
+                      onMouseLeave={isClickable ? (e) => { e.currentTarget.style.backgroundColor = '#F5EFE0'; } : undefined}
                     >
                       <div style={{ flex: '1 1 180px', minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
