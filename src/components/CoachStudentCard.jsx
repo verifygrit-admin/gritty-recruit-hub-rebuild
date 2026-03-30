@@ -50,6 +50,7 @@ function getJourneyProgress(items) {
 }
 
 export default function CoachStudentCard({ student, shortlistItems, expanded, onToggleExpand, onSchoolClick }) {
+  if (!student) return null;
   const itemCount = shortlistItems.length;
   const journey = getJourneyProgress(shortlistItems);
 

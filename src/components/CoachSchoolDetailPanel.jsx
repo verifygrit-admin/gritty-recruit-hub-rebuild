@@ -94,6 +94,7 @@ function Metric({ label, value }) {
 }
 
 export default function CoachSchoolDetailPanel({ item, student, counselorEmail, onClose }) {
+  if (!item || !student) return null;
   const steps = item.recruiting_journey_steps || [];
   const completedCount = steps.filter(s => s.completed).length;
 
