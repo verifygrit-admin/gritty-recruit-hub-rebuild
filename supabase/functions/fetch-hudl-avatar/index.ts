@@ -1,16 +1,17 @@
 // fetch-hudl-avatar Edge Function
 //
 // Fetches a student's Hudl profile page, extracts their photo from the
-// embedded window.__hudlEmbed data structure, downloads the image bytes,
-// uploads to Supabase Storage (avatars bucket), and writes the storage path
-// back to public.profiles.avatar_storage_path.
+// og:image meta tag, downloads the image bytes, uploads to Supabase Storage
+// (avatars bucket), and writes the storage path back to
+// public.profiles.avatar_storage_path.
 //
-// Placeholder detection:
-//   Hudl embeds profile data as JSON in window.__hudlEmbed. When a user has
-//   no profile photo, profileLogoUri is null and the page renders:
-//     https://static.hudl.com/profiles/images/avatars/blank-avatar.svg
-//   We treat profileLogoUri === null OR any URL containing "blank-avatar" as
-//   a placeholder — no image is stored, and avatar_storage_path is left NULL.
+// Detection logic:
+//   Hudl profile pages include an <meta property="og:image" content="..."/> tag.
+//   - If the tag has a URL (e.g. https://static.hudl.com/users/prod/...jpg),
+//     that is the profile photo — download and store it.
+//   - If the tag is empty (<meta property="og:image" />) or contains a
+//     blank-avatar/placeholder URL, the user has no photo — leave
+//     avatar_storage_path NULL.
 //
 // Called fire-and-forget from ProfilePage after a successful save when
 // hudl_url is set or changed.
@@ -23,7 +24,7 @@
 //   { user_id: string, hudl_url: string }
 //
 // Response:
-//   200 { ok: true, status: "uploaded" | "placeholder" | "no_photo" }
+//   200 { ok: true, status: "uploaded" | "placeholder" }
 //   400 { error: string }
 //   500 { error: string }
 
@@ -32,43 +33,33 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Placeholder signals in Hudl's embedded JSON
-const BLANK_AVATAR_SIGNALS = ["blank-avatar", "default-avatar", "placeholder"];
+// Signals that the og:image is a placeholder, not a real photo
+const PLACEHOLDER_SIGNALS = ["blank-avatar", "default-avatar", "placeholder"];
 
-// Extract profileLogoUri from window.__hudlEmbed JSON embedded in the page HTML.
-// Hudl injects a script tag containing window.__hudlEmbed = {...} or
-// window.__hudlEmbed=JSON. We parse the JSON blob out of the raw HTML.
-function extractProfileLogoUri(html: string): string | null {
-  // Match: window.__hudlEmbed = {...}  or  window.__hudlEmbed={...}
-  // The JSON object may span many lines — use a greedy match to the last }
-  const match = html.match(/window\.__hudlEmbed\s*=\s*(\{[\s\S]*?\});?\s*<\/script>/);
-  if (!match) return undefined as unknown as null; // signal: could not parse
+// Extract the og:image URL from raw HTML.
+// Handles both: <meta property="og:image" content="URL" />
+//           and: <meta content="URL" property="og:image" />
+//           and: <meta property="og:image" />  (empty — no photo)
+function extractOgImage(html: string): string | null {
+  // Pattern 1: property first, then content
+  const m1 = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']*)["']/i);
+  if (m1) return m1[1] || null;
 
-  let data: Record<string, unknown>;
-  try {
-    data = JSON.parse(match[1]);
-  } catch {
-    return undefined as unknown as null;
-  }
+  // Pattern 2: content first, then property
+  const m2 = html.match(/<meta\s+content=["']([^"']*)["']\s+property=["']og:image["']/i);
+  if (m2) return m2[1] || null;
 
-  // profileLogoUri may be nested under a profile key or at the top level.
-  // Try both common shapes Hudl has used.
-  const direct = (data as Record<string, unknown>).profileLogoUri;
-  if (direct !== undefined) return (direct as string | null) ?? null;
+  // Pattern 3: self-closing with no content (empty tag)
+  const m3 = html.match(/<meta\s+property=["']og:image["']\s*\/?>/i);
+  if (m3) return null;
 
-  // Deeper nesting: data.profile.profileLogoUri
-  const profile = (data as Record<string, Record<string, unknown>>).profile;
-  if (profile && profile.profileLogoUri !== undefined) {
-    return (profile.profileLogoUri as string | null) ?? null;
-  }
-
-  return undefined as unknown as null;
+  return null;
 }
 
-function isPlaceholder(uri: string | null | undefined): boolean {
-  if (!uri) return true;
-  const lower = uri.toLowerCase();
-  return BLANK_AVATAR_SIGNALS.some((sig) => lower.includes(sig));
+function isPlaceholder(url: string | null): boolean {
+  if (!url || !url.trim()) return true;
+  const lower = url.toLowerCase();
+  return PLACEHOLDER_SIGNALS.some((sig) => lower.includes(sig));
 }
 
 interface RequestBody {
@@ -130,7 +121,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     const hudlRes = await fetch(hudl_url, {
       headers: {
-        // Mimic a real browser to avoid bot-block responses
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -153,17 +143,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
     );
   }
 
-  // Step 2: Extract profileLogoUri from embedded JSON
-  const profileLogoUri = extractProfileLogoUri(hudlHtml);
+  // Step 2: Extract og:image from HTML meta tags
+  const ogImageUrl = extractOgImage(hudlHtml);
 
-  // extractProfileLogoUri returns undefined (cast as null) when parsing failed,
-  // and null when parsing succeeded but the field is null.
-  // In both cases, treat as no usable photo.
-
-  if (isPlaceholder(profileLogoUri)) {
-    // No photo on Hudl account — do not write anything to Storage or profiles.
-    // avatar_storage_path stays NULL. Return success so the caller doesn't retry.
-    console.log(`fetch-hudl-avatar: placeholder detected for user ${user_id}`);
+  if (isPlaceholder(ogImageUrl)) {
+    console.log(`fetch-hudl-avatar: placeholder/no photo for user ${user_id}`);
     return new Response(
       JSON.stringify({ ok: true, status: "placeholder" }),
       { status: 200, headers: { "Content-Type": "application/json" } }
@@ -174,7 +158,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   let imageBytes: Uint8Array;
   let contentType = "image/jpeg";
   try {
-    const imgRes = await fetch(profileLogoUri as string);
+    const imgRes = await fetch(ogImageUrl as string);
     if (!imgRes.ok) {
       console.error(`fetch-hudl-avatar: image fetch failed ${imgRes.status}`);
       return new Response(
@@ -206,7 +190,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const storagePath = `${user_id}/avatar.${ext}`;
 
   // Step 4: Upload to Supabase Storage (avatars bucket)
-  // upsert: true — overwrite any existing avatar for this user
   const { error: uploadError } = await supabase.storage
     .from("avatars")
     .upload(storagePath, imageBytes, {
@@ -230,8 +213,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   if (updateError) {
     console.error("fetch-hudl-avatar: profiles update failed", updateError);
-    // Storage upload succeeded — log the inconsistency but don't fail hard.
-    // The backfill script can reconcile this.
     return new Response(
       JSON.stringify({ error: "Image uploaded but failed to update profile" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
