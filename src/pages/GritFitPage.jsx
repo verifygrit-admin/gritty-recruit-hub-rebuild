@@ -314,6 +314,49 @@ export default function GritFitPage() {
         />
       )}
 
+      {/* Speed40 missing banner — Item 4 */}
+      {scoringResult && !profile?.speed_40 && (
+        <div
+          data-testid="speed40-missing-banner"
+          role="alert"
+          style={{
+            margin: '0 0 20px',
+            padding: '12px 16px',
+            backgroundColor: '#FFF3E0',
+            borderLeft: '4px solid #FF9800',
+            borderRadius: 4,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 16,
+            flexWrap: 'wrap',
+          }}
+        >
+          <span style={{ fontSize: '0.95rem', color: '#2C2C2C' }}>
+            <strong>Your 40-yard dash time is missing.</strong>{' '}
+            Without it, your speed is scored at 0 — your athletic fit and match count may be lower than your actual ability.
+            Enter your best estimate to improve your results.
+          </span>
+          <button
+            data-testid="speed40-missing-banner-cta"
+            onClick={() => navigate('/profile')}
+            style={{
+              padding: '8px 20px',
+              backgroundColor: '#FF9800',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: 4,
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Update Profile
+          </button>
+        </div>
+      )}
+
       {/* View Toggle */}
       <div data-testid="view-toggle-group" style={{ display: 'flex', marginBottom: 24 }}>
         <button

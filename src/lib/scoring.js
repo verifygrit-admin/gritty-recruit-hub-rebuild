@@ -64,7 +64,9 @@ export function calcAthleticFit(position, height, weight, speed40, tier) {
   if (!std) return 0;
   const hScore = normCDF((height - std.h50) / 1.5);
   const wScore = normCDF((weight - std.w50) / (std.w50 * 0.05));
-  const sScore = 1 - normCDF((speed40 - std.s50) / 0.15);
+  // speed40 = 0 means no 40 time on file — score as 0 (worst-case) per Item 4 decision.
+  // Passing 0 through the CDF produces sScore ≈ 1.0 (near-perfect), which is wrong.
+  const sScore = speed40 ? 1 - normCDF((speed40 - std.s50) / 0.15) : 0;
   return (hScore + wScore + sScore) / 3;
 }
 

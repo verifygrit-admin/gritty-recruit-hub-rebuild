@@ -527,7 +527,21 @@ export default function ProfilePage() {
           <div style={rowStyle}>
             <div style={thirdCol}>{renderInput('height', 'Height', 'input-height', { placeholder: '5\'10"' })}</div>
             <div style={thirdCol}>{renderInput('weight', 'Weight (lbs)', 'input-weight', { type: 'number', placeholder: '190', help: '(Pounds)' })}</div>
-            <div style={thirdCol}>{renderInput('speed_40', '40-Yard Dash (seconds)', 'input-speed-40', { type: 'number', placeholder: '4.65', help: '(Best time in seconds)' })}</div>
+            <div style={thirdCol}>{renderInput('speed_40', (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                40-Yard Dash (seconds)
+                <span
+                  title="Your 40 time directly affects your athletic fit score. Missing or slow 40 time lowers your matches."
+                  style={{
+                    fontSize: '0.7rem', fontWeight: 700, color: '#FFFFFF',
+                    backgroundColor: '#FF9800', borderRadius: 3,
+                    padding: '1px 5px', letterSpacing: '0.02em', cursor: 'help',
+                  }}
+                >
+                  AFFECTS SCORE
+                </span>
+              </span>
+            ), 'input-speed-40', { type: 'number', placeholder: '4.65', help: '(Best time in seconds — missing 40 time scores as worst-case)' })}</div>
           </div>
           {renderCheckbox('expected_starter', 'Expect to start as a freshman?', 'checkbox-expected-starter')}
           {renderCheckbox('captain', 'Team captain in high school?', 'checkbox-captain')}
