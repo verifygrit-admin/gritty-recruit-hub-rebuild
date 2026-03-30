@@ -12,6 +12,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { supabase } from '../lib/supabaseClient.js';
 import { TIER_COLORS } from '../lib/constants.js';
+import { useAuth } from '../hooks/useAuth.jsx';
 
 const DIVISION_OPTIONS = ['All Divisions', 'Power 4', 'G6', 'FCS', 'D2', 'D3'];
 
@@ -50,7 +51,7 @@ function formatPct(v) {
   return Math.round(v) + '%';
 }
 
-function buildPopupHtml(school) {
+function buildPopupHtml(school, { isStudent = false, inShortlist = false } = {}) {
   const name = school.school_name || 'Unknown';
   const division = school.type || 'N/A';
   const conf = school.conference || 'N/A';
@@ -104,20 +105,41 @@ function buildPopupHtml(school) {
                     font-size:0.8rem;color:#8B3A3A;text-decoration:none;">
             Contact Coaches
           </a>` : ''}
+        ${isStudent ? `
+          <button
+            data-testid="add-to-shortlist-btn"
+            data-unitid="${school.unitid}"
+            ${inShortlist ? 'disabled' : ''}
+            style="border:none;border-radius:4px;padding:10px 16px;font-size:0.875rem;font-weight:600;cursor:${inShortlist ? 'default' : 'pointer'};
+                   background:${inShortlist ? '#E8E8E8' : '#D4AF37'};color:${inShortlist ? '#6B6B6B' : '#8B3A3A'};width:100%;"
+          >
+            ${inShortlist ? '\u2713 In Shortlist' : '+ Add to Shortlist'}
+          </button>` : ''}
       </div>
     </div>`;
 }
 
 export default function BrowseMapPage() {
+  const { session, userType } = useAuth();
+  const isStudent = !!session && (!userType || userType === 'student');
   const [allSchools, setAllSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [divisionFilter, setDivisionFilter] = useState('All Divisions');
+  const [shortlistIds, setShortlistIds] = useState(new Set());
+  const [toast, setToast] = useState(null);
 
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersLayerRef = useRef(null);
+  const shortlistIdsRef = useRef(shortlistIds);
+  shortlistIdsRef.current = shortlistIds;
+
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
 
   // Fetch all schools — public query, no auth needed
   useEffect(() => {
@@ -134,6 +156,49 @@ export default function BrowseMapPage() {
     };
     fetchSchools();
   }, []);
+
+  // Load existing shortlist for authenticated students
+  useEffect(() => {
+    if (!session || !isStudent) return;
+    supabase.from('short_list_items').select('unitid').eq('user_id', session.user.id)
+      .then(({ data }) => {
+        if (data) setShortlistIds(new Set(data.map(r => r.unitid)));
+      });
+  }, [session, isStudent]);
+
+  // Add to shortlist handler
+  const handleAddToShortlist = useCallback(async (school) => {
+    if (!session || shortlistIdsRef.current.has(school.unitid)) return;
+    const payload = {
+      user_id: session.user.id,
+      unitid: school.unitid,
+      school_name: school.school_name,
+      div: school.type,
+      conference: school.conference,
+      state: school.state,
+      adltv: school.adltv,
+      grad_rate: school.graduation_rate,
+      coa: school.coa_out_of_state ? parseFloat(school.coa_out_of_state) : null,
+      q_link: school.recruiting_q_link,
+      coach_link: school.coach_link,
+      source: 'manual_add',
+      grit_fit_status: 'not_evaluated',
+      grit_fit_labels: ['not_evaluated'],
+    };
+    const { error: insertError } = await supabase.from('short_list_items').insert(payload);
+    if (insertError) {
+      if (insertError.code === '23505') {
+        setShortlistIds(prev => new Set([...prev, school.unitid]));
+        showToast(`${school.school_name} is already in your shortlist`, 'success');
+      } else {
+        showToast('Failed to add to shortlist. Please try again.', 'error');
+        console.error('Shortlist insert error:', insertError);
+      }
+      return;
+    }
+    setShortlistIds(prev => new Set([...prev, school.unitid]));
+    showToast(`Added ${school.school_name} to your shortlist`, 'success');
+  }, [session, showToast]);
 
   // Initialize map
   useEffect(() => {
@@ -197,13 +262,33 @@ export default function BrowseMapPage() {
       const name = school.school_name || '';
       const initial = name.charAt(0).toUpperCase() || '?';
       const color = TIER_COLORS[school.type] || '#8B3A3A';
+      const inList = shortlistIdsRef.current.has(school.unitid);
       const marker = L.marker([lat, lng], { icon: makeSchoolIcon(color, initial), keyboard: true });
-      marker.bindPopup(L.popup({ maxWidth: 360, minWidth: 320 }).setContent(buildPopupHtml(school)));
+      marker.bindPopup(L.popup({ maxWidth: 360, minWidth: 320 }).setContent(
+        buildPopupHtml(school, { isStudent, inShortlist: inList })
+      ));
+      if (isStudent) {
+        marker.on('popupopen', () => {
+          const popupEl = marker.getPopup().getElement();
+          if (!popupEl) return;
+          const btn = popupEl.querySelector('[data-testid="add-to-shortlist-btn"]');
+          if (btn && !btn.disabled) {
+            btn.addEventListener('click', () => {
+              handleAddToShortlist(school);
+              btn.textContent = '\u2713 In Shortlist';
+              btn.disabled = true;
+              btn.style.background = '#E8E8E8';
+              btn.style.color = '#6B6B6B';
+              btn.style.cursor = 'default';
+            }, { once: true });
+          }
+        });
+      }
       cluster.addLayer(marker);
     });
     cluster.addTo(map);
     markersLayerRef.current = cluster;
-  }, [allSchools, divisionFilter, searchQuery, loading, getFilteredSchools]);
+  }, [allSchools, divisionFilter, searchQuery, loading, getFilteredSchools, isStudent, handleAddToShortlist, shortlistIds]);
 
   const schoolCount = getFilteredSchools().length;
 
@@ -251,26 +336,40 @@ export default function BrowseMapPage() {
         ))}
       </div>
 
-      {/* CTA Banner */}
-      <div data-testid="browse-map-cta" style={{ marginTop: 32, padding: '32px 24px', backgroundColor: '#8B3A3A', borderRadius: 8, textAlign: 'center', boxShadow: '0 4px 12px rgba(139,58,58,0.2)' }}>
-        <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', fontWeight: 700, margin: '0 0 8px' }}>
-          Find Your Perfect College Football Fit
-        </h3>
-        <p style={{ color: '#F5EFE0', fontSize: '1.125rem', margin: '0 0 24px', maxWidth: 600, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
-          Create a free account to get your personalized GRIT FIT scores — matching your athletic stats,
-          academics, and finances against all {allSchools.length} programs.
-        </p>
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link to="/register" data-testid="cta-register-btn"
-            style={{ display: 'inline-block', padding: '14px 32px', backgroundColor: '#D4AF37', color: '#8B3A3A', borderRadius: 4, textDecoration: 'none', fontWeight: 700, fontSize: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
-            Create Free Account
-          </Link>
-          <Link to="/login" data-testid="cta-login-btn"
-            style={{ display: 'inline-block', padding: '14px 32px', border: '2px solid #FFFFFF', color: '#FFFFFF', borderRadius: 4, textDecoration: 'none', fontWeight: 600, fontSize: '1rem', backgroundColor: 'transparent' }}>
-            Sign In
-          </Link>
+      {/* CTA Banner — hidden for authenticated users */}
+      {!session && (
+        <div data-testid="browse-map-cta" style={{ marginTop: 32, padding: '32px 24px', backgroundColor: '#8B3A3A', borderRadius: 8, textAlign: 'center', boxShadow: '0 4px 12px rgba(139,58,58,0.2)' }}>
+          <h3 style={{ color: '#FFFFFF', fontSize: '1.5rem', fontWeight: 700, margin: '0 0 8px' }}>
+            Find Your Perfect College Football Fit
+          </h3>
+          <p style={{ color: '#F5EFE0', fontSize: '1.125rem', margin: '0 0 24px', maxWidth: 600, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
+            Create a free account to get your personalized GRIT FIT scores — matching your athletic stats,
+            academics, and finances against all {allSchools.length} programs.
+          </p>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/register" data-testid="cta-register-btn"
+              style={{ display: 'inline-block', padding: '14px 32px', backgroundColor: '#D4AF37', color: '#8B3A3A', borderRadius: 4, textDecoration: 'none', fontWeight: 700, fontSize: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+              Create Free Account
+            </Link>
+            <Link to="/login" data-testid="cta-login-btn"
+              style={{ display: 'inline-block', padding: '14px 32px', border: '2px solid #FFFFFF', color: '#FFFFFF', borderRadius: 4, textDecoration: 'none', fontWeight: 600, fontSize: '1rem', backgroundColor: 'transparent' }}>
+              Sign In
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          padding: '12px 24px', borderRadius: 8, fontSize: '0.875rem', fontWeight: 600,
+          color: '#FFFFFF', zIndex: 9999, boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          backgroundColor: toast.type === 'error' ? '#8B3A3A' : '#2e6b18',
+        }}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }
