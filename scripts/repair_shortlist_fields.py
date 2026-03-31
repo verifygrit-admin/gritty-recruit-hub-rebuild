@@ -84,19 +84,24 @@ Requires: pip install requests
 
 import argparse
 import math
-import sys
+import os
 import re
+import sys
+
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ── Config ──────────────────────────────────────────────────────────────────
 
-SUPABASE_URL = "https://xyudnajzhuwdauwkwsbh.supabase.co"
-SERVICE_ROLE_KEY = (
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-    "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5dWRuYWp6aHV3ZGF1d2t3c2JoIiwicm9sZSI6"
-    "InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDQ4NTI0MCwiZXhwIjoyMDkwMDYxMjQwfQ."
-    "yVuxnVG6rSB8EjVghiAOSEAhWhTgkbdUhaFyxO9HN2I"
-)
+SUPABASE_URL = os.environ.get("VITE_SUPABASE_URL")
+if not SUPABASE_URL:
+    raise ValueError("VITE_SUPABASE_URL not set in .env")
+
+SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+if not SERVICE_ROLE_KEY:
+    raise ValueError("SUPABASE_SERVICE_ROLE_KEY not set in .env")
 
 # Type migration map: old value -> new value
 # Only the three that are wrong. Power 4 and G6 are correct.
