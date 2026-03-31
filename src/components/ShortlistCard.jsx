@@ -21,7 +21,7 @@ const STATUS_CONFIG = {
   below_academic_fit:      { label: 'Below Academic Fit',       bg: '#FF9800' },
   out_of_academic_reach:   { label: 'Academic Stretch',          bg: '#FF9800' },
   out_of_athletic_reach:   { label: 'Athletic Stretch',          bg: '#FF9800' },
-  below_athletic_fit:      { label: 'Highly Recruitable',        bg: '#FF9800' },
+  below_athletic_fit:      { label: 'Highly Recruitable',        bg: '#D4A017' },
   outside_geographic_reach:{ label: 'Outside Geographic Reach', bg: '#9C27B0' },
   not_evaluated:           { label: 'Not Evaluated',            bg: '#6B6B6B' },
 };

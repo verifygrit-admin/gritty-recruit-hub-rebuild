@@ -25,7 +25,7 @@ const STATUS_COLORS = {
   out_of_academic_reach: '#F44336',
   below_academic_fit: '#FF9800',
   out_of_athletic_reach: '#F44336',
-  below_athletic_fit: '#FF9800',
+  below_athletic_fit: '#D4A017',
   outside_geographic_reach: '#9C27B0',
   not_evaluated: '#6B6B6B',
 };
