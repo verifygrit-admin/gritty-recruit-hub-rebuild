@@ -12,10 +12,10 @@
 
 const STATUS_LABELS = {
   currently_recommended: 'Currently Recommended',
-  out_of_academic_reach: 'Out of Academic Reach',
+  out_of_academic_reach: 'Academic Stretch',
   below_academic_fit: 'Below Academic Fit',
-  out_of_athletic_reach: 'Out of Athletic Reach',
-  below_athletic_fit: 'Below Athletic Fit',
+  out_of_athletic_reach: 'Athletic Stretch',
+  below_athletic_fit: 'Highly Recruitable',
   outside_geographic_reach: 'Outside Geographic Reach',
   not_evaluated: 'Not Evaluated',
 };

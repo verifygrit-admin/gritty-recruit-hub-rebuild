@@ -19,9 +19,9 @@ import DocumentsSection from './DocumentsSection.jsx';
 const STATUS_CONFIG = {
   currently_recommended:   { label: 'Currently Recommended',   bg: '#4CAF50' },
   below_academic_fit:      { label: 'Below Academic Fit',       bg: '#FF9800' },
-  out_of_academic_reach:   { label: 'Out of Academic Reach',    bg: '#FF9800' },
-  out_of_athletic_reach:   { label: 'Out of Athletic Reach',    bg: '#FF9800' },
-  below_athletic_fit:      { label: 'Below Athletic Fit',       bg: '#FF9800' },
+  out_of_academic_reach:   { label: 'Academic Stretch',          bg: '#FF9800' },
+  out_of_athletic_reach:   { label: 'Athletic Stretch',          bg: '#FF9800' },
+  below_athletic_fit:      { label: 'Highly Recruitable',        bg: '#FF9800' },
   outside_geographic_reach:{ label: 'Outside Geographic Reach', bg: '#9C27B0' },
   not_evaluated:           { label: 'Not Evaluated',            bg: '#6B6B6B' },
 };

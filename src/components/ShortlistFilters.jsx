@@ -17,9 +17,9 @@ const STATUS_OPTIONS = [
   { value: '', label: 'All Status' },
   { value: 'currently_recommended', label: 'Currently Recommended' },
   { value: 'below_academic_fit', label: 'Below Academic Fit' },
-  { value: 'out_of_academic_reach', label: 'Out of Academic Reach' },
-  { value: 'out_of_athletic_reach', label: 'Out of Athletic Reach' },
-  { value: 'below_athletic_fit', label: 'Below Athletic Fit' },
+  { value: 'out_of_academic_reach', label: 'Academic Stretch' },
+  { value: 'out_of_athletic_reach', label: 'Athletic Stretch' },
+  { value: 'below_athletic_fit', label: 'Highly Recruitable' },
   { value: 'outside_geographic_reach', label: 'Outside Geographic Reach' },
   { value: 'not_evaluated', label: 'Not Evaluated' },
 ];
