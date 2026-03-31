@@ -1,6 +1,8 @@
 /**
- * RecruitingJourney — collapsible 15-step recruiting journey tracker.
+ * RecruitingJourney — collapsible 15-step recruiting journey tracker
+ * with three-phase grouping: Outreach (1-3), Relating (4-10), Commitment (11-15).
  * UX Spec: UX_SPEC_SHORTLIST.md — Recruiting Journey Section
+ * Phase Grouping Spec: Quill UX Spec Draft 1.0 (2026-03-30)
  *
  * Props:
  *   steps: array of { step_id, label, completed, completed_at }
@@ -9,14 +11,17 @@
  */
 import { useState } from 'react';
 
-const connectorLine = {
-  position: 'absolute',
-  left: 15,
-  top: 0,
-  bottom: 0,
-  width: 2,
-  backgroundColor: '#E8E8E8',
-};
+/** Phase configuration — single source of truth for phase grouping in the UI. */
+export const JOURNEY_PHASES = [
+  { name: 'Outreach',   color: '#C97B2A', minStep: 1,  maxStep: 3,  count: 3 },
+  { name: 'Relating',   color: '#2A6B5C', minStep: 4,  maxStep: 10, count: 7 },
+  { name: 'Commitment', color: '#8B3A3A', minStep: 11, maxStep: 15, count: 5 },
+];
+
+/** Returns the phase object for a given step_id, or null if out of range. */
+export function getPhaseForStep(stepId) {
+  return JOURNEY_PHASES.find(p => stepId >= p.minStep && stepId <= p.maxStep) || null;
+}
 
 const checkboxBase = {
   width: 28,
@@ -43,11 +48,77 @@ const progressBarTrack = {
   marginTop: 8,
 };
 
+function StepRow({ step, updating, readOnly, onToggleStep }) {
+  const isUpdating = updating === step.step_id;
+  return (
+    <div
+      data-testid={`journey-step-${step.step_id}`}
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 12,
+        padding: '6px 0 6px 16px',
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
+      {readOnly ? (
+        <div
+          data-testid={`step-checkbox-${step.step_id}`}
+          aria-label={`Step ${step.step_id}: ${step.label}, ${step.completed ? 'completed' : 'not completed'}`}
+          role="img"
+          style={{
+            ...checkboxBase,
+            backgroundColor: step.completed ? '#8B3A3A' : '#FFFFFF',
+            color: step.completed ? '#FFFFFF' : 'transparent',
+            border: step.completed ? 'none' : '2px solid #D4D4D4',
+            cursor: 'default',
+          }}
+        >
+          {step.completed ? '\u2713' : ''}
+        </div>
+      ) : (
+        <button
+          data-testid={`step-checkbox-${step.step_id}`}
+          aria-label={`Step ${step.step_id}: ${step.label}, ${step.completed ? 'completed' : 'not completed'}`}
+          aria-checked={step.completed}
+          role="checkbox"
+          disabled={isUpdating}
+          onClick={() => onToggleStep(step.step_id, !step.completed)}
+          style={{
+            ...checkboxBase,
+            backgroundColor: step.completed ? '#8B3A3A' : '#FFFFFF',
+            color: step.completed ? '#FFFFFF' : 'transparent',
+            border: step.completed ? 'none' : '2px solid #D4D4D4',
+            opacity: isUpdating ? 0.5 : 1,
+            transform: isUpdating ? 'scale(0.9)' : 'scale(1)',
+          }}
+        >
+          {isUpdating ? '\u23F3' : step.completed ? '\u2713' : ''}
+        </button>
+      )}
+      <div style={{ flex: 1 }}>
+        <span style={{ fontSize: '0.875rem', color: '#2C2C2C' }}>
+          Step {step.step_id}: {step.label}
+        </span>
+        <div style={{ fontSize: '0.75rem', color: '#6B6B6B', marginTop: 2 }}>
+          {step.completed
+            ? step.completed_at
+              ? `Completed: ${new Date(step.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+              : 'Completed'
+            : 'Not yet completed'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RecruitingJourney({ steps, onToggleStep, updating, readOnly = false }) {
   const [expanded, setExpanded] = useState(false);
 
-  const completedCount = (steps || []).filter(s => s.completed).length;
-  const totalCount = (steps || []).length;
+  const safeSteps = steps || [];
+  const completedCount = safeSteps.filter(s => s.completed).length;
+  const totalCount = safeSteps.length;
   const pct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   return (
@@ -80,7 +151,7 @@ export default function RecruitingJourney({ steps, onToggleStep, updating, readO
         </span>
       </button>
 
-      {/* Progress bar */}
+      {/* Global progress bar — Option A: global bar only, no per-phase bars */}
       <div style={progressBarTrack}>
         <div
           data-testid="journey-progress-bar"
@@ -94,83 +165,70 @@ export default function RecruitingJourney({ steps, onToggleStep, updating, readO
         />
       </div>
 
-      {/* Expanded step list */}
+      {/* Expanded step list — grouped by phase */}
       {expanded && (
         <div
           data-testid="journey-step-list"
-          style={{ position: 'relative', paddingLeft: 16, marginTop: 12 }}
+          style={{ marginTop: 12 }}
         >
-          {/* Vertical connector line */}
-          <div style={connectorLine} aria-hidden="true" />
+          {JOURNEY_PHASES.map((phase, phaseIdx) => {
+            const phaseSteps = safeSteps.filter(
+              s => s.step_id >= phase.minStep && s.step_id <= phase.maxStep
+            );
+            const phaseCompleted = phaseSteps.filter(s => s.completed).length;
+            const isLastPhase = phaseIdx === JOURNEY_PHASES.length - 1;
 
-          {(steps || []).map((step, idx) => {
-            const isUpdating = updating === step.step_id;
             return (
               <div
-                key={step.step_id}
-                data-testid={`journey-step-${step.step_id}`}
+                key={phase.name}
+                data-testid={`journey-phase-${phase.name.toLowerCase()}`}
                 style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 12,
-                  padding: '6px 0 6px 16px',
-                  position: 'relative',
-                  zIndex: 1,
+                  borderLeft: `3px solid ${phase.color}`,
+                  paddingLeft: 16,
+                  marginTop: phaseIdx > 0 ? 8 : 0,
+                  paddingBottom: 4,
+                  borderBottom: isLastPhase ? 'none' : '1px solid #E8E8E8',
+                  marginBottom: isLastPhase ? 0 : 4,
                 }}
               >
-                {/* Checkbox */}
-                {readOnly ? (
-                  <div
-                    data-testid={`step-checkbox-${step.step_id}`}
-                    aria-label={`Step ${step.step_id}: ${step.label}, ${step.completed ? 'completed' : 'not completed'}`}
-                    role="img"
-                    style={{
-                      ...checkboxBase,
-                      backgroundColor: step.completed ? '#8B3A3A' : '#FFFFFF',
-                      color: step.completed ? '#FFFFFF' : 'transparent',
-                      border: step.completed ? 'none' : '2px solid #D4D4D4',
-                      cursor: 'default',
-                    }}
-                  >
-                    {step.completed ? '\u2713' : ''}
-                  </div>
-                ) : (
-                  <button
-                    data-testid={`step-checkbox-${step.step_id}`}
-                    aria-label={`Step ${step.step_id}: ${step.label}, ${step.completed ? 'completed' : 'not completed'}`}
-                    aria-checked={step.completed}
-                    role="checkbox"
-                    disabled={isUpdating}
-                    onClick={() => onToggleStep(step.step_id, !step.completed)}
-                    style={{
-                      ...checkboxBase,
-                      backgroundColor: step.completed ? '#8B3A3A' : '#FFFFFF',
-                      color: step.completed ? '#FFFFFF' : 'transparent',
-                      border: step.completed ? 'none' : '2px solid #D4D4D4',
-                      opacity: isUpdating ? 0.5 : 1,
-                      transform: isUpdating ? 'scale(0.9)' : 'scale(1)',
-                    }}
-                  >
-                    {isUpdating ? '\u23F3' : step.completed ? '\u2713' : ''}
-                  </button>
-                )}
-
-                {/* Label + date */}
-                <div style={{ flex: 1 }}>
+                {/* Phase header */}
+                <div
+                  data-testid={`phase-header-${phase.name.toLowerCase()}`}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 4,
+                  }}
+                >
                   <span style={{
-                    fontSize: '0.875rem',
-                    color: '#2C2C2C',
-                    textDecoration: step.completed ? 'none' : 'none',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    color: phase.color,
+                    letterSpacing: 0.5,
                   }}>
-                    Step {step.step_id}: {step.label}
+                    {phase.name}
                   </span>
-                  <div style={{ fontSize: '0.75rem', color: '#6B6B6B', marginTop: 2 }}>
-                    {step.completed
-                      ? step.completed_at
-                        ? `Completed: ${new Date(step.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                        : 'Completed'
-                      : 'Not yet completed'}
-                  </div>
+                  <span style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    color: phase.color,
+                  }}>
+                    {phaseCompleted} of {phase.count} completed
+                  </span>
+                </div>
+
+                {/* Steps within this phase */}
+                <div style={{ position: 'relative' }}>
+                  {phaseSteps.map(step => (
+                    <StepRow
+                      key={step.step_id}
+                      step={step}
+                      updating={updating}
+                      readOnly={readOnly}
+                      onToggleStep={onToggleStep}
+                    />
+                  ))}
                 </div>
               </div>
             );

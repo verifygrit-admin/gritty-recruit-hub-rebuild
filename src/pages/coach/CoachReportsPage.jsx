@@ -8,6 +8,7 @@
  */
 import { useState, useMemo } from 'react';
 import CoachActivitySummary from '../../components/CoachActivitySummary.jsx';
+import { getPhaseForStep } from '../../components/RecruitingJourney.jsx';
 
 // ── Pipeline Blockage Computation ─────────────────────────────────────────────
 
@@ -261,7 +262,9 @@ export default function CoachReportsPage({ students, shortlistByStudent, allShor
             )}
 
             {/* Top stuck step callout */}
-            {topStuck && (
+            {topStuck && (() => {
+              const stuckPhase = getPhaseForStep(topStuck.step_id);
+              return (
               <div style={{
                 background: '#F5EFE0',
                 border: '1px solid #D4AF37',
@@ -271,6 +274,16 @@ export default function CoachReportsPage({ students, shortlistByStudent, allShor
               }}>
                 <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#2C2C2C', marginBottom: 4 }}>
                   Most Common Block: {topStuck.label}
+                  {stuckPhase && (
+                    <span style={{
+                      marginLeft: 8,
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      color: stuckPhase.color,
+                    }}>
+                      {stuckPhase.name} Phase
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: '0.875rem', color: '#6B6B6B', marginBottom: 8 }}>
                   {topStuck.blockageRate}% of school-shortlist pairs haven't reached this step.
@@ -282,7 +295,8 @@ export default function CoachReportsPage({ students, shortlistByStudent, allShor
                   </div>
                 )}
               </div>
-            )}
+            );
+            })()}
           </>
         )}
       </div>
