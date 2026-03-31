@@ -5,8 +5,8 @@
 | F-01 | SOFT-JOIN | short_list_items.unitid | Medium | Open | No FK to schools. Orphan risk if school deleted. Acceptable MVP — harden post-v1. |
 | F-02 | SOFT-JOIN | document_shares.unitid | Medium | Open | No FK to schools. Same orphan risk as F-01. |
 | F-03 | SOFT-JOIN | file_uploads.unitid | Medium | Open | No FK to schools. Same orphan risk as F-01. |
-| F-04 | COL-NAME | schools.admissions_rate | High | Open | Scoring code reads admission_rate (no s). One spelling is wrong. David to confirm authoritative column name against live migration before any new query is written. |
-| F-05 | COL-NAME | schools.type | Medium | Open | UI and scoring reference this field as tier. Verify alias or rename before Patch writes new queries against it. |
+| F-04 | COL-NAME | schools.admissions_rate | High | Likely resolved | Scoring code reads admission_rate (no s). David to confirm authoritative column name against live DB. |
+| F-05 | COL-NAME | schools.type | Medium | CLOSED | Resolved: schools.type is authoritative. Tier vocabulary in constants only. No rename needed. |
 | F-06 | RLS | profiles.parent_guardian_email | Medium | Open | Readable by coaches via current RLS with no column exclusion. Policy decision required before parent accounts go live. |
 | F-07 | JSONB | short_list_items.coach_contact | High | Open | No enforced schema contract. Quill to write contract doc before any UI reads or writes this field. |
 | F-08 | JSONB | short_list_items.recruiting_journey_steps | High | Open | No enforced schema contract. Same requirement as F-07. |

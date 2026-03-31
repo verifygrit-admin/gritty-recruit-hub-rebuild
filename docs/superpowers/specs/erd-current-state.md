@@ -1,6 +1,13 @@
 # GrittyOS — Current State ERD
 
-Generated: March 31, 2026 | Version: v0.3.1 | Status: Pre-audit (pending David + Patch fidelity confirmation)
+**Source of truth: supabase/migrations/**
+**Last corrected: 2026-03-31 per David+Patch audit.**
+**ERD is a representative view — not all columns shown.**
+**Do not use as column reference for new code. Use migration files as authoritative column reference.**
+
+---
+
+Generated: March 31, 2026 | Version: v0.3.1 | Status: Post-audit (corrected per David + Patch fidelity confirmation)
 
 ---
 
@@ -12,7 +19,7 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Pre-audit (pending David +
 | school_name | text |  |
 | type | text | FLAG F-05: referenced as tier in code |
 | athletics_url | text |  |
-| camp_link | text | Exists — mostly null. Will be populated by data enhancement. |
+| prospect_camp_link | text | Exists — mostly null. Will be populated by data enhancement. |
 | coach_link | text | Exists — mostly null. Will be populated by data enhancement. |
 | admissions_rate | numeric | FLAG F-04: scoring code reads admission_rate (no s) |
 | adltv | numeric |  |
@@ -26,16 +33,14 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Pre-audit (pending David +
 |--------|------|-------|
 | id | uuid | PK |
 | user_id | uuid | FK → auth.users(id) CASCADE, UNIQUE |
-| first_name | text |  |
-| last_name | text |  |
+| name | text | Single column — consolidated from first_name / last_name |
 | position | text |  |
 | gpa | numeric |  |
-| sat_score | int |  |
+| sat | int | Consolidated from sat_score |
 | grad_year | int |  |
 | parent_guardian_email | text | FLAG F-06: readable by coaches via RLS — no column exclusion |
-| hudl_url | text |  |
-| lat | numeric |  |
-| lng | numeric |  |
+| hs_lat | numeric | High school latitude — renamed from lat |
+| hs_lng | numeric | High school longitude — renamed from lng |
 
 ---
 
@@ -56,9 +61,10 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Pre-audit (pending David +
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | uuid | PK |
+| id | bigint | PK — GENERATED ALWAYS AS IDENTITY |
 | coach_user_id | uuid | FK → auth.users(id) |
 | student_user_id | uuid | FK → auth.users(id). UNIQUE pair with coach_user_id. |
+| confirmed_at | timestamptz | When coach-student link was confirmed |
 
 ---
 
@@ -66,9 +72,10 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Pre-audit (pending David +
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | uuid | PK |
+| id | bigint | PK — GENERATED ALWAYS AS IDENTITY |
 | counselor_user_id | uuid | FK → auth.users(id) |
 | student_user_id | uuid | FK → auth.users(id). UNIQUE pair with counselor_user_id. |
+| linked_at | timestamptz | When counselor-student link was created |
 
 ---
 
@@ -76,10 +83,11 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Pre-audit (pending David +
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | uuid | PK |
+| id | bigint | PK — GENERATED ALWAYS AS IDENTITY |
 | coach_user_id | uuid | FK → auth.users(id) |
 | hs_program_id | uuid | FK → hs_programs(id) |
 | is_head_coach | boolean |  |
+| linked_at | timestamptz | When coach-school link was created |
 
 ---
 
@@ -87,9 +95,10 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Pre-audit (pending David +
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | uuid | PK |
+| id | bigint | PK — GENERATED ALWAYS AS IDENTITY |
 | counselor_user_id | uuid | FK → auth.users(id) |
 | hs_program_id | uuid | FK → hs_programs(id) |
+| linked_at | timestamptz | When counselor-school link was created |
 
 ---
 
@@ -122,7 +131,7 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Pre-audit (pending David +
 | Column | Type | Notes |
 |--------|------|-------|
 | id | uuid | PK |
-| document_id | uuid | FK → document_library(id) |
+| library_doc_id | uuid | FK → document_library(id) |
 | unitid | int | FLAG F-02: soft join — no FK to schools |
 
 ---
