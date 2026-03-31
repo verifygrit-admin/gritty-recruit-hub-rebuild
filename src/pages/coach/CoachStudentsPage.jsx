@@ -24,7 +24,7 @@ function getOfferStatus(shortlistItems) {
   return { hasVerbal, hasWritten };
 }
 
-export default function CoachStudentsPage({ students, shortlistByStudent, counselorByStudent }) {
+export default function CoachStudentsPage({ students, shortlistByStudent, counselorByStudent, coachByStudent, viewerRole }) {
   const [panelStudentId, setPanelStudentId] = useState(null);
   const [panelSchoolItem, setPanelSchoolItem] = useState(null);
   const [filterGradYear, setFilterGradYear] = useState('');
@@ -226,6 +226,8 @@ export default function CoachStudentsPage({ students, shortlistByStudent, counse
           item={panelSchoolItem}
           student={students.find(s => s.user_id === panelStudentId)}
           counselorEmail={(counselorByStudent || {})[panelStudentId] || null}
+          coachEmail={(coachByStudent || {})[panelStudentId] || null}
+          viewerRole={viewerRole}
           onClose={() => setPanelSchoolItem(null)}
         />
       )}

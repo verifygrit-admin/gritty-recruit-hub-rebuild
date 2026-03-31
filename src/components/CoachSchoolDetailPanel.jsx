@@ -6,7 +6,9 @@
  * Props:
  *   item: short_list_items row (includes recruiting_journey_steps JSONB)
  *   student: profile object for the student
- *   counselorEmail: string|null — linked counselor's email
+ *   counselorEmail: string|null — linked counselor's email (used when viewer is a coach)
+ *   coachEmail: string|null — linked coach's email (used when viewer is a counselor)
+ *   viewerRole: 'hs_coach' | 'hs_guidance_counselor' | string — determines which second mailto button to show
  *   onClose: () => void
  */
 import { useEffect } from 'react';
@@ -93,7 +95,7 @@ function Metric({ label, value }) {
   );
 }
 
-export default function CoachSchoolDetailPanel({ item, student, counselorEmail, onClose }) {
+export default function CoachSchoolDetailPanel({ item, student, counselorEmail, coachEmail, viewerRole, onClose }) {
   // Lock body scroll
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -344,45 +346,62 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
                       Status Pending
                     </span>
 
-                    {/* Mailto actions for missing docs */}
-                    <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
-                      {student.email && (
-                        <a
-                          href={`mailto:${student.email}?subject=${encodeURIComponent(`Missing Document: ${dt.libraryLabel}`)}&body=${encodeURIComponent(`Hi ${studentFirstName},\n\nI noticed your ${dt.libraryLabel} hasn't been uploaded yet for ${item.school_name}. Please upload it at your earliest convenience.\n\nBest,\nCoach`)}`}
-                          data-testid={`mailto-student-${slotKey}`}
-                          style={{
-                            fontSize: '0.75rem',
-                            color: '#8B3A3A',
-                            fontWeight: 600,
-                            textDecoration: 'none',
-                            padding: '3px 8px',
-                            border: '1px solid #8B3A3A',
-                            borderRadius: 4,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Email Student
-                        </a>
-                      )}
-                      {counselorEmail && (
-                        <a
-                          href={`mailto:${counselorEmail}?subject=${encodeURIComponent(`Student Document Follow-Up: ${student.name || 'Student'} — ${dt.libraryLabel}`)}&body=${encodeURIComponent(`Hi,\n\nI'm following up regarding ${student.name || 'a student'}'s missing ${dt.libraryLabel} for ${item.school_name}. Could you help ensure this gets uploaded?\n\nThank you.`)}`}
-                          data-testid={`mailto-counselor-${slotKey}`}
-                          style={{
-                            fontSize: '0.75rem',
-                            color: '#1976D2',
-                            fontWeight: 600,
-                            textDecoration: 'none',
-                            padding: '3px 8px',
-                            border: '1px solid #1976D2',
-                            borderRadius: 4,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Email Counselor
-                        </a>
-                      )}
-                    </div>
+                    {/* Mailto actions for missing docs — role-aware */}
+                    {(() => {
+                      const isCounselorViewer = viewerRole === 'hs_guidance_counselor';
+                      // Coach sees: Email Student + Email Counselor
+                      // Counselor sees: Email Student + Email Coach
+                      const secondEmail = isCounselorViewer ? coachEmail : counselorEmail;
+                      const secondLabel = isCounselorViewer ? 'Email Coach' : 'Email Counselor';
+                      const secondColor = isCounselorViewer ? '#2E7D32' : '#1976D2';
+                      const secondTestId = isCounselorViewer
+                        ? `mailto-coach-${slotKey}`
+                        : `mailto-counselor-${slotKey}`;
+                      const secondBody = encodeURIComponent(isCounselorViewer
+                        ? `Hi Coach,\n\nI'm following up regarding ${student.name || 'a student'}'s missing ${dt.libraryLabel} for ${item.school_name}. Could you help ensure this gets uploaded?\n\nThank you,\nYour Counselor`
+                        : `Hi,\n\nI'm following up regarding ${student.name || 'a student'}'s missing ${dt.libraryLabel} for ${item.school_name}. Could you help ensure this gets uploaded?\n\nThank you.`);
+
+                      return (
+                        <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
+                          {student.email && (
+                            <a
+                              href={`mailto:${student.email}?subject=${encodeURIComponent(`Missing Document: ${dt.libraryLabel}`)}&body=${encodeURIComponent(`Hi ${studentFirstName},\n\nI noticed your ${dt.libraryLabel} hasn't been uploaded yet for ${item.school_name}. Please upload it at your earliest convenience.\n\nBest,\n${isCounselorViewer ? 'Your Counselor' : 'Coach'}`)}`}
+                              data-testid={`mailto-student-${slotKey}`}
+                              style={{
+                                fontSize: '0.75rem',
+                                color: '#8B3A3A',
+                                fontWeight: 600,
+                                textDecoration: 'none',
+                                padding: '3px 8px',
+                                border: '1px solid #8B3A3A',
+                                borderRadius: 4,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              Email Student
+                            </a>
+                          )}
+                          {secondEmail && (
+                            <a
+                              href={`mailto:${secondEmail}?subject=${encodeURIComponent(`Student Document Follow-Up: ${student.name || 'Student'} — ${dt.libraryLabel}`)}&body=${secondBody}`}
+                              data-testid={secondTestId}
+                              style={{
+                                fontSize: '0.75rem',
+                                color: secondColor,
+                                fontWeight: 600,
+                                textDecoration: 'none',
+                                padding: '3px 8px',
+                                border: `1px solid ${secondColor}`,
+                                borderRadius: 4,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {secondLabel}
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}

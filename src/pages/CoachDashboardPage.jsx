@@ -32,6 +32,7 @@ export default function CoachDashboardPage() {
   const [students, setStudents] = useState([]);
   const [shortlistByStudent, setShortlistByStudent] = useState({});
   const [counselorByStudent, setCounselorByStudent] = useState({});
+  const [coachByStudent, setCoachByStudent] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -125,30 +126,50 @@ export default function CoachDashboardPage() {
       setShortlistByStudent(grouped);
 
       // Step 3: Fetch counselor emails for each student (for coach Panel 2 mailto)
+      // Also fetch coach emails for each student (for counselor Panel 2 mailto)
       const counselorMap = {};
+      const coachMap = {};
       try {
-        const { data: counselorLinks } = await supabase
-          .from('hs_counselor_students')
-          .select('student_user_id, counselor_user_id')
-          .in('student_user_id', studentUserIds);
+        const [counselorLinksRes, coachLinksRes] = await Promise.all([
+          supabase
+            .from('hs_counselor_students')
+            .select('student_user_id, counselor_user_id')
+            .in('student_user_id', studentUserIds),
+          supabase
+            .from('hs_coach_students')
+            .select('student_user_id, coach_user_id')
+            .in('student_user_id', studentUserIds),
+        ]);
 
-        if (counselorLinks && counselorLinks.length > 0) {
-          const counselorIds = [...new Set(counselorLinks.map(l => l.counselor_user_id))];
-          const { data: counselorProfiles } = await supabase
+        const counselorLinks = counselorLinksRes.data || [];
+        const coachLinks = coachLinksRes.data || [];
+
+        // Collect all unique advisor IDs in one profiles fetch
+        const counselorIds = [...new Set(counselorLinks.map(l => l.counselor_user_id))];
+        const coachIds = [...new Set(coachLinks.map(l => l.coach_user_id))];
+        const allAdvisorIds = [...new Set([...counselorIds, ...coachIds])];
+
+        if (allAdvisorIds.length > 0) {
+          const { data: advisorProfiles } = await supabase
             .from('profiles')
             .select('user_id, email')
-            .in('user_id', counselorIds);
+            .in('user_id', allAdvisorIds);
 
-          const counselorEmailMap = {};
-          for (const cp of (counselorProfiles || [])) { counselorEmailMap[cp.user_id] = cp.email; }
+          const advisorEmailMap = {};
+          for (const ap of (advisorProfiles || [])) { advisorEmailMap[ap.user_id] = ap.email; }
+
           for (const link of counselorLinks) {
-            counselorMap[link.student_user_id] = counselorEmailMap[link.counselor_user_id] || null;
+            counselorMap[link.student_user_id] = advisorEmailMap[link.counselor_user_id] || null;
+          }
+          for (const link of coachLinks) {
+            coachMap[link.student_user_id] = advisorEmailMap[link.coach_user_id] || null;
           }
         }
       } catch (_) {
-        // Non-critical — Panel 2 mailto for counselor will just not render
+        // Non-critical — Panel 2 mailto buttons will just not render
       }
       setCounselorByStudent(counselorMap);
+      setCoachByStudent(coachMap);
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
       console.error('CoachDashboard loadData error:', err);
@@ -286,6 +307,8 @@ export default function CoachDashboardPage() {
           students={students}
           shortlistByStudent={shortlistByStudent}
           counselorByStudent={counselorByStudent}
+          coachByStudent={coachByStudent}
+          viewerRole={userType}
         />
       )}
       {activeTab === 'reports' && (
