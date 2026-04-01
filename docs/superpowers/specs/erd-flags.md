@@ -16,3 +16,4 @@
 | F-12 | CLEAN | scripts/migrate.js | None | Resolved | npm run migrate operational via Supabase Management API (HTTPS port 443). Comcast port 5432 block bypassed. |
 | F-13 | CLEAN | 0027 rls policies | None | Resolved | Confirmed applied and committed. Matches live DB. |
 | F-14 | CLEAN | scripts/import_shortlist_bc_high.py + repair_shortlist_fields.py | None | Resolved | Hardcoded service role keys removed. Both use dotenv with ValueError guard. |
+| F-15 | MISSING | coach_contacts (table) | Blocking | Not created | Junction table for student-college coach contact tracking. FK to profiles, schools, and college_coaches. Migration 0031 — after college_coaches (0028) exists. Named coach_contacts always. |
