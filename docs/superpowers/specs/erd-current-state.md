@@ -150,7 +150,7 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Post-audit (corrected per 
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | uuid | PK |
+| id | uuid | PK — entity table, external-facing, UUID per DEC-CFBRB-064 |
 | unitid | int | FLAG F-09: FK → schools(unitid) — REQUIRED. Table does not exist yet. |
 | name | text |  |
 | title | text |  |
@@ -165,7 +165,7 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Post-audit (corrected per 
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | uuid | PK |
+| id | uuid | PK — entity table, external-facing, UUID per DEC-CFBRB-064 |
 | unitid | int | FLAG F-10: FK → schools(unitid) — REQUIRED. Table does not exist yet. |
 | event_type | text | camp \| junior_day \| official_visit \| unofficial_visit |
 | event_name | text |  |
@@ -181,7 +181,7 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Post-audit (corrected per 
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | uuid | PK |
+| id | uuid | PK — entity table, gcal sync, UUID per DEC-CFBRB-064 |
 | profile_id | uuid | FLAG F-11: FK → profiles(id) — REQUIRED. Table does not exist yet. |
 | event_id | uuid | FK → recruiting_events(id) |
 | status | text | recommended_by_coach \| registered \| on_calendar \| attended |
