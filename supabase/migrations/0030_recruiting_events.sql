@@ -30,7 +30,7 @@ CREATE TABLE public.recruiting_events (
 
   -- Scheduling
   event_date            date          NOT NULL,
-  end_date              date,          -- Multi-day event end date (nullable)
+  end_date              date,          -- Multi-day event end date (nullable) -- end_date and description authorized per DEC-CFBRB-078
   registration_deadline date,          -- Registration cutoff (nullable)
 
   -- Logistics
@@ -47,7 +47,7 @@ CREATE TABLE public.recruiting_events (
       'cancelled'
     )),
 
-  description           text,          -- Free-form event description (nullable)
+  description           text,          -- Free-form event description (nullable) -- end_date and description authorized per DEC-CFBRB-078
   created_at            timestamptz   NOT NULL DEFAULT now(),
 
   -- Deduplication constraint — one event per school/type/date combination

@@ -10,11 +10,6 @@
 -- No FK on matched_unitid — staging allows unresolved rows by design.
 -- No FK indexes — no FK columns on this table.
 
-COMMENT ON TABLE public.school_link_staging IS
-  'Permanent staging infrastructure per DEC-CFBRB-069. '
-  'Source of truth for unitid resolution before production inserts into college_coaches and recruiting_events. '
-  'matched_unitid carries no FK constraint — unresolved rows are valid staging state.';
-
 CREATE TABLE public.school_link_staging (
   id               serial      PRIMARY KEY,
 
@@ -48,6 +43,11 @@ CREATE TABLE public.school_link_staging (
 
   created_at       timestamptz NOT NULL DEFAULT now()
 );
+
+COMMENT ON TABLE public.school_link_staging IS
+  'Permanent staging infrastructure per DEC-CFBRB-069. '
+  'Source of truth for unitid resolution before production inserts into college_coaches and recruiting_events. '
+  'matched_unitid carries no FK constraint — unresolved rows are valid staging state.';
 
 COMMENT ON COLUMN public.school_link_staging.matched_unitid IS
   'Intentionally carries no FK constraint — staging rows may be unresolved (F-16). '
