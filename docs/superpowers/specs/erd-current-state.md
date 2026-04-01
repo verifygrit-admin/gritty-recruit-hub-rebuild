@@ -212,3 +212,5 @@ Constraint: UNIQUE(profile_id, event_id)
 | short_list_step | int | 1-15, nullable |
 | notes | text | nullable |
 | created_at | timestamptz | DEFAULT now() |
+
+C-2 OPEN: schools table seeding is not guaranteed complete. Known gaps include: new NCAA membership programs added after initial IPEDS extraction, joint-institution programs (e.g. Claremont-Mudd-Scripps combines three institutions under one football program), and name disambiguation failures from earlier extraction. Any coach_contacts or recruiting_events insert that references a unitid not present in schools will fail on the hard FK constraint. A manual unitid resolution workflow is required before production inserts run. Staging table (school_link_staging) must be reviewed and all unitids confirmed before migrations 0029-0031 receive live data.

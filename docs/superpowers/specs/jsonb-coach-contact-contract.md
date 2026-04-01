@@ -2,6 +2,13 @@ SUPERSEDED FOR NEW WRITES — DEC-CFBRB-066 (2026-03-31)
 coach_contacts is now a separate table. This contract doc is retained as legacy reference for existing data in short_list_items.coach_contact only. All new coach contact records go to the coach_contacts table.
 Do not use this schema for new development.
 
+---
+
+DATA PATHWAY PROHIBITION — DEC-CFBRB-066
+No Python script, import function, API call, or migration may use this document as a data target or schema source for new writes. The coach_contacts table is the only valid destination for coach contact data imported via Python extraction scripts. Any code that writes coach contact data to short_list_items.coach_contact instead of coach_contacts is incorrect and must be rejected in review.
+
+---
+
 # JSONB Schema Contract: coach_contact
 
 ## Schema Definition
