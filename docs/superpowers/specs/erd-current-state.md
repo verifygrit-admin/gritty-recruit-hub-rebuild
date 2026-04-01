@@ -158,6 +158,7 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Post-audit (corrected per 
 | photo_url | text |  |
 | twitter_handle | text |  |
 | profile_url | text |  |
+| created_at | timestamptz | DEFAULT now() |
 
 ---
 
@@ -174,6 +175,7 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Post-audit (corrected per 
 | cost_dollars | numeric |  |
 | registration_url | text |  |
 | status | text | confirmed \| registration_open \| completed \| cancelled |
+| created_at | timestamptz | DEFAULT now() |
 
 ---
 
@@ -188,5 +190,7 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Post-audit (corrected per 
 | gcal_event_id | text | For Google Calendar sync |
 | confirmed_by | text | student \| parent \| hs_coach |
 | confirmed_at | timestamptz |  |
+| notes | text | nullable |
+| created_at | timestamptz | DEFAULT now() |
 
 Constraint: UNIQUE(profile_id, event_id)
