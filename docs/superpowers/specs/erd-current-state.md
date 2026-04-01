@@ -202,16 +202,21 @@ Constraint: UNIQUE(profile_id, event_id)
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | uuid | PK — staging record identifier |
-| raw_school_name | text | required — name as received from source |
-| raw_location | text | nullable — city/state as received |
-| candidate_unitid | int | nullable — best-guess unitid match |
-| match_confidence | text | exact \| high \| low \| none — confidence of unitid match. CHECK (match_confidence IN ('exact', 'high', 'low', 'none')) |
-| resolved_unitid | int | nullable — confirmed unitid after manual review, FK → schools(unitid) |
-| resolved_by | text | nullable — who confirmed the match |
-| resolved_at | timestamptz | nullable — when confirmed |
-| source | text | required — where the record came from (e.g. camp_serper, coach_serper, manual) |
-| notes | text | nullable |
+| id | serial | PK — auto-increment staging record identifier |
+| source_tab | text | required — D1-FBS \| D1-FCS \| D2 \| D3 |
+| source_run | text | required — import run identifier (e.g. 2026-03-31) |
+| data_type | text | required — camp_link \| coach_link \| future types |
+| row_index | int | nullable — row position in source tab |
+| school_name_raw | text | required — name as received from Google Sheet |
+| athletics_url_raw | text | nullable — athletics URL from source |
+| camp_url | text | nullable — camp URL from source |
+| coach_url | text | nullable — coach page URL from source |
+| matched_unitid | int | nullable — best-match unitid (no FK, staging allows unresolved rows) |
+| match_confidence | numeric | nullable — 0.0-1.0 confidence score |
+| match_status | text | required — CHECK (match_status IN ('pending', 'auto_confirmed', 'manually_confirmed', 'unresolved')) |
+| match_method | text | nullable — how the match was determined (name_fuzzy \| domain \| manual) |
+| reviewed_by | text | nullable — who confirmed the match |
+| reviewed_at | timestamptz | nullable — when confirmed |
 | created_at | timestamptz | DEFAULT now() |
 
 ---
@@ -283,4 +288,4 @@ Constraint: UNIQUE(profile_id, event_id)
 | notes | text | nullable |
 | created_at | timestamptz | DEFAULT now() |
 
-C-2 OPEN: This table supports the F-16 unitid completeness workflow. All candidate unitids must be resolved in school_link_staging before production inserts run against coach_contacts or recruiting_events.
+C-2 OPEN: This table supports the F-16 unitid completeness workflow. All matched_unitids must be confirmed to match_status 'auto_confirmed' or 'manually_confirmed' in school_link_staging before production inserts run against coach_contacts or recruiting_events.

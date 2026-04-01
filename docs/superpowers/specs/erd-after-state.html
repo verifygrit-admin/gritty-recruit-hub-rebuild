@@ -99,7 +99,7 @@
   <tr class="staging-table"><td>match_status</td><td>text</td><td>CHECK constraint</td><td>pending | auto_confirmed | manually_confirmed | unresolved</td></tr>
   <tr class="staging-table"><td>match_method</td><td>text</td><td>nullable</td><td>name_fuzzy | domain | manual</td></tr>
   <tr class="staging-table"><td>reviewed_by</td><td>text</td><td>nullable</td><td>Who confirmed the match</td></tr>
-  <tr class="staging-table"><td>reviewed_at</td><td>timestamptz</td><td>nullable</td><td></td></tr>
+  <tr class="staging-table"><td>reviewed_at</td><td>timestamptz</td><td>nullable</td><td>When confirmed</td></tr>
   <tr class="staging-table"><td>created_at</td><td>timestamptz</td><td>default now()</td><td></td></tr>
 </table>
 
@@ -203,6 +203,8 @@ const newTables = `erDiagram
     numeric match_confidence
     text match_status
     text match_method
+    text reviewed_by
+    timestamptz reviewed_at
     timestamptz created_at
   }
   college_coaches {

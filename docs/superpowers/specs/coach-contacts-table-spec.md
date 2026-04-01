@@ -76,7 +76,7 @@
 
 ## 6. Data Enhancement Note
 
-`coach_contacts` will be populated during Phase 1 data enhancement as students begin logging initial contacts with college coaches. The source of coach names and details is the `college_coaches` table (migration 0028). The coach_id FK will be null for any contact logged before college_coaches is populated for that school. This is expected behavior — matching happens reactively as coaches are added to the database.
+`coach_contacts` will be populated during Phase 1 data enhancement as students begin logging initial contacts with college coaches. The source of coach names and details is the `college_coaches` table (migration 0029). The coach_id FK will be null for any contact logged before college_coaches is populated for that school. This is expected behavior — matching happens reactively as coaches are added to the database.
 
 ---
 
@@ -90,4 +90,4 @@ All new contact records go to `coach_contacts` only. UI logic must write to `coa
 
 ---
 
-**Decision Reference:** DEC-CFBRB-066 | **Migration:** 0032 (depends on college_coaches 0029, schools, profiles, recruiting_events 0030, student_recruiting_events 0031) | **Owned by:** Patch (migration), Quill (schema contract)
+**Decision Reference:** DEC-CFBRB-066 | **Migration:** 0032 (depends on college_coaches 0029, schools, profiles) | **Owned by:** Patch (migration), Quill (schema contract)
