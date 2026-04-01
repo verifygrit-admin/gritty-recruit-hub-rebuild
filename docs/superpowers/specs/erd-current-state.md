@@ -157,6 +157,7 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Post-audit (corrected per 
 | email | text |  |
 | photo_url | text |  |
 | twitter_handle | text |  |
+| is_head_coach | boolean | default false |
 | profile_url | text |  |
 | created_at | timestamptz | DEFAULT now() |
 
@@ -194,3 +195,20 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Post-audit (corrected per 
 | created_at | timestamptz | DEFAULT now() |
 
 Constraint: UNIQUE(profile_id, event_id)
+
+---
+
+## coach_contacts — MISSING
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK — UUID per DEC-CFBRB-064 |
+| profile_id | uuid | FK → profiles(id) |
+| unitid | int | FK → schools(unitid) |
+| coach_id | uuid | FK → college_coaches(id), nullable |
+| contact_date | date | required |
+| contact_type | text | email \| call \| text \| in_person \| dm \| camp |
+| initiated_by | text | student \| parent \| hs_coach \| college_coach |
+| short_list_step | int | 1-15, nullable |
+| notes | text | nullable |
+| created_at | timestamptz | DEFAULT now() |
