@@ -198,6 +198,76 @@ Constraint: UNIQUE(profile_id, event_id)
 
 ---
 
+## school_link_staging — MISSING
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK — staging record identifier |
+| raw_school_name | text | required — name as received from source |
+| raw_location | text | nullable — city/state as received |
+| candidate_unitid | int | nullable — best-guess unitid match |
+| match_confidence | text | exact \| high \| low \| none — confidence of unitid match. CHECK (match_confidence IN ('exact', 'high', 'low', 'none')) |
+| resolved_unitid | int | nullable — confirmed unitid after manual review, FK → schools(unitid) |
+| resolved_by | text | nullable — who confirmed the match |
+| resolved_at | timestamptz | nullable — when confirmed |
+| source | text | required — where the record came from (e.g. camp_serper, coach_serper, manual) |
+| notes | text | nullable |
+| created_at | timestamptz | DEFAULT now() |
+
+---
+
+## college_coaches — MISSING
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK — entity table, external-facing, UUID per DEC-CFBRB-064 |
+| unitid | int | FLAG F-09: FK → schools(unitid) — REQUIRED. Table does not exist yet. |
+| name | text |  |
+| title | text |  |
+| email | text |  |
+| photo_url | text |  |
+| twitter_handle | text |  |
+| is_head_coach | boolean | default false |
+| profile_url | text |  |
+| created_at | timestamptz | DEFAULT now() |
+
+---
+
+## recruiting_events — MISSING
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK — entity table, external-facing, UUID per DEC-CFBRB-064 |
+| unitid | int | FLAG F-10: FK → schools(unitid) — REQUIRED. Table does not exist yet. |
+| event_type | text | camp \| junior_day \| official_visit \| unofficial_visit |
+| event_name | text |  |
+| event_date | date |  |
+| registration_deadline | date |  |
+| cost_dollars | numeric |  |
+| registration_url | text |  |
+| status | text | confirmed \| registration_open \| completed \| cancelled. CHECK (status IN ('confirmed', 'registration_open', 'completed', 'cancelled')) |
+| created_at | timestamptz | DEFAULT now() |
+
+---
+
+## student_recruiting_events — MISSING
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK — entity table, gcal sync, UUID per DEC-CFBRB-064 |
+| profile_id | uuid | FLAG F-11: FK → profiles(id) — REQUIRED. Table does not exist yet. |
+| event_id | uuid | FK → recruiting_events(id) |
+| status | text | recommended_by_coach \| registered \| on_calendar \| attended. CHECK (status IN ('recommended_by_coach', 'registered', 'on_calendar', 'attended')) |
+| gcal_event_id | text | For Google Calendar sync |
+| confirmed_by | text | student \| parent \| hs_coach. CHECK (confirmed_by IN ('student', 'parent', 'hs_coach')) |
+| confirmed_at | timestamptz |  |
+| notes | text | nullable |
+| created_at | timestamptz | DEFAULT now() |
+
+Constraint: UNIQUE(profile_id, event_id)
+
+---
+
 ## coach_contacts — MISSING
 
 | Column | Type | Notes |
@@ -207,10 +277,10 @@ Constraint: UNIQUE(profile_id, event_id)
 | unitid | int | FK → schools(unitid) |
 | coach_id | uuid | FK → college_coaches(id), nullable |
 | contact_date | date | required |
-| contact_type | text | email \| call \| text \| in_person \| dm \| camp |
-| initiated_by | text | student \| parent \| hs_coach \| college_coach |
+| contact_type | text | email \| call \| text \| in_person \| dm \| camp. CHECK (contact_type IN ('email', 'call', 'text', 'in_person', 'dm', 'camp')) |
+| initiated_by | text | student \| parent \| hs_coach \| college_coach. CHECK (initiated_by IN ('student', 'parent', 'hs_coach', 'college_coach')) |
 | short_list_step | int | 1-15, nullable |
 | notes | text | nullable |
 | created_at | timestamptz | DEFAULT now() |
 
-C-2 OPEN: schools table seeding is not guaranteed complete. Known gaps include: new NCAA membership programs added after initial IPEDS extraction, joint-institution programs (e.g. Claremont-Mudd-Scripps combines three institutions under one football program), and name disambiguation failures from earlier extraction. Any coach_contacts or recruiting_events insert that references a unitid not present in schools will fail on the hard FK constraint. A manual unitid resolution workflow is required before production inserts run. Staging table (school_link_staging) must be reviewed and all unitids confirmed before migrations 0029-0031 receive live data.
+C-2 OPEN: This table supports the F-16 unitid completeness workflow. All candidate unitids must be resolved in school_link_staging before production inserts run against coach_contacts or recruiting_events.

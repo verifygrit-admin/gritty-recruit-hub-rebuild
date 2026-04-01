@@ -90,4 +90,4 @@ All new contact records go to `coach_contacts` only. UI logic must write to `coa
 
 ---
 
-**Decision Reference:** DEC-CFBRB-066 | **Migration:** 0031 (depends on college_coaches 0028, schools, profiles) | **Owned by:** Patch (migration), Quill (schema contract)
+**Decision Reference:** DEC-CFBRB-066 | **Migration:** 0032 (depends on college_coaches 0029, schools, profiles, recruiting_events 0030, student_recruiting_events 0031) | **Owned by:** Patch (migration), Quill (schema contract)
