@@ -1,3 +1,7 @@
+SUPERSEDED FOR NEW WRITES — DEC-CFBRB-066 (2026-03-31)
+coach_contacts is now a separate table. This contract doc is retained as legacy reference for existing data in short_list_items.coach_contact only. All new coach contact records go to the coach_contacts table.
+Do not use this schema for new development.
+
 # JSONB Schema Contract: coach_contact
 
 ## Schema Definition
