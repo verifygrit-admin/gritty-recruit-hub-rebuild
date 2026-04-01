@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>GrittyOS ERD — After State (Data Enhancement Target)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  body { font-family: sans-serif; padding: 24px; background: #fff; color: #2c2c2a; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  h2 { font-size: 16px; margin: 32px 0 12px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+  h3 { font-size: 14px; margin: 24px 0 8px; color: #444; }
+  p.meta { font-size: 13px; color: #888; margin-bottom: 8px; }
+  .warning { background: #fcebeb; border-left: 3px solid #a32d2d; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #791f1f; margin-bottom: 16px; }
+  .info { background: #e6f1fb; border-left: 3px solid #185fa5; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #0c447c; margin-bottom: 16px; }
+  .success { background: #eaf3de; border-left: 3px solid #3b6d11; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #27500a; margin-bottom: 16px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-bottom: 24px; }
+  th { background: #f1efe8; text-align: left; padding: 6px 10px; border: 1px solid #ccc; font-weight: 600; }
+  td { padding: 5px 10px; border: 1px solid #ddd; vertical-align: top; }
+  .new-table { background: #eaf3de; }
+  .staging-table { background: #f1efe8; }
+  .existing-table { background: #fff; }
+  .badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 4px; }
+  .b-new { background: #eaf3de; color: #27500a; }
+  .b-staging { background: #f1efe8; color: #444441; }
+  .b-existing { background: #e6f1fb; color: #0c447c; }
+  .b-flag { background: #fcebeb; color: #791f1f; }
+  .b-blocking { background: #faeeda; color: #633806; }
+  .b-check { background: #eaf3de; color: #27500a; }
+  #erd-new, #erd-full { margin-bottom: 32px; overflow-x: auto; }
+  .decision-ref { font-size: 11px; color: #888; font-style: italic; }
+</style>
+</head>
+<body>
+
+<h1>GrittyOS — After State ERD (Data Enhancement Target)</h1>
+<p class="meta">Generated: 2026-03-31 | Version: Target state post-migrations 0028-0032 | Status: PENDING — David + Patch review required before any migration runs</p>
+
+<div class="warning">
+  <strong>REVIEW REQUIRED — DO NOT EXECUTE</strong><br>
+  This document represents the target database state after data enhancement migrations 0028-0032. 
+  David and Patch must confirm fidelity and viability before any npm run migrate is called. 
+  Scout holds the run gate.
+</div>
+
+<div class="warning">
+  <strong>DATA PATHWAY PROHIBITION — DEC-CFBRB-066</strong><br>
+  No Python script, import function, API call, or migration may write coach contact data to 
+  short_list_items.coach_contact. The coach_contacts table (migration 0032) is the only valid 
+  destination for coach contact data from Python extraction scripts.
+</div>
+
+<div class="info">
+  <strong>F-16 OPEN — schools.unitid completeness not guaranteed</strong><br>
+  Known gaps: new NCAA membership programs, joint-institution programs (e.g. Claremont-Mudd-Scripps), 
+  name disambiguation failures. Manual unitid resolution required before production inserts into 
+  coach_contacts and recruiting_events. school_link_staging review workflow must complete first.
+</div>
+
+---
+
+<h2>Migration Sequence</h2>
+<table>
+  <tr><th>Migration</th><th>Table</th><th>Type</th><th>Depends On</th></tr>
+  <tr><td>0028</td><td>school_link_staging</td><td><span class="badge b-staging">STAGING</span></td><td>None — no FK constraints</td></tr>
+  <tr><td>0029</td><td>college_coaches</td><td><span class="badge b-new">NEW ENTITY</span></td><td>schools.unitid (FK)</td></tr>
+  <tr><td>0030</td><td>recruiting_events</td><td><span class="badge b-new">NEW ENTITY</span></td><td>schools.unitid (FK)</td></tr>
+  <tr><td>0031</td><td>student_recruiting_events</td><td><span class="badge b-new">NEW JUNCTION</span></td><td>profiles.id, recruiting_events.id</td></tr>
+  <tr><td>0032</td><td>coach_contacts</td><td><span class="badge b-new">NEW JUNCTION</span></td><td>profiles.id, schools.unitid, college_coaches.id</td></tr>
+</table>
+
+<h2>Decisions Governing These Migrations</h2>
+<table>
+  <tr><th>Decision ID</th><th>Decision</th></tr>
+  <tr><td>DEC-CFBRB-064</td><td>UUID PKs for all four entity/junction tables (college_coaches, recruiting_events, student_recruiting_events, coach_contacts). school_link_staging uses serial PK.</td></tr>
+  <tr><td>DEC-CFBRB-065</td><td>is_head_coach boolean on college_coaches. Data cleanup script deferred post-v1.</td></tr>
+  <tr><td>DEC-CFBRB-066</td><td>coach_contacts is a separate table. JSONB field short_list_items.coach_contact is legacy only. No new writes to JSONB.</td></tr>
+  <tr><td>DEC-CFBRB-067</td><td>CHECK constraints (not Postgres CREATE TYPE) for all enum-like columns.</td></tr>
+  <tr><td>DEC-CFBRB-068</td><td>David owns unitid reconciliation for F-16. Scout authorization required before each cross-reference.</td></tr>
+  <tr><td>DEC-CFBRB-069</td><td>school_link_staging is permanent staging infrastructure, not a one-time artifact.</td></tr>
+</table>
+
+<h2>New Table Definitions</h2>
+
+<h3>0028 — school_link_staging <span class="badge b-staging">STAGING</span></h3>
+<div class="info">No RLS. Service role access only. No FK on matched_unitid — staging allows unresolved rows. Permanent infrastructure for future link data imports.</div>
+<table>
+  <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+  <tr class="staging-table"><td>id</td><td>serial</td><td>PK</td><td>Auto-increment — not uuid, staging table</td></tr>
+  <tr class="staging-table"><td>source_tab</td><td>text</td><td>NOT NULL</td><td>D1-FBS | D1-FCS | D2 | D3</td></tr>
+  <tr class="staging-table"><td>source_run</td><td>text</td><td>NOT NULL</td><td>Import run identifier e.g. 2026-03-31</td></tr>
+  <tr class="staging-table"><td>data_type</td><td>text</td><td>NOT NULL</td><td>camp_link | coach_link | future types</td></tr>
+  <tr class="staging-table"><td>row_index</td><td>int</td><td></td><td>Row position in source tab</td></tr>
+  <tr class="staging-table"><td>school_name_raw</td><td>text</td><td></td><td>Exact text from Google Sheet</td></tr>
+  <tr class="staging-table"><td>athletics_url_raw</td><td>text</td><td></td><td>Exact URL from Google Sheet</td></tr>
+  <tr class="staging-table"><td>camp_url</td><td>text</td><td>nullable</td><td></td></tr>
+  <tr class="staging-table"><td>coach_url</td><td>text</td><td>nullable</td><td></td></tr>
+  <tr class="staging-table"><td>matched_unitid</td><td>int</td><td>nullable — NO FK</td><td>F-16: no FK constraint — staging allows unresolved</td></tr>
+  <tr class="staging-table"><td>match_confidence</td><td>numeric</td><td>nullable</td><td>0.0–1.0 fuzzy match score</td></tr>
+  <tr class="staging-table"><td>match_status</td><td>text</td><td>CHECK constraint</td><td>pending | auto_confirmed | manually_confirmed | unresolved</td></tr>
+  <tr class="staging-table"><td>match_method</td><td>text</td><td>nullable</td><td>name_fuzzy | domain | manual</td></tr>
+  <tr class="staging-table"><td>reviewed_by</td><td>text</td><td>nullable</td><td>Who confirmed the match</td></tr>
+  <tr class="staging-table"><td>reviewed_at</td><td>timestamptz</td><td>nullable</td><td></td></tr>
+  <tr class="staging-table"><td>created_at</td><td>timestamptz</td><td>default now()</td><td></td></tr>
+</table>
+
+<h3>0029 — college_coaches <span class="badge b-new">NEW</span></h3>
+<div class="info">Named college_coaches always — never coaches. Distinguishes from hs_coach_students and hs_coach_schools at all times in DB, code, and scripts. RLS: public SELECT, service role writes only.</div>
+<div class="warning">ON DELETE RESTRICT on unitid FK — do not cascade delete coaches if school is removed.</div>
+<table>
+  <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+  <tr class="new-table"><td>id</td><td>uuid</td><td>PK — DEC-CFBRB-064</td><td></td></tr>
+  <tr class="new-table"><td>unitid</td><td>int</td><td>FK → schools(unitid) ON DELETE RESTRICT</td><td>F-16: unitid must exist in schools before insert</td></tr>
+  <tr class="new-table"><td>name</td><td>text</td><td>NOT NULL</td><td></td></tr>
+  <tr class="new-table"><td>title</td><td>text</td><td>nullable</td><td></td></tr>
+  <tr class="new-table"><td>email</td><td>text</td><td>nullable</td><td>Incomplete data expected from scrape</td></tr>
+  <tr class="new-table"><td>photo_url</td><td>text</td><td>nullable</td><td></td></tr>
+  <tr class="new-table"><td>twitter_handle</td><td>text</td><td>nullable</td><td></td></tr>
+  <tr class="new-table"><td>is_head_coach</td><td>boolean</td><td>default false</td><td>DEC-CFBRB-065. Cleanup script needed post-v1 for staff turnover.</td></tr>
+  <tr class="new-table"><td>profile_url</td><td>text</td><td>nullable</td><td></td></tr>
+  <tr class="new-table"><td>created_at</td><td>timestamptz</td><td>default now()</td><td></td></tr>
+</table>
+
+<h3>0030 — recruiting_events <span class="badge b-new">NEW</span></h3>
+<div class="info">RLS: public SELECT, service role writes only. ON DELETE RESTRICT on unitid FK.</div>
+<table>
+  <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+  <tr class="new-table"><td>id</td><td>uuid</td><td>PK — DEC-CFBRB-064</td><td></td></tr>
+  <tr class="new-table"><td>unitid</td><td>int</td><td>FK → schools(unitid) ON DELETE RESTRICT</td><td></td></tr>
+  <tr class="new-table"><td>event_type</td><td>text</td><td>CHECK constraint — DEC-CFBRB-067</td><td>camp | junior_day | official_visit | unofficial_visit</td></tr>
+  <tr class="new-table"><td>event_name</td><td>text</td><td>nullable</td><td></td></tr>
+  <tr class="new-table"><td>event_date</td><td>date</td><td>NOT NULL</td><td></td></tr>
+  <tr class="new-table"><td>registration_deadline</td><td>date</td><td>nullable</td><td></td></tr>
+  <tr class="new-table"><td>cost_dollars</td><td>numeric(8,2)</td><td>nullable</td><td>Explicit precision per Patch advisory</td></tr>
+  <tr class="new-table"><td>registration_url</td><td>text</td><td>nullable</td><td></td></tr>
+  <tr class="new-table"><td>status</td><td>text</td><td>CHECK constraint — DEC-CFBRB-067</td><td>confirmed | registration_open | completed | cancelled</td></tr>
+  <tr class="new-table"><td>created_at</td><td>timestamptz</td><td>default now()</td><td></td></tr>
+</table>
+
+<h3>0031 — student_recruiting_events <span class="badge b-new">NEW</span></h3>
+<div class="info">RLS: student reads/writes own rows via profiles.user_id. HS coach reads linked students. HS counselor reads linked students.</div>
+<table>
+  <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+  <tr class="new-table"><td>id</td><td>uuid</td><td>PK — DEC-CFBRB-064</td><td></td></tr>
+  <tr class="new-table"><td>profile_id</td><td>uuid</td><td>FK → profiles(id)</td><td>Not user_id — indirection through profiles</td></tr>
+  <tr class="new-table"><td>event_id</td><td>uuid</td><td>FK → recruiting_events(id)</td><td></td></tr>
+  <tr class="new-table"><td>status</td><td>text</td><td>CHECK constraint — DEC-CFBRB-067</td><td>recommended_by_coach | registered | on_calendar | attended</td></tr>
+  <tr class="new-table"><td>gcal_event_id</td><td>text</td><td>nullable</td><td>Google Calendar sync ID</td></tr>
+  <tr class="new-table"><td>confirmed_by</td><td>text</td><td>CHECK constraint — DEC-CFBRB-067</td><td>student | parent | hs_coach</td></tr>
+  <tr class="new-table"><td>confirmed_at</td><td>timestamptz</td><td>nullable</td><td></td></tr>
+  <tr class="new-table"><td>notes</td><td>text</td><td>nullable</td><td></td></tr>
+  <tr class="new-table"><td>created_at</td><td>timestamptz</td><td>default now()</td><td></td></tr>
+</table>
+<p><strong>Constraint:</strong> UNIQUE(profile_id, event_id) — DEC-CFBRB-062</p>
+
+<h3>0032 — coach_contacts <span class="badge b-new">NEW</span></h3>
+<div class="info">Triple junction: profiles + schools + college_coaches. No direct FK to short_list_items — logically scoped via composite (profile_id + unitid).</div>
+<div class="warning">college_coaches CANNOT write their own contact records. Integrity rule — no exceptions.</div>
+<table>
+  <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+  <tr class="new-table"><td>id</td><td>uuid</td><td>PK — DEC-CFBRB-064</td><td></td></tr>
+  <tr class="new-table"><td>profile_id</td><td>uuid</td><td>FK → profiles(id)</td><td></td></tr>
+  <tr class="new-table"><td>unitid</td><td>int</td><td>FK → schools(unitid)</td><td>F-16: unitid must exist before insert</td></tr>
+  <tr class="new-table"><td>coach_id</td><td>uuid</td><td>FK → college_coaches(id) nullable</td><td>Null if contact is with program, not specific coach</td></tr>
+  <tr class="new-table"><td>contact_date</td><td>date</td><td>NOT NULL</td><td></td></tr>
+  <tr class="new-table"><td>contact_type</td><td>text</td><td>CHECK constraint — DEC-CFBRB-067</td><td>email | call | text | in_person | dm | camp</td></tr>
+  <tr class="new-table"><td>initiated_by</td><td>text</td><td>CHECK constraint — DEC-CFBRB-067</td><td>student | parent | hs_coach | college_coach</td></tr>
+  <tr class="new-table"><td>short_list_step</td><td>int</td><td>nullable, 1-15</td><td>Maps to recruiting_journey_steps pipeline position</td></tr>
+  <tr class="new-table"><td>notes</td><td>text</td><td>nullable</td><td></td></tr>
+  <tr class="new-table"><td>created_at</td><td>timestamptz</td><td>default now()</td><td></td></tr>
+</table>
+
+<h2>Open Flags Affecting These Migrations</h2>
+<table>
+  <tr><th>Flag</th><th>Type</th><th>Risk</th><th>Action Required</th></tr>
+  <tr><td>F-16</td><td><span class="badge b-flag">DATA-INTEGRITY</span></td><td>High</td><td>schools.unitid completeness not guaranteed. Manual resolution workflow via school_link_staging required before production inserts into college_coaches, recruiting_events, or coach_contacts.</td></tr>
+  <tr><td>F-17</td><td><span class="badge b-blocking">INFRASTRUCTURE</span></td><td>Blocking</td><td>school_link_staging (0028) must be created and populated before any other new table receives data.</td></tr>
+  <tr><td>F-09</td><td><span class="badge b-blocking">MISSING</span></td><td>Blocking</td><td>college_coaches — resolved by migration 0029.</td></tr>
+  <tr><td>F-10</td><td><span class="badge b-blocking">MISSING</span></td><td>Blocking</td><td>recruiting_events — resolved by migration 0030.</td></tr>
+  <tr><td>F-11</td><td><span class="badge b-blocking">MISSING</span></td><td>Blocking</td><td>student_recruiting_events — resolved by migration 0031.</td></tr>
+  <tr><td>F-15</td><td><span class="badge b-blocking">MISSING</span></td><td>Blocking</td><td>coach_contacts — resolved by migration 0032.</td></tr>
+</table>
+
+<h2>Diagram — New Tables Only</h2>
+<div id="erd-new"></div>
+
+<h2>Diagram — Full Schema</h2>
+<div id="erd-full"></div>
+
+<script>
+mermaid.initialize({ startOnLoad: false, theme: 'default', fontSize: 13 });
+
+const newTables = `erDiagram
+  school_link_staging {
+    serial id PK
+    text source_tab
+    text source_run
+    text data_type
+    text school_name_raw
+    text athletics_url_raw
+    text camp_url
+    text coach_url
+    int matched_unitid
+    numeric match_confidence
+    text match_status
+    text match_method
+    timestamptz created_at
+  }
+  college_coaches {
+    uuid id PK
+    int unitid FK
+    text name
+    text title
+    text email
+    boolean is_head_coach
+    text photo_url
+    text twitter_handle
+    text profile_url
+    timestamptz created_at
+  }
+  recruiting_events {
+    uuid id PK
+    int unitid FK
+    text event_type
+    date event_date
+    date registration_deadline
+    numeric cost_dollars
+    text status
+    text registration_url
+    timestamptz created_at
+  }
+  student_recruiting_events {
+    uuid id PK
+    uuid profile_id FK
+    uuid event_id FK
+    text status
+    text gcal_event_id
+    text confirmed_by
+    timestamptz confirmed_at
+    text notes
+    timestamptz created_at
+  }
+  coach_contacts {
+    uuid id PK
+    uuid profile_id FK
+    int unitid FK
+    uuid coach_id FK
+    date contact_date
+    text contact_type
+    text initiated_by
+    int short_list_step
+    text notes
+    timestamptz created_at
+  }
+  schools {
+    int unitid PK
+    text school_name
+    text prospect_camp_link
+    text coach_link
+  }
+  profiles {
+    uuid id PK
+    uuid user_id FK
+    text name
+    numeric gpa
+    int sat
+    int grad_year
+  }
+
+  schools ||--o{ college_coaches : "has coaches"
+  schools ||--o{ recruiting_events : "has events"
+  schools ||--o{ coach_contacts : "contacted via"
+  profiles ||--o{ student_recruiting_events : "attends"
+  profiles ||--o{ coach_contacts : "initiates"
+  recruiting_events ||--o{ student_recruiting_events : "attended by"
+  college_coaches ||--o{ coach_contacts : "contacted by"
+`;
+
+const fullSchema = `erDiagram
+  schools {
+    int unitid PK
+    text school_name
+    text type
+    text prospect_camp_link
+    text coach_link
+    numeric admissions_rate
+  }
+  auth_users {
+    uuid id PK
+    text email
+  }
+  profiles {
+    uuid id PK
+    uuid user_id FK
+    text name
+    int sat
+    numeric gpa
+    text parent_guardian_email
+    numeric hs_lat
+    numeric hs_lng
+  }
+  short_list_items {
+    bigint id PK
+    uuid user_id FK
+    int unitid
+    jsonb coach_contact
+    jsonb recruiting_journey_steps
+  }
+  hs_coach_students {
+    bigint id PK
+    uuid coach_user_id FK
+    uuid student_user_id FK
+    timestamptz confirmed_at
+  }
+  hs_counselor_students {
+    bigint id PK
+    uuid counselor_user_id FK
+    uuid student_user_id FK
+    timestamptz linked_at
+  }
+  hs_coach_schools {
+    bigint id PK
+    uuid coach_user_id FK
+    uuid hs_program_id FK
+    boolean is_head_coach
+  }
+  hs_counselor_schools {
+    bigint id PK
+    uuid counselor_user_id FK
+    uuid hs_program_id FK
+  }
+  hs_programs {
+    uuid id PK
+    text school_name
+    text state
+    text conference
+  }
+  school_link_staging {
+    serial id PK
+    text source_tab
+    text source_run
+    text data_type
+    text school_name_raw
+    int matched_unitid
+    text match_status
+    timestamptz created_at
+  }
+  college_coaches {
+    uuid id PK
+    int unitid FK
+    text name
+    text title
+    boolean is_head_coach
+    timestamptz created_at
+  }
+  recruiting_events {
+    uuid id PK
+    int unitid FK
+    text event_type
+    date event_date
+    text status
+    timestamptz created_at
+  }
+  student_recruiting_events {
+    uuid id PK
+    uuid profile_id FK
+    uuid event_id FK
+    text status
+    text gcal_event_id
+    timestamptz created_at
+  }
+  coach_contacts {
+    uuid id PK
+    uuid profile_id FK
+    int unitid FK
+    uuid coach_id FK
+    text contact_type
+    text initiated_by
+    int short_list_step
+    timestamptz created_at
+  }
+
+  auth_users ||--|| profiles : "has profile"
+  auth_users ||--o{ short_list_items : "shortlists"
+  auth_users ||--o{ hs_coach_students : "coach"
+  auth_users ||--o{ hs_counselor_students : "counselor"
+  auth_users ||--o{ hs_coach_schools : "coaches at"
+  auth_users ||--o{ hs_counselor_schools : "counsels at"
+  hs_programs ||--o{ hs_coach_schools : "has coaches"
+  hs_programs ||--o{ hs_counselor_schools : "has counselors"
+  schools ||--o{ college_coaches : "has coaches"
+  schools ||--o{ recruiting_events : "has events"
+  schools ||--o{ coach_contacts : "contacted via"
+  profiles ||--o{ student_recruiting_events : "attends"
+  profiles ||--o{ coach_contacts : "initiates"
+  recruiting_events ||--o{ student_recruiting_events : "attended by"
+  college_coaches ||--o{ coach_contacts : "contacted by"
+`;
+
+mermaid.render('erd-new-svg', newTables).then(({svg}) => {
+  document.getElementById('erd-new').innerHTML = svg;
+});
+mermaid.render('erd-full-svg', fullSchema).then(({svg}) => {
+  document.getElementById('erd-full').innerHTML = svg;
+});
+</script>
+</body>
+</html>
