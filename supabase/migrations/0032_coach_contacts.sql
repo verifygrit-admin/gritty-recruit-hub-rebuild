@@ -19,11 +19,6 @@
 --     (See section 4 of coach-contacts-table-spec.md)
 --   Service role has full access for bulk imports.
 
-COMMENT ON TABLE public.coach_contacts IS
-  'Cross-school integrity gap (unitid vs coach_id) enforced at application layer per DEC-CFBRB-074. '
-  'The DB does not verify that coach_id.unitid matches the row unitid. '
-  'College coaches are denied all write access — contact records are student/HS staff initiated only.';
-
 CREATE TABLE public.coach_contacts (
   id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -67,6 +62,11 @@ CREATE TABLE public.coach_contacts (
   notes           text,        -- Free-form notes (nullable)
   created_at      timestamptz NOT NULL DEFAULT now()
 );
+
+COMMENT ON TABLE public.coach_contacts IS
+  'Cross-school integrity gap (unitid vs coach_id) enforced at application layer per DEC-CFBRB-074. '
+  'The DB does not verify that coach_id.unitid matches the row unitid. '
+  'College coaches are denied all write access — contact records are student/HS staff initiated only.';
 
 -- Index on profile_id for student-scoped queries
 CREATE INDEX coach_contacts_profile_id_idx ON public.coach_contacts (profile_id);
