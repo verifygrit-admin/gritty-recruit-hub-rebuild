@@ -173,7 +173,7 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Post-audit (corrected per 
 | registration_deadline | date |  |
 | cost_dollars | numeric |  |
 | registration_url | text |  |
-| status | text | confirmed \| registration_open \| completed |
+| status | text | confirmed \| registration_open \| completed \| cancelled |
 
 ---
 
@@ -188,3 +188,5 @@ Generated: March 31, 2026 | Version: v0.3.1 | Status: Post-audit (corrected per 
 | gcal_event_id | text | For Google Calendar sync |
 | confirmed_by | text | student \| parent \| hs_coach |
 | confirmed_at | timestamptz |  |
+
+Constraint: UNIQUE(profile_id, event_id)
