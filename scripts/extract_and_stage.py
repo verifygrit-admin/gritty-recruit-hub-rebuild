@@ -7,8 +7,7 @@ Three-step pipeline:
   3. Insert all rows into school_link_staging and export pending rows to CSV
 
 Matching:
-  70% name similarity (rapidfuzz token_sort_ratio on school_name_raw vs school_name)
-  30% domain similarity (root domain comparison of athletics_url_raw vs athletics_url)
+  100% name similarity (rapidfuzz token_sort_ratio on school_name_raw vs school_name)
   >= 0.90 → auto_confirmed
   <  0.90 → pending (needs manual review)
 
@@ -25,8 +24,6 @@ import os
 import sys
 from datetime import date
 from pathlib import Path
-from urllib.parse import urlparse
-
 import requests
 from dotenv import load_dotenv
 from rapidfuzz import fuzz
@@ -55,21 +52,6 @@ def supabase_headers():
         "Content-Type": "application/json",
         "Prefer": "return=minimal",
     }
-
-
-def extract_domain(url):
-    """Extract root domain from a URL, stripping www prefix."""
-    if not url:
-        return ""
-    try:
-        parsed = urlparse(url if "://" in url else f"https://{url}")
-        domain = parsed.netloc or parsed.path.split("/")[0]
-        domain = domain.lower()
-        if domain.startswith("www."):
-            domain = domain[4:]
-        return domain
-    except Exception:
-        return ""
 
 
 # ============================================================
@@ -158,7 +140,7 @@ def load_all_tabs():
 
 def fetch_schools():
     """Fetch all schools from Supabase for matching."""
-    url = f"{SUPABASE_URL}/rest/v1/schools?select=unitid,school_name,athletics_url"
+    url = f"{SUPABASE_URL}/rest/v1/schools?select=unitid,school_name"
     try:
         resp = requests.get(url, headers={
             "apikey": SUPABASE_KEY,
@@ -174,28 +156,15 @@ def fetch_schools():
 def match_school(row, schools):
     """Find the best matching school for a row. Returns match dict."""
     raw_name = row["school_name_raw"]
-    raw_domain = extract_domain(row["athletics_url_raw"])
 
     best_score = 0.0
     best_match = None
 
     for school in schools:
         db_name = school.get("school_name", "") or ""
-        db_domain = extract_domain(school.get("athletics_url", "") or "")
 
         # Name similarity (0-100 from rapidfuzz, normalize to 0-1)
-        name_score = fuzz.token_sort_ratio(raw_name.lower(), db_name.lower()) / 100.0
-
-        # Domain similarity
-        if raw_domain and db_domain:
-            domain_score = 1.0 if raw_domain == db_domain else fuzz.ratio(raw_domain, db_domain) / 100.0
-        elif not raw_domain and not db_domain:
-            domain_score = 0.5  # Both missing — neutral
-        else:
-            domain_score = 0.0
-
-        # Weighted average
-        score = (0.70 * name_score) + (0.30 * domain_score)
+        score = fuzz.token_sort_ratio(raw_name.lower(), db_name.lower()) / 100.0
 
         if score > best_score:
             best_score = score
