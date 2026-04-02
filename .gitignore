@@ -10,3 +10,6 @@ scripts/seed_users.js
 .claude/
 docs/superpowers/specs/DAVID + PATCH JOINT FIDELITY AUDIT.txt
 docs/superpowers/specs/erd-current-state.html
+credentials.json
+token.pickle
+extracted/
