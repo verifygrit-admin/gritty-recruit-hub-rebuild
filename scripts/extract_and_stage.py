@@ -4,13 +4,13 @@ extract_and_stage.py
 Three-step pipeline:
   1. Load extracted JSON files from extracted/ (output of extract_schools_with_links.py)
   2. Fuzzy match each school row against the live Supabase schools table
-  3. Insert all rows into school_link_staging and export needs_review rows to CSV
+  3. Insert all rows into school_link_staging and export pending rows to CSV
 
 Matching:
   70% name similarity (rapidfuzz token_sort_ratio on school_name_raw vs school_name)
   30% domain similarity (root domain comparison of athletics_url_raw vs athletics_url)
   >= 0.90 → auto_confirmed
-  <  0.90 → needs_review
+  <  0.90 → pending (needs manual review)
 
 Auth: SUPABASE_SERVICE_ROLE_KEY from .env (service role for staging inserts)
 
@@ -77,11 +77,17 @@ def extract_domain(url):
 # ============================================================
 
 def find_column_index(headers, candidates):
-    """Find the first header index matching any candidate (case-insensitive)."""
-    for i, header in enumerate(headers):
-        text = header.get("text", "").strip().lower()
-        for candidate in candidates:
-            if candidate.lower() in text:
+    """Find the best header index matching candidates in priority order.
+
+    Iterates candidates most-specific-first. For each candidate, checks all
+    headers for a match. Returns the first hit, so candidate order determines
+    priority (put specific terms before broad ones like 'name').
+    """
+    for candidate in candidates:
+        candidate_lower = candidate.lower()
+        for i, header in enumerate(headers):
+            text = header.get("text", "").strip().lower()
+            if candidate_lower in text:
                 return i
     return None
 
@@ -96,8 +102,12 @@ def load_all_tabs():
             print(f"WARNING: {json_path} not found — skipping tab {tab}")
             continue
 
-        with open(json_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"ERROR: Failed to load {json_path}: {e}")
+            sys.exit(1)
 
         if len(data) < 2:
             print(f"WARNING: {tab} has no data rows — skipping")
@@ -105,8 +115,8 @@ def load_all_tabs():
 
         headers = data[0]
 
-        # Identify columns by header text
-        name_col = find_column_index(headers, ["school", "institution", "name"])
+        # Identify columns by header text (most-specific candidates first)
+        name_col = find_column_index(headers, ["institution", "school", "name"])
         athletics_col = find_column_index(headers, ["athletics", "athletic"])
         camp_col = find_column_index(headers, ["camp", "prospect camp"])
         coach_col = find_column_index(headers, ["coach", "coaching staff", "staff"])
@@ -149,12 +159,16 @@ def load_all_tabs():
 def fetch_schools():
     """Fetch all schools from Supabase for matching."""
     url = f"{SUPABASE_URL}/rest/v1/schools?select=unitid,school_name,athletics_url"
-    resp = requests.get(url, headers={
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-    })
-    resp.raise_for_status()
-    return resp.json()
+    try:
+        resp = requests.get(url, headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        })
+        resp.raise_for_status()
+        return resp.json()
+    except requests.RequestException as e:
+        print(f"ERROR: Failed to fetch schools from Supabase: {e}")
+        sys.exit(1)
 
 
 def match_school(row, schools):
@@ -192,18 +206,18 @@ def match_school(row, schools):
             "matched_unitid": None,
             "match_confidence": 0.0,
             "match_status": "unresolved",
-            "match_method": "no_candidates",
+            "match_method": "name_fuzzy",
             "best_match_name": "",
             "best_match_id": None,
         }
 
-    status = "auto_confirmed" if best_score >= MATCH_THRESHOLD else "needs_review"
+    status = "auto_confirmed" if best_score >= MATCH_THRESHOLD else "pending"
 
     return {
         "matched_unitid": best_match["unitid"],
         "match_confidence": round(best_score, 4),
         "match_status": status,
-        "match_method": "fuzzy_name_domain",
+        "match_method": "name_fuzzy",
         "best_match_name": best_match.get("school_name", ""),
         "best_match_id": best_match["unitid"],
     }
@@ -222,10 +236,20 @@ def insert_staging_rows(rows):
         payload = []
 
         for row in batch:
+            # Determine data_type based on which URLs are populated
+            has_camp = bool(row.get("camp_url"))
+            has_coach = bool(row.get("coach_url"))
+            if has_camp:
+                data_type = "camp_link"
+            elif has_coach:
+                data_type = "coach_link"
+            else:
+                data_type = "none"
+
             payload.append({
                 "source_tab": row["source_tab"],
                 "source_run": SOURCE_RUN,
-                "data_type": "camp_link",
+                "data_type": data_type,
                 "row_index": row["row_index"],
                 "school_name_raw": row["school_name_raw"],
                 "athletics_url_raw": row["athletics_url_raw"] or None,
@@ -238,7 +262,7 @@ def insert_staging_rows(rows):
             })
 
         resp = requests.post(url, headers=supabase_headers(), json=payload)
-        if resp.status_code not in (200, 201):
+        if resp.status_code not in (200, 201, 204):
             print(f"ERROR inserting batch {i // batch_size + 1}: {resp.status_code}")
             print(resp.text[:500])
             sys.exit(1)
@@ -254,8 +278,8 @@ def insert_staging_rows(rows):
 # ============================================================
 
 def export_review_csv(rows):
-    """Write needs_review rows to CSV for manual review."""
-    review_rows = [r for r in rows if r["match_status"] == "needs_review"]
+    """Write pending (needs review) rows to CSV for manual review."""
+    review_rows = [r for r in rows if r["match_status"] == "pending"]
 
     csv_path = EXTRACTED_DIR / "match_review.csv"
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
@@ -283,7 +307,37 @@ def export_review_csv(rows):
 # Main
 # ============================================================
 
+def check_dedup():
+    """Check if staging rows already exist for today's source_run. Exit if so."""
+    url = (
+        f"{SUPABASE_URL}/rest/v1/school_link_staging"
+        f"?source_run=eq.{SOURCE_RUN}&select=id&limit=1"
+    )
+    try:
+        resp = requests.get(url, headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        })
+        resp.raise_for_status()
+        rows = resp.json()
+    except requests.RequestException as e:
+        print(f"ERROR: Dedup check failed: {e}")
+        sys.exit(1)
+
+    if rows:
+        print(f"ERROR: school_link_staging already has rows for source_run = '{SOURCE_RUN}'.")
+        print("To re-run, first delete existing rows:")
+        print(f"  DELETE FROM school_link_staging WHERE source_run = '{SOURCE_RUN}';")
+        print("Or use a different source_run identifier.")
+        sys.exit(1)
+
+
 def main():
+    # Dedup guard — prevent duplicate inserts on re-run
+    print("Checking for existing staging rows...")
+    check_dedup()
+    print("No duplicates found — proceeding.\n")
+
     print("=" * 60)
     print("STEP 1 — Loading extracted JSON files")
     print("=" * 60)
@@ -309,11 +363,11 @@ def main():
         row.update(match)
 
     auto_confirmed = sum(1 for r in all_rows if r["match_status"] == "auto_confirmed")
-    needs_review = sum(1 for r in all_rows if r["match_status"] == "needs_review")
+    pending = sum(1 for r in all_rows if r["match_status"] == "pending")
     unresolved = sum(1 for r in all_rows if r["match_status"] == "unresolved")
 
     print(f"  Auto confirmed: {auto_confirmed}")
-    print(f"  Needs review:   {needs_review}")
+    print(f"  Pending review: {pending}")
     print(f"  Unresolved:     {unresolved}\n")
 
     print("Inserting into school_link_staging...")
@@ -333,7 +387,7 @@ def main():
     print("=" * 60)
     print(f"  Total rows:      {len(all_rows)}")
     print(f"  Auto confirmed:  {auto_confirmed}")
-    print(f"  Needs review:    {needs_review}")
+    print(f"  Pending review:  {pending}")
     print(f"  Unresolved:      {unresolved}")
     print(f"  Staged in DB:    {inserted}")
     print(f"  Review CSV:      {csv_path}")
