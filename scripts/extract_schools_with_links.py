@@ -78,7 +78,7 @@ def extract_tab(service, tab_name):
         service.spreadsheets()
         .get(
             spreadsheetId=SHEET_ID,
-            ranges=[tab_name],
+            ranges=[f"'{tab_name}'"],
             includeGridData=True,
         )
         .execute()
