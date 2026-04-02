@@ -15,7 +15,7 @@ ALTER TABLE public.school_link_staging
   school_link_staging_match_status_check;
 ALTER TABLE public.school_link_staging
   ADD CONSTRAINT school_link_staging_match_status_check
-  CHECK (match_status IN (
+  CHECK (match_status IS NULL OR match_status IN (
     'pending','auto_confirmed','manually_confirmed',
     'unresolved','dedup_excluded'
   ));
