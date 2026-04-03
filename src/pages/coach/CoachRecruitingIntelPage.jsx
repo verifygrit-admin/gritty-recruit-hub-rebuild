@@ -38,6 +38,26 @@ const DEADLINES = [
   { name: 'Early Signing Day', date: new Date(2026, 11, 7) },
 ];
 
+const STATUS_LABELS = {
+  currently_recommended: 'Currently Recommended',
+  out_of_academic_reach: 'Academic Stretch',
+  below_academic_fit: 'Below Academic Fit',
+  out_of_athletic_reach: 'Athletic Stretch',
+  below_athletic_fit: 'Highly Recruitable',
+  outside_geographic_reach: 'Outside Geographic Reach',
+  not_evaluated: 'Not Evaluated',
+};
+
+const STATUS_COLORS = {
+  currently_recommended: '#4CAF50',
+  out_of_academic_reach: '#F44336',
+  below_academic_fit: '#FF9800',
+  out_of_athletic_reach: '#F44336',
+  below_athletic_fit: '#D4A017',
+  outside_geographic_reach: '#9C27B0',
+  not_evaluated: '#6B6B6B',
+};
+
 function daysUntil(target) {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
@@ -61,6 +81,22 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
   const [slideoutStudent, setSlideoutStudent] = useState(null);
   const [slideoutFilter, setSlideoutFilter] = useState(null); // { type: 'division'|'conference', value: string }
   const [imgErrors, setImgErrors] = useState({});
+
+  // ── Lock body scroll when slideout is open ──
+  useEffect(() => {
+    if (!slideoutStudent) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [slideoutStudent]);
+
+  // ── Close slideout on Escape ──
+  useEffect(() => {
+    if (!slideoutStudent) return;
+    const handler = (e) => { if (e.key === 'Escape') { setSlideoutStudent(null); setSlideoutFilter(null); } };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [slideoutStudent]);
 
   // ── Student lookup map ──
   const studentMap = useMemo(() => {
@@ -99,7 +135,10 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
     if (document.getElementById(id)) return;
     const style = document.createElement('style');
     style.id = id;
-    style.textContent = '@keyframes slideDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }';
+    style.textContent = [
+      '@keyframes slideDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }',
+      '@media (max-width: 768px) { [data-testid="intel-student-slideout"] { width: 100% !important; } }',
+    ].join('\n');
     document.head.appendChild(style);
     return () => { const el = document.getElementById(id); if (el) el.remove(); };
   }, []);
@@ -188,6 +227,35 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
       }))
       .sort((a, b) => b.studentIds.length - a.studentIds.length);
   }, [selectedDivision, shortlistByStudent, schoolDetails, students]);
+
+  // ── Slideout: filtered shortlist items for selected student ──
+  const slideoutItems = useMemo(() => {
+    if (!slideoutStudent || !slideoutFilter) return [];
+    const items = shortlistByStudent[slideoutStudent] || [];
+
+    return items.filter(item => {
+      const school = schoolDetails[item.unitid];
+      if (slideoutFilter.type === 'division') {
+        const division = school?.type || item.div || 'Unknown';
+        return division === slideoutFilter.value;
+      }
+      if (slideoutFilter.type === 'conference') {
+        return (item.conference || 'Independent') === slideoutFilter.value;
+      }
+      return true;
+    }).map(item => {
+      const school = schoolDetails[item.unitid];
+      const steps = item.recruiting_journey_steps || [];
+      const done = steps.filter(s => s.completed).length;
+      return {
+        ...item,
+        _done: done,
+        _total: steps.length,
+        _pct: steps.length > 0 ? Math.round((done / steps.length) * 100) : 0,
+        _campLink: school?.prospect_camp_link || null,
+      };
+    }).sort((a, b) => b._pct - a._pct);
+  }, [slideoutStudent, slideoutFilter, shortlistByStudent, schoolDetails]);
 
   // ── Avatar helper ──
   function renderAvatars(studentIds, filterCtx) {
@@ -541,7 +609,147 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
         </div>
       )}
 
-      {/* Student slideout renders here — added in Task 5 */}
+      {/* ── Student Slideout ── */}
+      {slideoutStudent && (() => {
+        const student = studentMap[slideoutStudent];
+        if (!student) return null;
+        const filterLabel = slideoutFilter
+          ? `${slideoutFilter.value} schools`
+          : 'schools';
+
+        return (
+          <div
+            data-testid="intel-student-slideout-overlay"
+            style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', justifyContent: 'flex-end' }}
+          >
+            {/* Backdrop */}
+            <div
+              style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)' }}
+              onClick={() => { setSlideoutStudent(null); setSlideoutFilter(null); }}
+              aria-hidden="true"
+            />
+            {/* Panel */}
+            <div
+              data-testid="intel-student-slideout"
+              style={{
+                position: 'relative',
+                width: 'min(50vw, 560px)',
+                height: '100%',
+                backgroundColor: '#FFFFFF',
+                boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
+                overflowY: 'auto',
+                transition: 'transform 250ms ease-out',
+              }}
+            >
+              {/* Sticky close button */}
+              <div style={{
+                position: 'sticky', top: 0, zIndex: 2,
+                display: 'flex', justifyContent: 'flex-start',
+                padding: '12px 16px 0', backgroundColor: '#FFFFFF',
+              }}>
+                <button
+                  data-testid="slideout-close"
+                  onClick={() => { setSlideoutStudent(null); setSlideoutFilter(null); }}
+                  style={{
+                    background: 'none', border: `1px solid ${BORDER}`,
+                    borderRadius: 4, padding: '6px 14px', cursor: 'pointer',
+                    fontSize: '0.8125rem', color: TEXT_MED, fontWeight: 500,
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* Student header */}
+              <div style={{ padding: '16px 20px 0' }}>
+                <h3 style={{ margin: '0 0 4px', fontSize: '1.125rem', fontWeight: 600, color: TEXT_DARK }}>
+                  {student.name || 'Unknown Student'}
+                </h3>
+                <div style={{ fontSize: '0.875rem', color: TEXT_MED, marginBottom: 4 }}>
+                  {[student.position, student.grad_year ? `Class of ${student.grad_year}` : null]
+                    .filter(Boolean).join(' \u2022 ') || 'No profile details'}
+                </div>
+                <div style={{
+                  fontSize: '0.8125rem', color: MAROON, fontWeight: 500, marginBottom: 16,
+                }}>
+                  Showing {slideoutItems.length} {filterLabel}
+                </div>
+              </div>
+
+              {/* Filtered school list */}
+              <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {slideoutItems.length === 0 ? (
+                  <p style={{ fontSize: '0.875rem', color: TEXT_MED, fontStyle: 'italic' }}>
+                    No schools in this {slideoutFilter?.type || 'filter'}.
+                  </p>
+                ) : (
+                  slideoutItems.map(item => (
+                    <div
+                      key={item.id}
+                      data-testid={`slideout-school-${item.id}`}
+                      style={{
+                        padding: '10px 14px',
+                        backgroundColor: CREAM,
+                        borderRadius: 6,
+                      }}
+                    >
+                      {/* School name + status badge */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: TEXT_DARK }}>
+                          {item.school_name || `UNITID ${item.unitid}`}
+                        </span>
+                        <span style={{
+                          fontSize: '0.6875rem', fontWeight: 500, color: '#FFFFFF',
+                          backgroundColor: STATUS_COLORS[item.grit_fit_status] || TEXT_MED,
+                          padding: '2px 8px', borderRadius: 12,
+                        }}>
+                          {STATUS_LABELS[item.grit_fit_status] || item.grit_fit_status || 'Not Evaluated'}
+                        </span>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <div style={{
+                          flex: 1, height: 6, backgroundColor: BORDER,
+                          borderRadius: 3, overflow: 'hidden',
+                        }}>
+                          <div style={{
+                            height: '100%', width: `${item._pct}%`,
+                            backgroundColor: MAROON, borderRadius: 3,
+                          }} />
+                        </div>
+                        <span style={{ fontSize: '0.6875rem', color: TEXT_MED, whiteSpace: 'nowrap' }}>
+                          {item._done}/{item._total}
+                        </span>
+                      </div>
+
+                      {/* Camp link */}
+                      {item._campLink && (
+                        <a
+                          href={item._campLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            fontSize: '0.75rem', color: '#2A6B5C', fontWeight: 500,
+                            textDecoration: 'none',
+                          }}
+                        >
+                          <span style={{
+                            width: 7, height: 7, borderRadius: '50%',
+                            background: '#4CAF50', display: 'inline-block',
+                          }} />
+                          2026 Camp Available
+                        </a>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
