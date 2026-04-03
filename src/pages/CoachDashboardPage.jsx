@@ -17,12 +17,14 @@ import { supabase } from '../lib/supabaseClient.js';
 import CoachStudentsPage from './coach/CoachStudentsPage.jsx';
 import CoachReportsPage from './coach/CoachReportsPage.jsx';
 import CoachCalendarPage from './coach/CoachCalendarPage.jsx';
+import CoachRecruitingIntelPage from './coach/CoachRecruitingIntelPage.jsx';
 
 const ALLOWED_ROLES = ['hs_coach', 'hs_guidance_counselor'];
 const TABS = [
   { key: 'students', label: 'Students' },
   { key: 'calendar', label: 'Calendar' },
   { key: 'reports', label: 'Reports' },
+  { key: 'intel', label: 'Recruiting Intelligence' },
 ];
 
 export default function CoachDashboardPage() {
@@ -320,6 +322,11 @@ export default function CoachDashboardPage() {
       )}
       {activeTab === 'calendar' && (
         <CoachCalendarPage />
+      )}
+      {activeTab === 'intel' && (
+        <CoachRecruitingIntelPage
+          shortlistByStudent={shortlistByStudent}
+        />
       )}
     </div>
   );
