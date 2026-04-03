@@ -58,6 +58,12 @@ const STATUS_COLORS = {
   not_evaluated: '#6B6B6B',
 };
 
+function safeHref(url) {
+  if (!url) return '#';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return '#';
+}
+
 function daysUntil(target) {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
@@ -74,20 +80,22 @@ function deadlineColor(days) {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function CoachRecruitingIntelPage({ students, shortlistByStudent }) {
+export default function CoachRecruitingIntelPage({ students, shortlistByStudent, selectedDivision, onSelectedDivisionChange }) {
   const [schoolDetails, setSchoolDetails] = useState({});
   const [loading, setLoading] = useState(true);
-  const [selectedDivision, setSelectedDivision] = useState(null);
+  const setSelectedDivision = onSelectedDivisionChange;
   const [slideoutStudent, setSlideoutStudent] = useState(null);
   const [slideoutFilter, setSlideoutFilter] = useState(null); // { type: 'division'|'conference', value: string }
   const [imgErrors, setImgErrors] = useState({});
 
   // ── Lock body scroll when slideout is open ──
   useEffect(() => {
-    if (!slideoutStudent) return;
-    const prev = document.body.style.overflow;
+    if (!slideoutStudent) {
+      document.body.style.overflow = '';
+      return;
+    }
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    return () => { document.body.style.overflow = ''; };
   }, [slideoutStudent]);
 
   // ── Close slideout on Escape ──
@@ -361,7 +369,6 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
           overflowX: 'auto',
           paddingBottom: 4,
           marginBottom: 24,
-          WebkitOverflowScrolling: 'touch',
         }}
       >
         {DEADLINES.map(dl => {
@@ -424,7 +431,8 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))',
+            overflow: 'hidden',
             gap: 16,
           }}>
             {divisionData.map(div => (
@@ -516,7 +524,8 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))',
+            overflow: 'hidden',
             gap: 16,
           }}>
             {conferenceData.map(conf => {
@@ -579,7 +588,7 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
                       {visibleCoachLinks.map((s, i) => (
                         <a
                           key={i}
-                          href={s.coach_link}
+                          href={safeHref(s.coach_link)}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
@@ -726,7 +735,7 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
                       {/* Camp link */}
                       {item._campLink && (
                         <a
-                          href={item._campLink}
+                          href={safeHref(item._campLink)}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{

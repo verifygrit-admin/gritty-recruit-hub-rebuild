@@ -40,6 +40,7 @@ export default function CoachDashboardPage() {
 
   // UI state
   const [activeTab, setActiveTab] = useState('students');
+  const [intelSelectedDivision, setIntelSelectedDivision] = useState(null);
 
   const isCoach = userType === 'hs_coach';
   const isCounselor = userType === 'hs_guidance_counselor';
@@ -327,6 +328,8 @@ export default function CoachDashboardPage() {
         <CoachRecruitingIntelPage
           students={students}
           shortlistByStudent={shortlistByStudent}
+          selectedDivision={intelSelectedDivision}
+          onSelectedDivisionChange={setIntelSelectedDivision}
         />
       )}
     </div>
