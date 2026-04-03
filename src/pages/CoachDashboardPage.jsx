@@ -325,6 +325,7 @@ export default function CoachDashboardPage() {
       )}
       {activeTab === 'intel' && (
         <CoachRecruitingIntelPage
+          students={students}
           shortlistByStudent={shortlistByStudent}
         />
       )}
