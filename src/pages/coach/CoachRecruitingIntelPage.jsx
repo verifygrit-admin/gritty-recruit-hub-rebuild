@@ -93,6 +93,17 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
       });
   }, [allUnitids]);
 
+  // ── Inject slide-down keyframe (once) ──
+  useEffect(() => {
+    const id = 'intel-slide-keyframe';
+    if (document.getElementById(id)) return;
+    const style = document.createElement('style');
+    style.id = id;
+    style.textContent = '@keyframes slideDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }';
+    document.head.appendChild(style);
+    return () => { const el = document.getElementById(id); if (el) el.remove(); };
+  }, []);
+
   // ── Division aggregation ──
   const divisionData = useMemo(() => {
     const divs = {};
@@ -130,6 +141,53 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
       }))
       .sort((a, b) => b.studentIds.length - a.studentIds.length);
   }, [shortlistByStudent, schoolDetails, students]);
+
+  // ── Conference aggregation (for selected division) ──
+  const conferenceData = useMemo(() => {
+    if (!selectedDivision) return [];
+
+    const confs = {};
+    for (const [userId, items] of Object.entries(shortlistByStudent)) {
+      for (const item of items) {
+        const school = schoolDetails[item.unitid];
+        const division = school?.type || item.div || 'Unknown';
+        if (division !== selectedDivision) continue;
+
+        const conf = item.conference || 'Independent';
+        if (!confs[conf]) {
+          confs[conf] = {
+            name: conf,
+            studentIds: new Set(),
+            schools: new Map(), // unitid -> { school_name, coach_link }
+            items: [],
+          };
+        }
+        confs[conf].studentIds.add(userId);
+        confs[conf].items.push({ ...item, _userId: userId });
+
+        if (!confs[conf].schools.has(item.unitid)) {
+          confs[conf].schools.set(item.unitid, {
+            school_name: item.school_name || school?.school_name || `UNITID ${item.unitid}`,
+            coach_link: item.coach_link || school?.coach_link || null,
+            prospect_camp_link: school?.prospect_camp_link || null,
+          });
+        }
+      }
+    }
+
+    return Object.values(confs)
+      .map(c => ({
+        name: c.name,
+        studentIds: [...c.studentIds],
+        schoolCount: c.schools.size,
+        schools: [...c.schools.values()],
+        rosterPct: students.length > 0
+          ? Math.round((c.studentIds.size / students.length) * 100)
+          : 0,
+        items: c.items,
+      }))
+      .sort((a, b) => b.studentIds.length - a.studentIds.length);
+  }, [selectedDivision, shortlistByStudent, schoolDetails, students]);
 
   // ── Avatar helper ──
   function renderAvatars(studentIds, filterCtx) {
@@ -354,7 +412,134 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
         </div>
       )}
 
-      {/* Section 3 (Conference Layer) renders here — added in Task 4 */}
+      {/* ── SECTION 3: Conference Layer (Layer 2) ── */}
+      {selectedDivision && (
+        <div
+          data-testid="conference-layer"
+          style={{
+            animation: 'slideDown 250ms ease-out',
+          }}
+        >
+          {/* Back button */}
+          <button
+            data-testid="back-to-divisions"
+            onClick={() => setSelectedDivision(null)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: MAROON, fontWeight: 600, fontSize: '0.875rem',
+              padding: '4px 0', marginBottom: 16,
+            }}
+          >
+            &larr; All Divisions
+          </button>
+
+          <h3 style={{
+            fontSize: '1.125rem', fontWeight: 600, color: TEXT_DARK,
+            margin: '0 0 4px',
+          }}>
+            {selectedDivision} — Conferences
+          </h3>
+          <p style={{
+            fontSize: '0.875rem', color: TEXT_MED, margin: '0 0 20px', lineHeight: 1.5,
+          }}>
+            Conference breakdown for {selectedDivision} schools on your athletes' shortlists.
+          </p>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gap: 16,
+          }}>
+            {conferenceData.map(conf => {
+              const coachLinkSchools = conf.schools.filter(s => s.coach_link);
+              const visibleCoachLinks = coachLinkSchools.slice(0, 4);
+              const moreCoachLinks = coachLinkSchools.length - 4;
+
+              return (
+                <div
+                  key={conf.name}
+                  data-testid={`conference-card-${conf.name}`}
+                  style={{
+                    background: '#FFFFFF',
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: 10,
+                    padding: 20,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'box-shadow 200ms, transform 200ms',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = `0 6px 20px ${GOLD}33`;
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 700, color: MAROON }}>
+                      {conf.name}
+                    </span>
+                    <span style={{
+                      fontSize: '0.75rem', fontWeight: 600, color: TEXT_MED,
+                    }}>
+                      {conf.schoolCount} school{conf.schoolCount !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '0.8125rem', color: MAROON, fontWeight: 600, marginBottom: 4 }}>
+                    {conf.rosterPct}% of your roster
+                  </div>
+
+                  {renderAvatars(conf.studentIds, { type: 'conference', value: conf.name })}
+
+                  {/* Coaching Staff links */}
+                  {visibleCoachLinks.length > 0 && (
+                    <div style={{
+                      marginTop: 12,
+                      paddingTop: 10,
+                      borderTop: `1px solid ${BORDER}`,
+                    }}>
+                      <div style={{
+                        fontSize: '0.6875rem', fontWeight: 600, color: TEXT_MED,
+                        textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6,
+                      }}>
+                        Coaching Staff
+                      </div>
+                      {visibleCoachLinks.map((s, i) => (
+                        <a
+                          key={i}
+                          href={s.coach_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'block',
+                            fontSize: '0.8125rem',
+                            color: MAROON,
+                            textDecoration: 'none',
+                            padding: '2px 0',
+                            fontWeight: 500,
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {s.school_name} &rarr;
+                        </a>
+                      ))}
+                      {moreCoachLinks > 0 && (
+                        <span style={{ fontSize: '0.75rem', color: TEXT_MED }}>
+                          +{moreCoachLinks} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Student slideout renders here — added in Task 5 */}
     </div>
