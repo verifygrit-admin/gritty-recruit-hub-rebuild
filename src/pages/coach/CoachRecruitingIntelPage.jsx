@@ -93,6 +93,111 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
       });
   }, [allUnitids]);
 
+  // ── Division aggregation ──
+  const divisionData = useMemo(() => {
+    const divs = {};
+
+    for (const [userId, items] of Object.entries(shortlistByStudent)) {
+      for (const item of items) {
+        const school = schoolDetails[item.unitid];
+        const division = school?.type || item.div || 'Unknown';
+        if (!divs[division]) {
+          divs[division] = {
+            name: division,
+            studentIds: new Set(),
+            schoolUnitids: new Set(),
+            conferences: new Set(),
+            items: [],
+          };
+        }
+        divs[division].studentIds.add(userId);
+        divs[division].schoolUnitids.add(item.unitid);
+        if (item.conference) divs[division].conferences.add(item.conference);
+        divs[division].items.push({ ...item, _userId: userId });
+      }
+    }
+
+    return Object.values(divs)
+      .map(d => ({
+        name: d.name,
+        studentIds: [...d.studentIds],
+        schoolCount: d.schoolUnitids.size,
+        conferenceCount: d.conferences.size,
+        rosterPct: students.length > 0
+          ? Math.round((d.studentIds.size / students.length) * 100)
+          : 0,
+        items: d.items,
+      }))
+      .sort((a, b) => b.studentIds.length - a.studentIds.length);
+  }, [shortlistByStudent, schoolDetails, students]);
+
+  // ── Avatar helper ──
+  function renderAvatars(studentIds, filterCtx) {
+    const visible = studentIds.slice(0, MAX_AVATARS);
+    const overflow = studentIds.length - MAX_AVATARS;
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', marginTop: 10 }}>
+        {visible.map((uid, i) => {
+          const student = studentMap[uid];
+          if (!student) return null;
+          const hasStorageAvatar = student.avatar_storage_path && !imgErrors[uid];
+          let avatarUrl = null;
+          if (hasStorageAvatar) {
+            const { data } = supabase.storage.from('avatars').getPublicUrl(student.avatar_storage_path);
+            avatarUrl = data?.publicUrl;
+          }
+          const initial = student.name?.charAt(0).toUpperCase() || '?';
+
+          return (
+            <div
+              key={uid}
+              title={student.name || 'Unknown'}
+              onClick={(e) => { e.stopPropagation(); setSlideoutStudent(uid); setSlideoutFilter(filterCtx); }}
+              style={{
+                width: 32, height: 32, borderRadius: '50%',
+                border: '2px solid #FFFFFF',
+                backgroundColor: CREAM,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.75rem', fontWeight: 700, color: MAROON,
+                cursor: 'pointer',
+                marginLeft: i > 0 ? -8 : 0,
+                zIndex: MAX_AVATARS - i,
+                position: 'relative',
+                overflow: 'hidden',
+                flexShrink: 0,
+                transition: 'transform 150ms',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.15)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={student.name}
+                  onError={() => setImgErrors(prev => ({ ...prev, [uid]: true }))}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              ) : (
+                initial
+              )}
+            </div>
+          );
+        })}
+        {overflow > 0 && (
+          <span style={{
+            marginLeft: 6,
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            color: TEXT_MED,
+          }}>
+            +{overflow} more
+          </span>
+        )}
+      </div>
+    );
+  }
+
   // ── SECTION 1: Deadline Countdown Bar ──
   // (Sections 2 and 3 will be added in subsequent tasks)
 
@@ -176,7 +281,80 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent 
         })}
       </div>
 
-      {/* Sections 2 and 3 render here — added in Tasks 3 and 4 */}
+      {/* ── SECTION 2: Division Layer (Layer 1) ── */}
+      {!selectedDivision && (
+        <div data-testid="division-layer">
+          <h3 style={{
+            fontSize: '1.125rem', fontWeight: 600, color: TEXT_DARK,
+            margin: '0 0 4px',
+          }}>
+            Recruiting Intelligence
+          </h3>
+          <p style={{
+            fontSize: '0.875rem', color: TEXT_MED, margin: '0 0 20px', lineHeight: 1.5,
+          }}>
+            Schools your athletes are targeting — drill down by division and conference.
+          </p>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gap: 16,
+          }}>
+            {divisionData.map(div => (
+              <div
+                key={div.name}
+                data-testid={`division-card-${div.name}`}
+                onClick={() => setSelectedDivision(div.name)}
+                style={{
+                  background: '#FFFFFF',
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 10,
+                  padding: 20,
+                  cursor: 'pointer',
+                  transition: 'box-shadow 200ms, transform 200ms',
+                  aspectRatio: '1 / 0.85',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = `0 6px 20px ${GOLD}33`;
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 800, color: MAROON }}>
+                      {div.name}
+                    </span>
+                    <span style={{
+                      background: GOLD, color: MAROON, fontWeight: 700,
+                      fontSize: '0.7rem', padding: '3px 10px', borderRadius: 12,
+                    }}>
+                      {div.conferenceCount} conf.
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: TEXT_MED, marginBottom: 4 }}>
+                    {div.schoolCount} school{div.schoolCount !== 1 ? 's' : ''}
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: MAROON, fontWeight: 600 }}>
+                    {div.rosterPct}% of your roster
+                  </div>
+                </div>
+
+                {renderAvatars(div.studentIds, { type: 'division', value: div.name })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Section 3 (Conference Layer) renders here — added in Task 4 */}
 
       {/* Student slideout renders here — added in Task 5 */}
     </div>
