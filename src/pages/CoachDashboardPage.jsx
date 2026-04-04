@@ -279,8 +279,14 @@ export default function CoachDashboardPage() {
 
       {/* Tab Navigation */}
       <div style={{
-        display: 'flex', borderBottom: '1px solid #E8E8E8',
-        backgroundColor: '#FFFFFF', marginBottom: 16,
+        display: 'flex',
+        borderBottom: '1px solid #E8E8E8',
+        backgroundColor: '#FFFFFF',
+        marginBottom: 16,
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        scrollBehavior: 'smooth',
+        WebkitOverflowScrolling: 'touch',
       }}>
         {TABS.map(tab => (
           <button
@@ -297,12 +303,34 @@ export default function CoachDashboardPage() {
               fontSize: '0.875rem',
               cursor: 'pointer',
               transition: 'color 150ms, border-color 150ms',
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
             }}
           >
             {tab.label}
           </button>
         ))}
       </div>
+      <style>{`
+        @supports (scrollbar-width: thin) {
+          div[style*="overflowX"] {
+            scrollbar-width: thin;
+            scrollbar-color: #D4D4D4 transparent;
+          }
+        }
+        @supports selector(::-webkit-scrollbar) {
+          div[style*="overflowX"]::-webkit-scrollbar {
+            height: 4px;
+          }
+          div[style*="overflowX"]::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          div[style*="overflowX"]::-webkit-scrollbar-thumb {
+            background-color: #D4D4D4;
+            border-radius: 2px;
+          }
+        }
+      `}</style>
 
       {/* Tab Content */}
       {activeTab === 'students' && (

@@ -388,6 +388,16 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
   return (
     <div data-testid="recruiting-intel-page">
       {/* ── SECTION 1: Deadline Countdown Trackers ── */}
+      <h3 style={{
+        fontSize: '0.875rem',
+        fontWeight: 600,
+        color: '#2C2C2C',
+        margin: '0 0 12px 0',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+      }}>
+        Upcoming Deadlines
+      </h3>
       <DeadlinePercentileTracker deadlines={DEADLINES} />
 
       {/* ── SECTION 2: Division Layer (Layer 1) ── */}

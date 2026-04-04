@@ -394,7 +394,22 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
                       {dt.libraryLabel}
                     </span>
 
-                    {/* Status Pending removed — SHOULD 4: show real status when document_shares data available */}
+                    {/* Not Submitted badge — hardcoded per Quill spec (DEC-GLOBAL-057 session).
+                        Do not conditionalize without a separate Quill spec.
+                        Future: swap to dynamic state when document_shares data is wired. */}
+                    <span style={{
+                      fontSize: '0.6875rem',
+                      fontWeight: 600,
+                      color: '#FFFFFF',
+                      backgroundColor: '#9E9E9E',
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5,
+                      flexShrink: 0,
+                    }}>
+                      Not Submitted
+                    </span>
 
                     {/* Mailto actions for missing docs — role-aware */}
                     {(() => {
@@ -426,6 +441,11 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
                                 border: '1px solid #8B3A3A',
                                 borderRadius: 4,
                                 whiteSpace: 'nowrap',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minWidth: '80px',
+                                height: '24px',
                               }}
                             >
                               Email Student
@@ -444,6 +464,11 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
                                 border: `1px solid ${secondColor}`,
                                 borderRadius: 4,
                                 whiteSpace: 'nowrap',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minWidth: '80px',
+                                height: '24px',
                               }}
                             >
                               {secondLabel}
