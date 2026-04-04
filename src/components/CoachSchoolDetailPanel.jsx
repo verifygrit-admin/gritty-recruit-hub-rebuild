@@ -328,11 +328,12 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
             style={{
               display: 'flex',
               flexWrap: 'wrap',
-              gap: 16,
+              gap: 20,
               marginBottom: 16,
-              padding: '8px 0',
-              borderTop: '1px solid #F0F0F0',
-              borderBottom: '1px solid #F0F0F0',
+              padding: '12px 16px',
+              backgroundColor: '#F5EFE0',
+              borderRadius: 8,
+              border: '1px solid #F0F0F0',
             }}
           >
             {item.coa != null && <Metric label="COA" value={formatMoney(item.coa)} />}
