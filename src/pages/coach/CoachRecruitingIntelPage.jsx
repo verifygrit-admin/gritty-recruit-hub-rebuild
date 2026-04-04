@@ -99,6 +99,16 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
   const [slideoutStudent, setSlideoutStudent] = useState(null);
   const [slideoutFilter, setSlideoutFilter] = useState(null); // { type: 'division'|'conference', value: string }
   const [imgErrors, setImgErrors] = useState({});
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  // ── Track window width for responsive avatar count ──
+  useEffect(() => {
+    const handler = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  const maxAvatars = windowWidth <= 640 ? 4 : MAX_AVATARS;
 
   // ── Lock body scroll when slideout is open ──
   useEffect(() => {
@@ -284,8 +294,8 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
 
   // ── Avatar helper ──
   function renderAvatars(studentIds, filterCtx) {
-    const visible = studentIds.slice(0, MAX_AVATARS);
-    const overflow = studentIds.length - MAX_AVATARS;
+    const visible = studentIds.slice(0, maxAvatars);
+    const overflow = studentIds.length - maxAvatars;
 
     return (
       <div style={{ display: 'flex', alignItems: 'center', marginTop: 10 }}>
@@ -313,7 +323,7 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
                 fontSize: '0.75rem', fontWeight: 700, color: MAROON,
                 cursor: 'pointer',
                 marginLeft: i > 0 ? -8 : 0,
-                zIndex: MAX_AVATARS - i,
+                zIndex: maxAvatars - i,
                 position: 'relative',
                 overflow: 'hidden',
                 flexShrink: 0,
