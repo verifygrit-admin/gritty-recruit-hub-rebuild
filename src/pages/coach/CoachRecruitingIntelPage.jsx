@@ -18,6 +18,7 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabaseClient.js';
+import DeadlinePercentileTracker from '../../components/DeadlinePercentileTracker.jsx';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -76,6 +77,18 @@ function deadlineColor(days) {
   if (days <= 14) return RED;
   if (days <= 60) return MAROON;
   return GOLD;
+}
+
+function getDivisionColor(divisionName) {
+  const colors = {
+    'Power 4': '#6B1A1A',
+    'G5': '#C9A84C',
+    'FCS': '#4CAF50',
+    'FBS Ind': '#9C27B0',
+    'D2': '#9E9E9E',
+    'D3': '#9E9E9E',
+  };
+  return colors[divisionName] || '#9E9E9E';
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -360,59 +373,8 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
 
   return (
     <div data-testid="recruiting-intel-page">
-      {/* ── SECTION 1: Deadline Countdown Bar ── */}
-      <div
-        data-testid="deadline-bar"
-        style={{
-          display: 'flex',
-          gap: 12,
-          overflowX: 'auto',
-          paddingBottom: 4,
-          marginBottom: 24,
-        }}
-      >
-        {DEADLINES.map(dl => {
-          const days = daysUntil(dl.date);
-          const color = deadlineColor(days);
-          const isPast = days < 0;
-          return (
-            <div
-              key={dl.name}
-              data-testid={`deadline-pill-${dl.name.replace(/\s+/g, '-').toLowerCase()}`}
-              style={{
-                flexShrink: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: '10px 20px',
-                borderRadius: 24,
-                border: `2px solid ${isPast ? BORDER : color}`,
-                backgroundColor: isPast ? '#F9F9F9' : '#FFFFFF',
-                opacity: isPast ? 0.5 : 1,
-                minWidth: 160,
-              }}
-            >
-              <span style={{
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                color: isPast ? TEXT_MED : color,
-                textAlign: 'center',
-                lineHeight: 1.3,
-              }}>
-                {dl.name}
-              </span>
-              <span style={{
-                fontSize: '1.25rem',
-                fontWeight: 800,
-                color: isPast ? TEXT_MED : color,
-                marginTop: 2,
-              }}>
-                {isPast ? 'Passed' : `${days}d`}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      {/* ── SECTION 1: Deadline Countdown Trackers ── */}
+      <DeadlinePercentileTracker deadlines={DEADLINES} />
 
       {/* ── SECTION 2: Division Layer (Layer 1) ── */}
       {!selectedDivision && (
@@ -443,11 +405,12 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
                 style={{
                   background: '#FFFFFF',
                   border: `1px solid ${BORDER}`,
+                  borderTop: `4px solid ${getDivisionColor(div.name)}`,
                   borderRadius: 10,
                   padding: 20,
                   cursor: 'pointer',
                   transition: 'box-shadow 200ms, transform 200ms',
-                  aspectRatio: '1 / 0.85',
+                  aspectRatio: '1 / 0.65',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
@@ -566,51 +529,110 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
                     </span>
                   </div>
 
-                  <div style={{ fontSize: '0.8125rem', color: MAROON, fontWeight: 600, marginBottom: 4 }}>
+                  <div style={{ fontSize: '0.8125rem', color: MAROON, fontWeight: 600, marginBottom: 8 }}>
                     {conf.rosterPct}% of your roster
                   </div>
 
-                  {renderAvatars(conf.studentIds, { type: 'conference', value: conf.name })}
-
-                  {/* Coaching Staff links */}
-                  {visibleCoachLinks.length > 0 && (
+                  {/* Coaching Staff links — MUST 2: moved above avatars, button-styled */}
+                  {coachLinkSchools.length > 0 && (
                     <div style={{
-                      marginTop: 12,
-                      paddingTop: 10,
-                      borderTop: `1px solid ${BORDER}`,
+                      marginBottom: 10,
+                      paddingBottom: 10,
+                      borderBottom: `1px solid ${BORDER}`,
                     }}>
                       <div style={{
                         fontSize: '0.6875rem', fontWeight: 600, color: TEXT_MED,
-                        textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6,
+                        textTransform: 'uppercase', letterSpacing: 0.75, marginBottom: 6,
                       }}>
-                        Coaching Staff
+                        Contact Coaching Staff
                       </div>
-                      {visibleCoachLinks.map((s, i) => (
-                        <a
-                          key={i}
-                          href={safeHref(s.coach_link)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: 'block',
-                            fontSize: '0.8125rem',
-                            color: MAROON,
-                            textDecoration: 'none',
-                            padding: '2px 0',
-                            fontWeight: 500,
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {s.school_name} &rarr;
-                        </a>
-                      ))}
-                      {moreCoachLinks > 0 && (
-                        <span style={{ fontSize: '0.75rem', color: TEXT_MED }}>
-                          +{moreCoachLinks} more
-                        </span>
-                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {coachLinkSchools.map((s, i) => (
+                          <a
+                            key={i}
+                            href={safeHref(s.coach_link)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '6px 12px',
+                              borderRadius: 6,
+                              border: '1px solid #D4D4D4',
+                              backgroundColor: '#F9F9F9',
+                              fontSize: '0.8125rem',
+                              fontWeight: 500,
+                              color: MAROON,
+                              textDecoration: 'none',
+                              transition: 'background 150ms',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.textDecoration = 'underline';
+                              e.currentTarget.style.backgroundColor = '#F0F0F0';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.textDecoration = 'none';
+                              e.currentTarget.style.backgroundColor = '#F9F9F9';
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              background: s.prospect_camp_link ? '#4CAF50' : '#FFC107',
+                              display: 'inline-block',
+                              flexShrink: 0,
+                            }} />
+                            {s.school_name}
+                          </a>
+                        ))}
+                      </div>
                     </div>
                   )}
+
+                  {/* Camp status indicator — MUST 3 */}
+                  {(() => {
+                    const campCount = conf.schools.filter(s => s.prospect_camp_link).length;
+                    const total = conf.schoolCount;
+                    const allHave = campCount === total && total > 0;
+                    const noneHave = campCount === 0;
+                    const color = noneHave ? '#9E9E9E' : allHave ? '#4CAF50' : '#FFC107';
+                    const label = noneHave
+                      ? 'No camps available'
+                      : allHave
+                        ? `All ${total} have 2026 camps`
+                        : `${campCount} of ${total} schools have 2026 camps`;
+                    return (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '6px 10px',
+                        borderRadius: 6,
+                        backgroundColor: `${color}18`,
+                        marginBottom: 10,
+                      }}>
+                        <span style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: color,
+                          flexShrink: 0,
+                        }} />
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: noneHave ? '#757575' : color === '#4CAF50' ? '#2E7D32' : '#E65100',
+                        }}>
+                          {label}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
+                  {renderAvatars(conf.studentIds, { type: 'conference', value: conf.name })}
                 </div>
               );
             })}

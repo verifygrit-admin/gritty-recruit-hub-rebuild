@@ -86,3 +86,28 @@ input, select, button, textarea {
   font-family: var(--font-body) !important;
   font-weight: 700 !important;
 }
+
+/* ── MOBILE RESPONSIVE — Recruiting Intelligence ────────── */
+@media (max-width: 640px) {
+  [data-testid="recruiting-intel-page"] {
+    padding: 16px !important;
+  }
+  [data-testid="division-layer"] > div[style*="grid"],
+  [data-testid="conference-layer"] > div[style*="grid"] {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  [data-testid="deadline-tracker"] {
+    gap: 16px !important;
+    padding: 16px !important;
+  }
+  [data-testid*="division-card-"],
+  [data-testid*="conference-card-"] {
+    aspect-ratio: unset !important;
+    min-height: auto !important;
+  }
+  .school-detail-panel button,
+  .school-detail-panel a {
+    min-height: 44px;
+  }
+}

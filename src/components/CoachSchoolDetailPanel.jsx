@@ -222,6 +222,61 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
             </div>
           )}
 
+          {/* ── Action Buttons (MUST 5: moved up, styled) ── */}
+          <div style={{
+            display: 'flex',
+            gap: 10,
+            marginBottom: 16,
+            flexWrap: 'wrap',
+          }}>
+            {item.q_link && (
+              <a
+                data-testid="school-q-link"
+                href={item.q_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: '12px 20px',
+                  backgroundColor: '#6B1A1A',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                Recruiting Questionnaire
+              </a>
+            )}
+            {item.coach_link && (
+              <a
+                data-testid="school-coach-link"
+                href={item.coach_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: '12px 20px',
+                  backgroundColor: 'transparent',
+                  color: '#6B1A1A',
+                  border: '2px solid #6B1A1A',
+                  borderRadius: 6,
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                Coaching Staff
+              </a>
+            )}
+          </div>
+
           {/* ── Offer Badge Placeholders ── */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
             {OFFER_BADGES.map(badge => {
@@ -338,13 +393,7 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
                       {dt.libraryLabel}
                     </span>
 
-                    <span style={{
-                      fontSize: '0.75rem',
-                      color: '#FF9800',
-                      fontWeight: 600,
-                    }}>
-                      Status Pending
-                    </span>
+                    {/* Status Pending removed — SHOULD 4: show real status when document_shares data available */}
 
                     {/* Mailto actions for missing docs — role-aware */}
                     {(() => {
@@ -408,51 +457,7 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
             </div>
           </div>
 
-          {/* ── Action Links (read-only) ── */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            marginTop: 20,
-            paddingTop: 12,
-            borderTop: '1px solid #F0F0F0',
-            flexWrap: 'wrap',
-          }}>
-            {item.q_link && (
-              <a
-                data-testid="school-q-link"
-                href={item.q_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: '8px 16px',
-                  border: '2px solid #8B3A3A',
-                  borderRadius: 4,
-                  color: '#8B3A3A',
-                  textDecoration: 'none',
-                  fontSize: '0.8125rem',
-                  fontWeight: 500,
-                }}
-              >
-                Recruiting Questionnaire
-              </a>
-            )}
-            {item.coach_link && (
-              <a
-                data-testid="school-coach-link"
-                href={item.coach_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  color: '#8B3A3A',
-                  textDecoration: 'underline',
-                  fontSize: '0.8125rem',
-                }}
-              >
-                Coaching Staff
-              </a>
-            )}
-          </div>
+          {/* Action links moved to top — see MUST 5 above match rank */}
         </div>
       </div>
 
