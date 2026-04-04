@@ -6,7 +6,11 @@ Two-step production write from extracted/import_ready.csv:
   STEP 1 — Update schools table camp and coach links.
              For each row where camp_url or coach_url is not blank:
                PATCH schools SET prospect_camp_link, coach_link WHERE unitid = N
-             Only columns with values are written — blank values are never sent.
+             Only columns with values are written — blank values and string
+             sentinels ('NOT_FOUND', 'NEEDS_REVIEW', 'Football Camp Link') are
+             never sent; they are treated as NULL per DEC-CFBRB-080.
+             When the same unitid appears more than once, the manually_confirmed
+             row is preferred over auto_confirmed per DEC-CFBRB-079.
              Batched in groups of 50.
 
   STEP 2 — Update school_link_staging final status.
@@ -56,6 +60,29 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 
 
 # ============================================================
+# URL sentinel list (DEC-CFBRB-080)
+# Any value in this set is treated as NULL — never written to DB.
+# ============================================================
+
+_URL_SENTINELS = {
+    "NOT_FOUND",
+    "NEEDS_REVIEW",
+    "Football Camp Link",
+}
+
+
+def _clean_url(raw: str) -> str | None:
+    """
+    Return None if raw is blank or a known string sentinel (DEC-CFBRB-080).
+    Otherwise return the stripped value.
+    """
+    val = (raw or "").strip()
+    if not val or val in _URL_SENTINELS:
+        return None
+    return val
+
+
+# ============================================================
 # Shared helpers (match import_staging_to_schools.py patterns)
 # ============================================================
 
@@ -87,16 +114,31 @@ def supabase_patch(url, payload):
 
 def load_import_ready():
     """
-    Read import_ready.csv and return a list of dicts.
-    Skips rows where both camp_url and coach_url are blank.
+    Read import_ready.csv and return a deduplicated list of dicts.
+
+    Dedup rule (DEC-CFBRB-079): when the same unitid appears more than once,
+    the manually_confirmed row is preferred over auto_confirmed.  If both rows
+    have the same match_status, the last row wins (stable sort fallback).
+
+    String sentinels ('NOT_FOUND', 'NEEDS_REVIEW', 'Football Camp Link') are
+    converted to None and treated as absent values (DEC-CFBRB-080).
+
+    Skips rows where both camp_url and coach_url are absent after cleaning.
     """
     if not IMPORT_READY_CSV.exists():
         print(f"ERROR: {IMPORT_READY_CSV} not found.")
         print("Run import_staging_to_schools.py first to produce import_ready.csv.")
         sys.exit(1)
 
-    rows = []
+    # Priority map: higher number wins in dedup (DEC-CFBRB-079).
+    _MATCH_PRIORITY = {
+        "manually_confirmed": 2,
+        "auto_confirmed":     1,
+    }
+
+    raw_by_unitid: dict[int, dict] = {}   # unitid -> best row seen so far
     skipped = 0
+    dedup_overrides = 0
 
     with open(IMPORT_READY_CSV, "r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
@@ -109,8 +151,6 @@ def load_import_ready():
 
         for raw in reader:
             unitid_raw = (raw.get("unitid") or "").strip()
-            camp_url   = (raw.get("camp_url") or "").strip()
-            coach_url  = (raw.get("coach_url") or "").strip()
 
             if not unitid_raw:
                 skipped += 1
@@ -123,12 +163,39 @@ def load_import_ready():
                 skipped += 1
                 continue
 
-            rows.append({
-                "unitid":    unitid,
-                "camp_url":  camp_url,
-                "coach_url": coach_url,
+            camp_url  = _clean_url(raw.get("camp_url", ""))
+            coach_url = _clean_url(raw.get("coach_url", ""))
+            status    = (raw.get("match_status") or "").strip()
+            priority  = _MATCH_PRIORITY.get(status, 0)
+
+            candidate = {
+                "unitid":          unitid,
+                "camp_url":        camp_url,
+                "coach_url":       coach_url,
                 "school_name_raw": (raw.get("school_name_raw") or "").strip(),
-            })
+                "_priority":       priority,
+            }
+
+            if unitid in raw_by_unitid:
+                existing_priority = raw_by_unitid[unitid]["_priority"]
+                if priority >= existing_priority:
+                    # Incoming row wins — manually_confirmed beats auto_confirmed,
+                    # or equal priority falls through (last row wins).
+                    raw_by_unitid[unitid] = candidate
+                    dedup_overrides += 1
+                # else: existing row has higher priority — keep it, discard incoming
+            else:
+                raw_by_unitid[unitid] = candidate
+
+    if dedup_overrides:
+        print(f"  Dedup: {dedup_overrides} duplicate unitid(s) resolved "
+              f"(manually_confirmed priority — DEC-CFBRB-079)")
+
+    # Strip internal priority key; filter rows with no usable URLs.
+    rows = []
+    for entry in raw_by_unitid.values():
+        entry.pop("_priority")
+        rows.append(entry)
 
     return rows, skipped
 
