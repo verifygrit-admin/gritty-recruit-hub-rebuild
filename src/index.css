@@ -110,4 +110,8 @@ input, select, button, textarea {
   .school-detail-panel a {
     min-height: 44px;
   }
+  [data-testid="coach-student-roster"] {
+    padding: 16px !important;
+    gap: 16px !important;
+  }
 }

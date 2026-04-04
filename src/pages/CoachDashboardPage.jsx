@@ -22,9 +22,9 @@ import CoachRecruitingIntelPage from './coach/CoachRecruitingIntelPage.jsx';
 const ALLOWED_ROLES = ['hs_coach', 'hs_guidance_counselor'];
 const TABS = [
   { key: 'students', label: 'Students' },
+  { key: 'intel', label: 'Recruiting Intelligence' },
   { key: 'calendar', label: 'Calendar' },
   { key: 'reports', label: 'Reports' },
-  { key: 'intel', label: 'Recruiting Intelligence' },
 ];
 
 export default function CoachDashboardPage() {
@@ -314,22 +314,22 @@ export default function CoachDashboardPage() {
           viewerRole={userType}
         />
       )}
-      {activeTab === 'reports' && (
-        <CoachReportsPage
-          students={students}
-          shortlistByStudent={shortlistByStudent}
-          allShortlistItems={allShortlistItems}
-        />
-      )}
-      {activeTab === 'calendar' && (
-        <CoachCalendarPage />
-      )}
       {activeTab === 'intel' && (
         <CoachRecruitingIntelPage
           students={students}
           shortlistByStudent={shortlistByStudent}
           selectedDivision={intelSelectedDivision}
           onSelectedDivisionChange={setIntelSelectedDivision}
+        />
+      )}
+      {activeTab === 'calendar' && (
+        <CoachCalendarPage />
+      )}
+      {activeTab === 'reports' && (
+        <CoachReportsPage
+          students={students}
+          shortlistByStudent={shortlistByStudent}
+          allShortlistItems={allShortlistItems}
         />
       )}
     </div>
