@@ -770,7 +770,7 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
                       key={item.id}
                       data-testid={`slideout-school-${item.id}`}
                       style={{
-                        padding: '10px 14px',
+                        padding: '12px 16px',
                         backgroundColor: CREAM,
                         borderRadius: 6,
                       }}
