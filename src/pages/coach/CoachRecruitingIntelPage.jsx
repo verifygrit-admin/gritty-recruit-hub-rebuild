@@ -245,7 +245,12 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
           : 0,
         items: c.items,
       }))
-      .sort((a, b) => b.studentIds.length - a.studentIds.length);
+      .sort((a, b) => {
+        if (b.studentIds.length !== a.studentIds.length) {
+          return b.studentIds.length - a.studentIds.length;
+        }
+        return b.schoolCount - a.schoolCount;
+      });
   }, [selectedDivision, shortlistByStudent, schoolDetails, students]);
 
   // ── Slideout: filtered shortlist items for selected student ──
