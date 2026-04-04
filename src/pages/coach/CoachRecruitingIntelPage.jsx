@@ -636,6 +636,43 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
                     );
                   })()}
 
+                  {/* Camp availability progress bar — SHOULD 3 */}
+                  {(() => {
+                    const campCount = conf.schools.filter(s => s.prospect_camp_link).length;
+                    return (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        marginBottom: 10,
+                      }}>
+                        <div style={{
+                          flex: 1,
+                          height: 4,
+                          backgroundColor: BORDER,
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                        }}>
+                          <div style={{
+                            height: '100%',
+                            width: conf.schoolCount > 0 ? `${(campCount / conf.schoolCount) * 100}%` : '0%',
+                            backgroundColor: '#4CAF50',
+                            borderRadius: 2,
+                            transition: 'width 300ms',
+                          }} />
+                        </div>
+                        <span style={{
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
+                          color: TEXT_MED,
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {campCount}/{conf.schoolCount}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
                   {renderAvatars(conf.studentIds, { type: 'conference', value: conf.name })}
                 </div>
               );
