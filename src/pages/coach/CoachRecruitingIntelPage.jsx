@@ -548,7 +548,7 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
                         fontSize: '0.6875rem', fontWeight: 600, color: TEXT_MED,
                         textTransform: 'uppercase', letterSpacing: 0.75, marginBottom: 8,
                       }}>
-                        Contact Coaching Staff
+                        {'👥 Contact Coaching Staff'}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {coachLinkSchools.map((s, i) => (
@@ -606,8 +606,8 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
                     const label = noneHave
                       ? 'No camps available'
                       : allHave
-                        ? `All ${total} have 2026 camps`
-                        : `${campCount} of ${total} schools have 2026 camps`;
+                        ? `\u{1F3D5}\uFE0F All ${total} have 2026 camps`
+                        : `\u{1F3D5}\uFE0F ${campCount} of ${total} schools have 2026 camps`;
                     return (
                       <div style={{
                         display: 'flex',

@@ -249,7 +249,7 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
                   gap: 6,
                 }}
               >
-                Recruiting Questionnaire
+                {'\uD83D\uDCCB Recruiting Questionnaire'}
               </a>
             )}
             {item.coach_link && (
@@ -272,7 +272,7 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
                   gap: 6,
                 }}
               >
-                Coaching Staff
+                {'\uD83D\uDC65 Coaching Staff'}
               </a>
             )}
           </div>
