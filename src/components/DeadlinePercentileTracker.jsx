@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 /**
  * DeadlinePercentileTracker — Circular SVG deadline countdowns.
  *
@@ -141,14 +143,26 @@ function DeadlineCircle({ deadline, size }) {
 }
 
 export default function DeadlinePercentileTracker({ deadlines }) {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth <= 640 : false
+  );
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 640);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  const size = isMobile ? 'mobile' : 'desktop';
+
   return (
     <div
       data-testid="deadline-tracker"
       style={{
         display: 'flex',
         justifyContent: 'center',
-        gap: 32,
-        padding: '20px 24px',
+        gap: isMobile ? 16 : 32,
+        padding: isMobile ? '16px' : '20px 24px',
         backgroundColor: CREAM,
         borderRadius: 12,
         border: `1px solid ${BORDER}`,
@@ -157,7 +171,7 @@ export default function DeadlinePercentileTracker({ deadlines }) {
       }}
     >
       {deadlines.map(dl => (
-        <DeadlineCircle key={dl.name} deadline={dl} size="desktop" />
+        <DeadlineCircle key={dl.name} deadline={dl} size={size} />
       ))}
     </div>
   );
