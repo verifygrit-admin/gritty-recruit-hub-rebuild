@@ -159,7 +159,7 @@ export default function GritFitMapView({
             ${inList ? '\u2713 In Shortlist' : '+ Add to Shortlist'}
           </button>
           ${school.recruiting_q_link ? `
-            <a href="${school.recruiting_q_link}" target="_blank" rel="noopener"
+            <a href="${school.recruiting_q_link}" target="_blank" rel="noopener noreferrer"
                data-testid="rq-link-btn"
                style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:8px 12px;
                       font-size:0.8rem;color:#8B3A3A;text-decoration:none;">
@@ -167,7 +167,7 @@ export default function GritFitMapView({
             </a>
           ` : ''}
           ${school.coach_link ? `
-            <a href="${school.coach_link}" target="_blank" rel="noopener"
+            <a href="${school.coach_link}" target="_blank" rel="noopener noreferrer"
                data-testid="visit-profile-btn"
                style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:8px 12px;
                       font-size:0.8rem;color:#8B3A3A;text-decoration:none;">

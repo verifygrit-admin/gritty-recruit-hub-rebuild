@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth.jsx';
 import Layout from './components/Layout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -27,6 +27,7 @@ export default function App() {
           <Route path="/gritfit" element={<Layout><ProtectedRoute><GritFitPage /></ProtectedRoute></Layout>} />
           <Route path="/shortlist" element={<Layout><ProtectedRoute><ShortlistPage /></ProtectedRoute></Layout>} />
           <Route path="/coach" element={<Layout><ProtectedRoute><CoachDashboardPage /></ProtectedRoute></Layout>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -98,13 +98,13 @@ function buildPopupHtml(school, { isStudent = false, inShortlist = false } = {})
       </div>
       <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
         ${school.recruiting_q_link ? `
-          <a href="${school.recruiting_q_link}" target="_blank" rel="noopener"
+          <a href="${school.recruiting_q_link}" target="_blank" rel="noopener noreferrer"
              style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:8px 12px;
                     font-size:0.8rem;color:#8B3A3A;text-decoration:none;">
             \u2709 Recruiting Questionnaire
           </a>` : ''}
         ${school.coach_link ? `
-          <a href="${school.coach_link}" target="_blank" rel="noopener"
+          <a href="${school.coach_link}" target="_blank" rel="noopener noreferrer"
              style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:8px 12px;
                     font-size:0.8rem;color:#8B3A3A;text-decoration:none;">
             Contact Coaches
