@@ -384,7 +384,7 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
       {!selectedDivision && (
         <div data-testid="division-layer">
           <h3 style={{
-            fontSize: '1.125rem', fontWeight: 600, color: TEXT_DARK,
+            fontSize: '1.25rem', fontWeight: 700, color: TEXT_DARK,
             margin: '0 0 4px',
           }}>
             Recruiting Intelligence
@@ -478,7 +478,7 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
           </button>
 
           <h3 style={{
-            fontSize: '1.125rem', fontWeight: 600, color: TEXT_DARK,
+            fontSize: '1.25rem', fontWeight: 700, color: TEXT_DARK,
             margin: '0 0 4px',
           }}>
             {selectedDivision} — Conferences
@@ -546,7 +546,7 @@ export default function CoachRecruitingIntelPage({ students, shortlistByStudent,
                     }}>
                       <div style={{
                         fontSize: '0.6875rem', fontWeight: 600, color: TEXT_MED,
-                        textTransform: 'uppercase', letterSpacing: 0.75, marginBottom: 6,
+                        textTransform: 'uppercase', letterSpacing: 0.75, marginBottom: 8,
                       }}>
                         Contact Coaching Staff
                       </div>
