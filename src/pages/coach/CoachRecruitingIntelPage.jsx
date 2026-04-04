@@ -82,10 +82,9 @@ function deadlineColor(days) {
 function getDivisionColor(divisionName) {
   const colors = {
     'Power 4': '#6B1A1A',
-    'G5': '#C9A84C',
+    'G6': '#C9A84C',
     'FCS': '#4CAF50',
-    'FBS Ind': '#9C27B0',
-    'D2': '#9E9E9E',
+    'D2': '#1976D2',
     'D3': '#9E9E9E',
   };
   return colors[divisionName] || '#9E9E9E';
