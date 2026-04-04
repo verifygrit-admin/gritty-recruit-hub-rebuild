@@ -8,8 +8,15 @@ dist/
 data/users.csv
 scripts/seed_users.js
 .claude/
-docs/superpowers/specs/DAVID + PATCH JOINT FIDELITY AUDIT.txt
-docs/superpowers/specs/erd-current-state.html
+docs/superpowers/
+
+# Playwright output (DEC-GLOBAL-056)
+playwright-report/
+test-results/
+
+# Agent-generated working artifacts (DEC-GLOBAL-056)
+*_log.txt
+PIPELINE_MAP_SCHOOLS_TABLE.txt
 credentials.json
 token.pickle
 extracted/
