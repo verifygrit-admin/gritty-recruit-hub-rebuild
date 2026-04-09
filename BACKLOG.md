@@ -11,6 +11,22 @@
 - **Deadline:** None
 - **Source:** Dexter credential scan, 2026-04-02 session
 - **Status:** Open
+- **UX Vectors:** [UX-COACH]
+
+---
+
+## BACKLOG-UI-002 — Wire document_shares data to Pre-Read Document status badge in CoachSchoolDetailPanel.jsx
+- **File:** src/pages/coach/CoachSchoolDetailPanel.jsx
+- **What:** Wire document_shares table data to the Pre-Read Document status badge. Badge is currently hardcoded with "Not Submitted" label. Conditional logic required to surface actual status from document_shares records.
+- **Spec:** Quill (UX conditional logic) / Nova (implementation to spec only)
+- **Implementation:** Fetch document_shares records for the current user_id + school_id pair. Map status field to badge display. Fallback to "Not Submitted" if no record found. Include loading state during fetch.
+- **Urgency:** Session 016 Objective 5 (Coach Dashboard refinement phase)
+- **Owner:** Quill (spec) / Nova (execution)
+- **Deadline:** Session 016
+- **Source:** Session 016 coach dashboard objective
+- **UX Vectors:** [UX-COACH]
+- **Status:** Open
+- **Blocked by:** None
 
 ---
 
@@ -21,6 +37,7 @@
 - **Owner:** Patch
 - **Date:** 2026-04-03
 - **Status:** Open
+- **UX Vectors:** (infrastructure — no vector)
 
 ---
 
@@ -31,3 +48,31 @@
 - **Owner:** David (audit query) / Patch (any remediation)
 - **Date:** 2026-04-03
 - **Status:** Open
+- **UX Vectors:** [UX-COACH], [UX-ATHLETE]
+
+---
+
+## BACKLOG-DATA-003 — Schema gap — no confirmation_status column for coach_link/prospect_camp_link source tracking
+- **What:** DEC-CFBRB-082 Condition 3 remediation revealed no mechanism exists in the schools table to distinguish manually_confirmed vs auto_confirmed link values. If future data pipelines need overwrite protection, add coach_link_source and camp_link_source columns (enum: auto, manual, null). This capability is carry-forward infrastructure — no schema addition required before Objective 4.
+- **Description:** Future enhancement for data governance. When data pipelines source links from different providers (Serper scraper, manual verification, import batch), the system currently has no way to record or enforce that a manually-verified link should not be overwritten by an auto-sourced value. This backlog item is reserved for Phase 2+ when governance controls become necessary.
+- **Owner:** Patch (schema) / David (data governance)
+- **Priority:** LOW
+- **Date:** 2026-04-07
+- **Status:** Open
+- **UX Vectors:** [UX-COACH], [UX-ATHLETE]
+- **Blocked by:** None
+- **Blocks:** None
+
+---
+
+## BACKLOG-DATA-004 — Vermont State University prospect_camp_link recency review
+- **What:** Vermont State University (unitid 231165) prospect_camp_link points to castletonsports.com — a legacy domain from Castleton University (merged into Vermont State in 2023). This URL is a known exception per DEC-CFBRB-095 and represents legitimate legacy branding, not cross-contamination. However, Vermont State may transition camp branding to a unified Vermont State domain at some future date. This backlog item is reserved for periodic freshness review to confirm the URL remains current.
+- **Source:** DEC-CFBRB-095 (Vermont State Castleton Legacy Exception)
+- **Owner:** David
+- **Priority:** LOW
+- **Date:** 2026-04-07
+- **Status:** Open
+- **UX Vectors:** [UX-COACH], [UX-ATHLETE]
+- **Blocked by:** None
+- **Blocks:** None
+- **Review trigger:** If Vermont State announces a migration of prospect camp infrastructure to a unified Vermont State domain, revisit this URL and update if necessary.

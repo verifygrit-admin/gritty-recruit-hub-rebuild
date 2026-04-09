@@ -20,3 +20,7 @@ PIPELINE_MAP_SCHOOLS_TABLE.txt
 credentials.json
 token.pickle
 extracted/
+
+# Temporary working files (DEC-CFBRB-094)
+tmp_*
+scripts/__pycache__/
