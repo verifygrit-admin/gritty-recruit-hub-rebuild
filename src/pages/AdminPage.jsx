@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
@@ -39,10 +40,12 @@ export default function AdminPage() {
   const activeTab = deriveActiveTab(location.pathname);
   const adminEmail = session?.user?.email || '';
 
-  // Redirect bare /admin to /admin/schools
-  if (location.pathname === '/admin' || location.pathname === '/admin/') {
-    navigate('/admin/schools', { replace: true });
-  }
+  // Redirect bare /admin to /admin/schools (must be in useEffect, not render body)
+  useEffect(() => {
+    if (location.pathname === '/admin' || location.pathname === '/admin/') {
+      navigate('/admin/schools', { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
