@@ -9,10 +9,6 @@ jobs:
   build-and-deploy:
     name: Vitest Gate + Build + Deploy
     runs-on: ubuntu-latest
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
     steps:
       - name: Checkout
@@ -30,11 +26,16 @@ jobs:
       - name: Vitest gate
         run: npx vitest run
 
-      - name: Pull Vercel environment
-        run: npx vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-
       - name: Build
-        run: npx vercel build --prod --token=$VERCEL_TOKEN
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
 
       - name: Deploy to Vercel
-        run: npx vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
