@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth.jsx';
 import Layout from './components/Layout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AdminRoute from './components/AdminRoute.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
@@ -10,6 +11,8 @@ import GritFitPage from './pages/GritFitPage.jsx';
 import ShortlistPage from './pages/ShortlistPage.jsx';
 import CoachDashboardPage from './pages/CoachDashboardPage.jsx';
 import BrowseMapPage from './pages/BrowseMapPage.jsx';
+import AdminLoginPage from './pages/AdminLoginPage.jsx';
+import AdminPage from './pages/AdminPage.jsx';
 
 export default function App() {
   return (
@@ -19,6 +22,10 @@ export default function App() {
           {/* Auth screens — no Layout wrapper */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+
+          {/* Admin screens — no Layout wrapper, AdminRoute guard on /admin */}
+          <Route path="/admin-login" element={<AdminLoginPage />} />
+          <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
 
           {/* App screens — Layout wrapper */}
           <Route path="/" element={<Layout><LandingPage /></Layout>} />
