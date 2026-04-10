@@ -1,0 +1,971 @@
+═══════════════════════════════════════════════════════════════════════════════
+GrittyOS RECRUIT HUB — ADMIN PANEL UI EXPANSION SPEC
+Session 016-B | Quill Design Authority
+═══════════════════════════════════════════════════════════════════════════════
+
+SPEC ISSUE DATE: 2026-04-10
+SPEC AUTHOR: Quill (Executive Assistant Design Spec)
+PROJECT: cfb-recruit-hub-rebuild (GrittyOS Recruit Hub Rebuild)
+SCOPE: Admin panel frontend layout, tab navigation, bulk edit table view, slide-out
+        forms for all entity types, mobile responsiveness rules, design language
+REFERENCE COMPONENTS: AdminPage.jsx | SchoolsTableEditor.jsx | AuditLogViewer.jsx
+SUPABASE SCHEMA SOURCE: Migrations 0002, 0003, 0004, 0005, 0006, 0007, 0008
+
+───────────────────────────────────────────────────────────────────────────────
+1. TAB/NAV STRUCTURE
+───────────────────────────────────────────────────────────────────────────────
+
+NAVIGATION TABS (Desktop + Mobile):
+  - Schools
+  - Users
+  - Institutions
+  - Recruiting Events
+  - Audit Log
+
+CURRENT STATE (Session 015):
+  The AdminPage.jsx renders two tabs: Schools and Audit Log. This spec expands
+  the tab bar to include three additional sections while preserving the existing
+  Schools and Audit Log tabs.
+
+TAB SEQUENCING (left-to-right):
+  1. Schools      — school entity management
+  2. Users        — user account management (student_athlete, hs_coach,
+                     hs_guidance_counselor, parent, college_coach)
+  3. Institutions — college institution metadata, recruiting events registration,
+                     division/conference data
+  4. Recruiting Events — recruiting event calendar, registration tracking
+  5. Audit Log    — read-only admin action history (existing, no change)
+
+ACTIVE STATE BEHAVIOR:
+  - Active tab: bottom border 3px solid #8B3A3A (dark maroon)
+  - Active tab text: color #8B3A3A, font-weight 700
+  - Inactive tab text: color #6B6B6B, font-weight 500
+  - Bottom border on inactive: 3px solid transparent (maintains layout stability)
+  - Tab padding: 12px vertical × 20px horizontal
+  - Font size: 0.9375rem (15px)
+
+TAB-TO-ROUTE MAPPING:
+  /admin → Schools (default landing)
+  /admin/schools → Schools
+  /admin/users → Users
+  /admin/institutions → Institutions
+  /admin/recruiting-events → Recruiting Events
+  /admin/audit → Audit Log
+
+TAB BAR CONTAINER STYLE:
+  - Background: #FFFFFF
+  - Border-bottom: 1px solid #E8E8E8
+  - Display: flex
+  - Padding: 0 24px (horizontal only; tab buttons provide vertical padding)
+  - Min-height: 56px (accommodates 12px padding top/bottom × 2 + 14px text height + border)
+
+DEFAULT LANDING:
+  When user navigates to /admin without a tab route, redirect to /admin/schools.
+  Schools tab renders with active state styling.
+
+───────────────────────────────────────────────────────────────────────────────
+2. DESKTOP LAYOUT
+───────────────────────────────────────────────────────────────────────────────
+
+CONTAINER STRUCTURE:
+  The admin panel is a distinct surface from the student/coach app shell.
+  Does NOT inherit the Layout wrapper component.
+
+PAGE STRUCTURE:
+  <header>    Admin page header + dual-admin indicator + sign out button
+  <nav>       Tab bar — Schools | Users | Institutions | Recruiting Events | Audit
+  <main>      Tab content area — single active component per tab
+
+VIEWPORT & MARGINS:
+  - Body background: #FAFAFA (light neutral)
+  - Max-width of main content: 1400px (generous, not cramped)
+  - Horizontal padding (outside max-width container): 24px on desktop (1024px+)
+  - Horizontal padding (tablet/mobile): 16px (below 1024px)
+  - Vertical padding (all content sections): 24px
+
+HEADER LAYOUT:
+  - Height: 56px
+  - Display: flex | justify-content: space-between | align-items: center
+  - Padding: 16px 24px
+  - Background: #FFFFFF
+  - Border-bottom: 1px solid #E8E8E8
+  - Box-shadow: 0 1px 3px rgba(0,0,0,0.05)
+
+  LEFT SECTION:
+    <h1> + <DualAdminIndicator>
+    - h1 font-size: 1.25rem (20px) | color: #8B3A3A | font-weight: 700
+    - h1 letter-spacing: 0.02em
+    - Flex gap between h1 and indicator: 16px
+
+  RIGHT SECTION:
+    Sign Out button
+    - Padding: 8px 16px
+    - Background: #FFFFFF
+    - Color: #8B3A3A
+    - Border: 1px solid #8B3A3A
+    - Border-radius: 4px
+    - Font-size: 0.875rem (14px)
+    - Font-weight: 700
+    - Cursor: pointer
+    - Hover state: background #F5F5F5
+
+MAIN CONTENT AREA:
+  - Padding: 24px
+  - Min-height: calc(100vh - header - tabbar) ≈ 1040px @ 1440px viewport
+  - Background: #FAFAFA
+
+TABLE CONTAINER:
+  - Border: 1px solid #E8E8E8
+  - Border-radius: 4px
+  - Background: #FFFFFF
+  - Overflow: auto (horizontal scroll on desktop when needed)
+  - Box-shadow: 0 1px 3px rgba(0,0,0,0.05) (subtle, matches header)
+
+SLIDE-OUT FORM (Right panel):
+  - Position: fixed | right: 0 | top: header+tabbar ≈ 112px
+  - Width: 420px (minimum 400px, rounded to 420 for visual balance)
+  - Height: calc(100vh - 112px)
+  - Background: #FFFFFF
+  - Border-left: 1px solid #E8E8E8
+  - Box-shadow: -2px 0 8px rgba(0,0,0,0.1)
+  - Padding: 24px
+  - Overflow: auto (internal scroll if form exceeds viewport height)
+  - Z-index: 9998 (below modals at 9999)
+
+OVERLAY BACKDROP (behind form):
+  - Position: fixed | inset: 0
+  - Background: rgba(0,0,0,0.3)
+  - Z-index: 9997 (below form)
+  - Click-outside closes the form
+
+SPACING SYSTEM (reusable tokens):
+  xs: 4px
+  sm: 8px
+  md: 12px
+  lg: 16px
+  xl: 24px
+  xxl: 32px
+  xxxl: 48px
+
+TABLE ROW HEIGHT:
+  - Default: 44px (padding 10px vertical × 12px horizontal + content)
+  - Adequate for single-line cell content and inline edit controls
+
+VISUAL HIERARCHY:
+  - Primary headings (section titles): 1.5rem | color: #2C2C2C | font-weight: 700
+  - Secondary text (row counts, instructions): 0.875rem | color: #6B6B6B
+  - Table headers: 0.875rem | color: #2C2C2C | font-weight: 700 | background: #F5F5F5
+  - Table cells (text): 0.875rem | color: #2C2C2C
+  - Form labels: 0.875rem | color: #2C2C2C | font-weight: 600
+  - Form input text: 0.875rem | color: #2C2C2C
+
+───────────────────────────────────────────────────────────────────────────────
+3. BULK TABLE EDIT VIEW (Desktop Only: viewport >= 1024px)
+───────────────────────────────────────────────────────────────────────────────
+
+VIEWPORT CONSTRAINT:
+  This UI is DESKTOP ONLY. Below 1024px viewport width, no inline edit controls
+  render. All bulk edit components (per-row Save/Discard buttons, editable cells)
+  are hidden. See MOBILE RULE section for viewport <1024px behavior.
+
+EDITABLE ROW PATTERN:
+  Rows display in a <table> with the following characteristics:
+
+  COLUMNS (standard layout):
+    - First column is always a reference/UID column (locked, read-only)
+    - Subsequent columns: mixture of editable and read-only
+    - Read-only columns render as plain text in a <td>
+    - Editable columns render as clickable cells with edit state
+
+  CELL INTERACTION:
+    - Non-editable cells: display text only, no cursor change
+    - Editable cells: cursor: pointer | background: transparent
+    - On click: cell transitions to edit mode
+    - On focus: background: #FFF8E1 (light yellow highlight), input gains focus
+
+  EDIT MODE:
+    - <input type="text"> appears in-cell
+    - Input styling:
+      padding: 6px 8px
+      border: 1px solid #8B3A3A
+      border-radius: 4px
+      font-size: 0.875rem
+      color: #2C2C2C
+      width: 100%
+      outline: none
+    - Auto-focus: true
+    - On Enter key: save the edit
+    - On Escape key: cancel the edit
+
+  SAVE/DISCARD CONTROLS (per row):
+    Location: below the input in edit mode, within the same <td>
+    Margin-top: 6px
+    Display: flex | gap: 6px
+
+    Save button:
+      - Padding: 4px 10px
+      - Background: #8B3A3A
+      - Color: #FFFFFF
+      - Border: none
+      - Border-radius: 4px
+      - Font-size: 0.75rem (12px)
+      - Font-weight: 700
+      - Cursor: pointer (disabled: not-allowed)
+      - Opacity: 1 (saving: 0.7)
+      - Label: "Save" (saving: "Saving...")
+
+    Discard button:
+      - Padding: 4px 10px
+      - Background: #FFFFFF
+      - Color: #6B6B6B
+      - Border: 1px solid #D4D4D4
+      - Border-radius: 4px
+      - Font-size: 0.75rem
+      - Font-weight: 500
+      - Cursor: pointer (disabled: not-allowed)
+      - Label: "Cancel"
+
+    Error state (if save fails):
+      - Error message appears below buttons
+      - Color: #C62828 (red)
+      - Font-size: 0.75rem
+      - Margin-top: 6px
+      - Aria-live: polite (screen reader announcement)
+
+  SUCCESS FEEDBACK:
+    - Fixed position toast, bottom-right
+    - Position: fixed | bottom: 24px | right: 24px
+    - Background: #2E7D32 (green)
+    - Color: #FFFFFF
+    - Padding: 10px 16px
+    - Border-radius: 4px
+    - Font-size: 0.875rem
+    - Font-weight: 700
+    - Box-shadow: 0 2px 8px rgba(0,0,0,0.2)
+    - Z-index: 9998
+    - Auto-dismiss: 3000ms
+    - Aria-live: polite
+
+EDITABLE COLUMNS BY TABLE:
+
+  SCHOOLS TABLE:
+    Columns: school_name | state | coach_link | prospect_camp_link |
+             recruiting_q_link | school_link_staging
+    Locked (read-only): unitid (primary key) | school_name | state |
+                        city | division | conference
+    Editable: coach_link | prospect_camp_link | recruiting_q_link |
+              school_link_staging
+    Column indicator: "(editable)" label in header for editable columns
+
+  USERS TABLE:
+    Locked (read-only): id (uuid) | user_id (fk to auth.users) |
+                        email | created_at
+    Editable: account_status | email_verified | payment_status | trial_started_at
+    (Other columns locked per authorization model)
+
+  COLLEGE_COACHES TABLE:
+    Locked (read-only): id | user_id | created_at
+    Editable: phone | email (if editable per roles) | school_id (fk, display-only
+              in edit mode with school selector dropdown)
+    Contact info fields editable: phone | preferred_contact_method
+
+  HS_COACHES TABLE:
+    Locked (read-only): id | coach_user_id | created_at
+    Editable: phone | primary_school (display-only, hs_program_id foreign key) |
+              is_head_coach (toggle)
+
+  GUIDANCE_COUNSELORS TABLE:
+    Locked (read-only): id | user_id | created_at
+    Editable: phone | school_id | email
+
+  STUDENT_ATHLETES TABLE:
+    Locked (read-only): id | user_id | created_at | gpa | sat | position
+    Editable: recruiting_status | grad_year | height | weight | speed_40 |
+              agi | captain | all_conference | all_state | expected_starter
+
+  PARENTS TABLE:
+    Locked (read-only): id | user_id | created_at
+    Editable: phone | email | associated_student_id (fk dropdown)
+
+  RECRUITING_EVENTS TABLE:
+    Locked (read-only): id | created_at | event_date (if past)
+    Editable: event_name | event_date | location | host_school_id |
+              registration_cap | current_registrations
+
+STICKY COLUMN HEADERS:
+  <thead> uses position: sticky | top: 0
+  Z-index: 10 (above table body)
+  Background: #F5F5F5 stays in place during horizontal/vertical scroll
+
+TABLE ROW STYLING:
+  <tr> border-bottom: 1px solid #E8E8E8
+  Row hover state: background-color: #FAFAFA (subtle highlight on hover)
+
+LOADING STATE:
+  - Center-aligned text, padding 48px
+  - Color: #6B6B6B
+  - Font-size: 0.875rem
+  - Aria-live: polite
+  - Label: "Loading [table name]..."
+
+ERROR STATE:
+  - Background: #FFF5F5 (light red)
+  - Border: 1px solid #F44336 (red)
+  - Border-radius: 4px
+  - Color: #C62828
+  - Font-size: 0.9rem
+  - Margin: 24px
+  - Padding: 24px
+
+  Includes a Retry button:
+    - Padding: 8px 16px
+    - Background: #8B3A3A
+    - Color: #FFFFFF
+    - Border: none
+    - Border-radius: 4px
+    - Font-size: 0.875rem
+    - Font-weight: 700
+    - Cursor: pointer
+    - Margin-top: 12px
+
+───────────────────────────────────────────────────────────────────────────────
+4. INDIVIDUAL SLIDE-OUT FORM (Right-Side Panel)
+───────────────────────────────────────────────────────────────────────────────
+
+TRIGGER:
+  When user clicks on a row in any table (outside of edit-in-place mode) OR
+  clicks a "View Details" / "Edit" button on a row, the slide-out form opens.
+
+FORM PANEL POSITIONING:
+  - Position: fixed
+  - Right: 0
+  - Top: 112px (height of header + tabbar)
+  - Width: 420px
+  - Height: calc(100vh - 112px)
+  - Background: #FFFFFF
+  - Border-left: 1px solid #E8E8E8
+  - Box-shadow: -2px 0 8px rgba(0,0,0,0.1)
+  - Padding: 24px
+  - Overflow-y: auto
+  - Z-index: 9998
+
+FORM HEADER:
+  - Display: flex | justify-content: space-between | align-items: flex-start
+  - Margin-bottom: 24px
+  - Sticky: position sticky | top: 0 | background: #FFFFFF | z-index: 9999
+
+  Title:
+    - Font-size: 1.125rem (18px)
+    - Color: #2C2C2C
+    - Font-weight: 700
+    - Margin: 0
+    - Format: "[Entity Type] — [UID or Name]"
+    - Example: "School — Wilson High (ID: 14921)"
+
+  Close Button:
+    - Background: transparent
+    - Border: none
+    - Font-size: 1.5rem (24px)
+    - Color: #6B6B6B
+    - Cursor: pointer
+    - Padding: 0 8px
+    - Aria-label: "Close details"
+    - Hover: color #2C2C2C
+
+OVERLAY BACKDROP:
+  - Position: fixed | inset: 0
+  - Background: rgba(0,0,0,0.3)
+  - Z-index: 9997
+  - Click-outside to close
+
+FORM STRUCTURE:
+  Forms are organized into FIELD GROUP SECTIONS by entity type. Each section
+  is visually separated and contains related fields. Reusable field group
+  component pattern defined below.
+
+FIELD GROUP COMPONENT (reusable pattern):
+  - Margin-bottom: 24px
+  - Border-bottom: 1px solid #E8E8E8 (except last group)
+  - Padding-bottom: 24px (except last group, 0)
+
+  Section Header (optional):
+    - Font-size: 0.875rem (14px)
+    - Font-weight: 700
+    - Color: #8B3A3A (dark maroon)
+    - Text-transform: uppercase
+    - Letter-spacing: 0.05em
+    - Margin-bottom: 12px
+
+  Field:
+    - Margin-bottom: 16px
+
+    Label:
+      - Font-size: 0.75rem (12px)
+      - Font-weight: 600
+      - Color: #2C2C2C
+      - Display: block
+      - Margin-bottom: 4px
+      - Required indicator: "*" in same color
+
+    Input / Select / Textarea:
+      - Width: 100%
+      - Padding: 8px 12px
+      - Border: 1px solid #D4D4D4
+      - Border-radius: 4px
+      - Font-size: 0.875rem
+      - Color: #2C2C2C
+      - Background: #FFFFFF
+      - Focus: border-color #8B3A3A | box-shadow: 0 0 0 2px rgba(139,58,58,0.1)
+      - Read-only: background #F5F5F5 | color #6B6B6B | cursor: default
+
+    Validation Message:
+      - Font-size: 0.75rem
+      - Color: #C62828 (error)
+      - Margin-top: 4px
+      - Display: block
+      - Aria-live: polite
+
+FORM SECTIONS BY ENTITY TYPE:
+
+  COLLEGE (school):
+    Section: School Metadata
+      - school_name (locked, display-only)
+      - city, state (display-only)
+      - ncaa_division (editable, dropdown/select)
+      - conference (editable, dropdown/select)
+      - latitude, longitude (display-only, center map link optional)
+
+    Section: Recruit Hub Links
+      - coach_link (editable, text input, URL format)
+      - prospect_camp_link (editable, text input, URL format)
+      - recruiting_q_link (editable, text input, URL format)
+      - school_link_staging (editable, text input, URL format)
+
+    Section: Financial / Academic
+      - avg_gpa (display-only, numeric)
+      - avg_sat (display-only, numeric)
+      - graduation_rate (display-only, percent)
+      - need_blind_school (display-only, boolean toggle, read-only)
+      - is_test_optional (display-only, boolean)
+
+    Section: Contact
+      - athletics_phone (editable, tel input if available)
+      - athletics_email (editable, email input)
+
+  HIGH SCHOOL (hs_program):
+    Section: Basic Info
+      - school_name (locked)
+      - city, state (display-only)
+
+    Section: Primary Contacts
+      - head_coach_name (editable, text)
+      - head_coach_phone (editable, tel)
+      - head_coach_email (editable, email)
+      - asst_coach_name (editable, text, optional)
+      - asst_coach_phone (editable, tel, optional)
+
+    Section: Recruiting
+      - recruiting_contact_preference (editable, select: phone/email/both)
+
+  COLLEGE COACH:
+    Section: Basic Info
+      - first_name (locked)
+      - last_name (locked)
+      - title (editable, text, e.g., "Head Coach", "Assistant Coach")
+      - specialization (editable, text, e.g., "LB Coach", optional)
+
+    Section: Contact
+      - phone (editable, tel)
+      - email (locked, display-only from auth.users)
+      - preferred_contact (editable, select)
+
+    Section: School Association
+      - school_name (locked, display from school FK)
+      - school_id (locked, read-only UUID)
+
+  HIGH SCHOOL COACH:
+    Section: Basic Info
+      - first_name (locked)
+      - last_name (locked)
+      - title (editable, text)
+
+    Section: Contact
+      - phone (editable, tel)
+      - email (locked, display-only from auth.users)
+
+    Section: School Association
+      - primary_school (locked, display-only, hs_program FK)
+      - is_head_coach (editable, boolean toggle)
+
+  GUIDANCE COUNSELOR:
+    Section: Basic Info
+      - first_name (locked)
+      - last_name (locked)
+
+    Section: School Association
+      - school_name (locked, display-only, hs_program FK)
+      - school_id (locked, read-only UUID)
+
+    Section: Contact
+      - phone (editable, tel)
+      - email (locked, display-only from auth.users)
+
+  STUDENT-ATHLETE:
+    Section: Profile
+      - name (locked)
+      - position (locked)
+      - high_school (locked, display-only)
+      - grad_year (editable, select: year range)
+      - state (display-only)
+
+    Section: Physical Attributes
+      - height (editable, text, e.g., "6'2\"")
+      - weight (editable, numeric)
+      - speed_40 (editable, numeric, seconds)
+      - agi (editable, numeric, athletic greats index)
+
+    Section: Academic
+      - gpa (display-only, numeric)
+      - sat (display-only, numeric)
+
+    Section: Recruiting Status
+      - recruiting_status (editable, select)
+      - expected_starter (editable, boolean toggle)
+      - captain (editable, boolean toggle)
+      - all_conference (editable, boolean toggle)
+      - all_state (editable, boolean toggle)
+
+  PARENT:
+    Section: Basic Info
+      - name (editable, text)
+      - relationship (editable, select: parent/guardian/other)
+
+    Section: Contact
+      - phone (editable, tel)
+      - email (editable, email)
+
+    Section: Student Link
+      - associated_student_name (locked, display from student FK)
+      - student_id (locked, read-only UUID)
+
+  RECRUITING EVENT:
+    Section: Event Info
+      - event_name (editable, text)
+      - event_date (editable, date input)
+      - event_time (editable, time input, optional)
+      - location (editable, text)
+
+    Section: Logistics
+      - host_school_id (editable, select dropdown)
+      - registration_cap (editable, numeric)
+      - current_registrations (locked, display-only counter)
+
+    Section: Details
+      - description (editable, textarea)
+      - event_type (editable, select: camp/showcase/combine/other)
+
+FORM ACTIONS:
+  Bottom of form (sticky):
+    - Display: flex | gap: 12px | justify-content: flex-end
+    - Margin-top: 24px
+    - Padding-top: 24px
+    - Border-top: 1px solid #E8E8E8
+    - Background: #FFFFFF
+    - Position: sticky | bottom: 0
+
+    Save button:
+      - Padding: 10px 20px
+      - Background: #8B3A3A
+      - Color: #FFFFFF
+      - Border: none
+      - Border-radius: 4px
+      - Font-size: 0.875rem
+      - Font-weight: 700
+      - Cursor: pointer
+      - Disabled: opacity 0.7 | cursor not-allowed
+      - Label: "Save Changes"
+
+    Cancel button:
+      - Padding: 10px 20px
+      - Background: #FFFFFF
+      - Color: #6B6B6B
+      - Border: 1px solid #D4D4D4
+      - Border-radius: 4px
+      - Font-size: 0.875rem
+      - Font-weight: 500
+      - Cursor: pointer
+      - Label: "Discard"
+
+FIELD VALIDATION RULES:
+
+  REQUIRED FIELDS:
+    - name (all entities)
+    - email (users, parents, coaches where applicable)
+    - phone (coaches, parents, counselors)
+    - school_id / hs_program_id (all entities with school association)
+
+  FORMAT VALIDATION:
+    - email: RFC 5322 pattern (standard email validation)
+    - phone: 10-digit US format (XXX-XXX-XXXX) or accept flexible entry
+    - url: http(s)://... required for link fields
+    - numeric fields: must parse as integer or decimal depending on field
+
+  MAX LENGTH:
+    - Text fields (name, title, etc): 255 characters
+    - Text fields (description, notes): 1000 characters
+    - URL fields (links): 2048 characters
+    - Email: 254 characters
+    - Phone: 20 characters
+
+  ON-BLUR VALIDATION:
+    Input loses focus → validation runs → error message displays if invalid
+    Border changes to #C62828 (red) if invalid
+
+  ON-SUBMIT VALIDATION:
+    Save button click → all required fields checked → all formats validated
+    If any field invalid: focus moves to first invalid field, error shown
+    If all valid: form submits
+
+FORM LOADING STATE:
+  - All buttons disabled: opacity 0.7 | cursor not-allowed
+  - Inputs disabled: opacity 0.5 | cursor not-allowed
+  - Spinner near Save button: 16px icon, margin-right: 8px
+
+FORM ERROR STATE:
+  - Error banner at top of form (below header)
+  - Background: #FFF5F5
+  - Border: 1px solid #F44336
+  - Border-radius: 4px
+  - Padding: 12px
+  - Color: #C62828
+  - Font-size: 0.875rem
+  - Margin-bottom: 16px
+  - Includes close button (X)
+
+FORM SUCCESS STATE:
+  - Toast notification, fixed position bottom-right (same as table edit)
+  - Close form automatically after 2000ms
+  - Label: "Changes saved successfully"
+
+───────────────────────────────────────────────────────────────────────────────
+5. MOBILE RULE (viewport < 1024px)
+───────────────────────────────────────────────────────────────────────────────
+
+BULK TABLE EDIT COMPONENTS — NOT RENDERED:
+  - Editable cells (click-to-edit inline): hidden
+  - Save/Discard buttons (per-row controls): hidden
+  - Cell background color on hover: not applied
+  - Entire table should render as read-only display
+
+TABLES ON MOBILE:
+  - Display: read-only table view only
+  - Columns: subset of desktop columns (UX decision: hide secondary/tertiary
+    columns to fit viewport)
+  - Horizontal scroll: still available if column count requires it
+  - Row height: 44px minimum (touch-friendly)
+  - Font size: 0.875rem (no reduction below this)
+
+TAB BAR:
+  - On mobile, tab bar may wrap to secondary line if space constrains
+  - Or: use horizontal scroll for tab buttons with scroll snap
+  - Label text may abbreviate (e.g., "Rec Events" instead of "Recruiting Events")
+  - Touch-target minimum: 44px × 44px for each tab button
+
+SLIDE-OUT FORM (Right Panel):
+  - REMAINS EDITABLE on mobile
+  - Width: 100% (takes full viewport on mobile, not 420px)
+  - Top: 112px (below header + tabbar)
+  - Height: calc(100vh - 112px)
+  - Positions over table content (absolute/fixed overlay)
+  - Close button: prominent, easy to tap
+
+FORM FIELDS ON MOBILE:
+  - Full viewport width, minus padding
+  - Padding: 16px instead of 24px
+  - Font size: same (0.875rem)
+  - Input height: 44px minimum (touch-friendly)
+  - Spacing between fields: 16px (reduced from 24px for space)
+
+HEADING TEXT ON MOBILE:
+  - Main header h1: reduce to 1rem (16px) from 1.25rem
+  - Section headers: 0.875rem (no change)
+  - Form titles: 1rem (reduced from 1.125rem)
+
+BREAKPOINT RULE:
+  - 1024px viewport width is the hard breakpoint
+  - At exactly 1024px: bulk edit controls render (desktop behavior)
+  - At 1023px and below: bulk edit controls hidden, read-only table only
+
+CSS MEDIA QUERY STRUCTURE:
+  @media (max-width: 1023px) {
+    /* Hide all bulk edit UI components */
+    [data-edit-controls] { display: none; }
+    [data-editable-cell] { cursor: default !important; }
+    [editable-inline-input] { display: none; }
+    [save-discard-buttons] { display: none; }
+  }
+
+FORM RESPONSIVE:
+  @media (max-width: 1023px) {
+    [data-testid="admin-form-panel"] {
+      width: 100%;
+      position: fixed;
+      right: 0;
+      inset: 112px 0 0 0;
+      padding: 16px;
+    }
+    [data-testid="admin-form-header"] {
+      font-size: 1rem;
+    }
+    input, select, textarea {
+      min-height: 44px;
+    }
+  }
+
+───────────────────────────────────────────────────────────────────────────────
+6. DESIGN LANGUAGE
+───────────────────────────────────────────────────────────────────────────────
+
+COLOR PALETTE (GrittyOS Admin):
+  Primary: #8B3A3A (dark maroon — primary actions, active states, brand accent)
+  Background (page): #FAFAFA (light neutral)
+  Background (surface): #FFFFFF (card, modal, table)
+  Text (primary): #2C2C2C (headlines, body text)
+  Text (secondary): #6B6B6B (help text, disabled, muted)
+  Border: #E8E8E8 (light gray, subtle divisions)
+  Border (hover): #D4D4D4 (slightly darker)
+  Error: #C62828 (red, validation failures)
+  Error (background): #FFF5F5 (light red, error containers)
+  Success: #2E7D32 (green, confirmations)
+  Warning/Focus: #FFF8E1 (light yellow, cell edit highlight)
+
+TYPOGRAPHY:
+
+  Font Families:
+    Headline: 'Playfair Display', Georgia, 'Times New Roman', serif
+    Body: 'DM Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+    Monospace: 'Courier New', monospace (for JSON/code display)
+
+  Sizes (existing from codebase):
+    h1 (page title): 1.25rem | 700 weight | letter-spacing 0.02em
+    h2 (section header): 1.125rem | 700 weight
+    h3 (form title): 1rem | 700 weight
+    h4 (field label, emphasized): 0.875rem | 600 weight
+    body: 0.875rem | 400 weight
+    small: 0.75rem | 400 weight
+    caption: 0.75rem | 600 weight (labels)
+
+  Line Height:
+    Headlines: 1.2
+    Body: 1.5
+    Inputs: 1.4
+
+COMPONENT PATTERNS:
+
+  Button (Primary Action):
+    - Background: #8B3A3A
+    - Color: #FFFFFF
+    - Padding: 10px 20px
+    - Border: none
+    - Border-radius: 4px
+    - Font-weight: 700
+    - Cursor: pointer
+    - Transition: background 200ms ease, opacity 200ms ease
+    - Hover: background #6B2E2E (darker maroon), shadow 0 2px 4px rgba(0,0,0,0.1)
+    - Active: box-shadow: inset 0 2px 4px rgba(0,0,0,0.2)
+    - Disabled: opacity 0.7 | cursor not-allowed | no hover effect
+
+  Button (Secondary):
+    - Background: #FFFFFF
+    - Color: #6B6B6B
+    - Border: 1px solid #D4D4D4
+    - Padding: 10px 20px
+    - Border-radius: 4px
+    - Font-weight: 500
+    - Cursor: pointer
+    - Transition: border-color 200ms ease, background 200ms ease
+    - Hover: background #F5F5F5 | border-color #8B3A3A
+    - Active: border-color #8B3A3A | color #8B3A3A
+    - Disabled: opacity 0.5 | cursor not-allowed
+
+  Small Button (inline, Save/Cancel in edit cells):
+    - Padding: 4px 10px
+    - Font-size: 0.75rem
+    - Inherits primary/secondary color scheme above but smaller
+
+  Input Field (text, tel, email, number):
+    - Width: 100%
+    - Padding: 8px 12px
+    - Border: 1px solid #D4D4D4
+    - Border-radius: 4px
+    - Font-size: 0.875rem
+    - Font-family: inherit (DM Sans)
+    - Color: #2C2C2C
+    - Background: #FFFFFF
+    - Transition: border-color 200ms ease, box-shadow 200ms ease
+    - Focus: border-color #8B3A3A | box-shadow: 0 0 0 2px rgba(139,58,58,0.1)
+    - Placeholder: color #9E9E9E | opacity 0.8
+    - Disabled: background #F5F5F5 | color #6B6B6B | cursor not-allowed
+    - Read-only: background #F5F5F5 | color #6B6B6B | cursor default
+    - Error: border-color #C62828
+
+  Select Dropdown:
+    - Same padding/border/radius/font as input field
+    - Focus: same highlight as input
+    - Option background: #FFFFFF
+    - Option hover: background #F5F5F5
+
+  Textarea:
+    - Min-height: 80px
+    - Max-height: 200px
+    - Resize: vertical only
+    - Otherwise inherits input field styling
+    - Font-family: inherit (DM Sans, not monospace)
+
+  Label:
+    - Font-size: 0.75rem
+    - Font-weight: 600
+    - Color: #2C2C2C
+    - Display: block
+    - Margin-bottom: 4px
+    - Required indicator: "*" in same color
+
+  Table Header Cell:
+    - Background: #F5F5F5
+    - Color: #2C2C2C
+    - Font-weight: 700
+    - Font-size: 0.875rem
+    - Padding: 10px 12px
+    - Text-align: left
+    - White-space: nowrap
+    - Border-bottom: 2px solid #D4D4D4
+    - Position: sticky | top: 0 | z-index: 10
+
+  Table Data Cell:
+    - Background: #FFFFFF (default) | #FAFAFA (row hover)
+    - Color: #2C2C2C
+    - Font-size: 0.875rem
+    - Padding: 10px 12px
+    - Border-bottom: 1px solid #E8E8E8
+    - Vertical-align: top
+    - Transition: background 200ms ease
+
+  Divider / Section Break:
+    - Border-bottom: 1px solid #E8E8E8
+    - Height: 1px
+    - Margin: 24px 0
+
+  Card / Container:
+    - Background: #FFFFFF
+    - Border: 1px solid #E8E8E8
+    - Border-radius: 4px
+    - Padding: 24px
+    - Box-shadow: 0 1px 3px rgba(0,0,0,0.05)
+
+SPACING CONSISTENCY:
+  - Field groups: margin-bottom 24px
+  - Fields within group: margin-bottom 16px
+  - Section divider: padding-bottom 24px
+  - Form padding: 24px (desktop), 16px (mobile)
+  - Table padding: 24px
+
+ACCESSIBILITY:
+
+  Labels:
+    - All form inputs have associated <label> elements
+    - Label htmlFor={inputId} creates association
+    - Required fields marked with "*" and aria-required="true"
+
+  ARIA attributes:
+    - Aria-live: polite on error/success messages
+    - Aria-label: "Close details" on close buttons
+    - Aria-hidden: true on decorative elements
+    - Role: dialog on modal overlays
+    - Aria-modal: true on modals
+
+  Keyboard Navigation:
+    - Tab order: natural (top-to-bottom, left-to-right)
+    - Escape key: close modals and slide-out forms
+    - Enter key: submit form or save cell edit
+    - Focus visible: 2px border around focused element
+
+  Color Contrast:
+    - Text on background: WCAG AA minimum (4.5:1 for body text)
+    - #2C2C2C on #FFFFFF: 14.8:1 (excellent)
+    - #6B6B6B on #FFFFFF: 7.5:1 (good)
+    - #8B3A3A on #FFFFFF: 5.2:1 (good)
+    - Error (#C62828) on error background (#FFF5F5): 10.2:1 (excellent)
+
+───────────────────────────────────────────────────────────────────────────────
+COMPONENT IMPLEMENTATION NOTES
+───────────────────────────────────────────────────────────────────────────────
+
+FIELD GROUP COMPONENT (reusable):
+  This pattern appears in every slide-out form. Consider extracting as a
+  React component:
+
+    <FieldGroup title="School Metadata" divider>
+      <Field label="School Name" value={...} readOnly />
+      <Field label="Division" value={...} editable select options={...} />
+      <Field label="Conference" value={...} editable select options={...} />
+    </FieldGroup>
+
+  Props:
+    - title: string (section header, optional)
+    - divider: boolean (render border-bottom, default true except last)
+    - children: field components
+
+EDITABLE CELL COMPONENT:
+  Encapsulates the inline edit behavior (click-to-edit, input, save/discard):
+
+    <EditableCell
+      value={value}
+      readOnly={false}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      validation={validationFn}
+      fieldType="text|tel|email|number"
+    />
+
+TABLE COLUMN CONFIGURATION:
+  Define each table's column layout in a JavaScript config array:
+
+    const SCHOOL_COLUMNS = [
+      { key: 'unitid', label: 'ID', editable: false, width: '80px' },
+      { key: 'name', label: 'School', editable: false, width: '200px' },
+      { key: 'state', label: 'State', editable: false, width: '80px' },
+      { key: 'coach_link', label: 'Coach Link', editable: true, width: '250px' },
+      { ... more columns ... },
+    ];
+
+───────────────────────────────────────────────────────────────────────────────
+DELIVERY NOTES
+───────────────────────────────────────────────────────────────────────────────
+
+This spec is ready for handoff to a build agent. The spec covers:
+✓ Tab structure and routing (5 tabs, default Schools)
+✓ Desktop layout with max-width and spacing tokens
+✓ Bulk table edit view (inline editable cells per-table, save/discard controls)
+✓ Slide-out form with field grouping by entity type
+✓ Mobile responsiveness (tables read-only <1024px, forms remain editable)
+✓ Complete design language (colors, typography, components, spacing)
+✓ Validation rules per field type
+✓ Accessibility requirements (labels, ARIA, keyboard, contrast)
+
+The build agent should:
+1. Create TabBar component (generic, reusable)
+2. Create EditableCell component (inline edit behavior)
+3. Create FieldGroup component (field grouping pattern)
+4. Create SlideOutForm component (right-side panel behavior)
+5. Extend AdminPage.jsx with tab routing (users, institutions, recruiting_events)
+6. Create table editor components for each new table type
+7. Implement mobile breakpoint at 1024px (hide bulk edit UI)
+8. Style all components per section 6 (colors, typography, spacing)
+
+All pixel values, colors, spacing tokens, and component behavior are specified
+in this document. Questions about implementation details should reference this
+spec before proceeding.
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF SPEC
+═══════════════════════════════════════════════════════════════════════════════
