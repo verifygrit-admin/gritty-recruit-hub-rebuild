@@ -25,7 +25,7 @@ export default function App() {
 
           {/* Admin screens — no Layout wrapper, AdminRoute guard on /admin */}
           <Route path="/admin-login" element={<AdminLoginPage />} />
-          <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+          <Route path="/admin/*" element={<AdminRoute><AdminPage /></AdminRoute>} />
 
           {/* App screens — Layout wrapper */}
           <Route path="/" element={<Layout><LandingPage /></Layout>} />
