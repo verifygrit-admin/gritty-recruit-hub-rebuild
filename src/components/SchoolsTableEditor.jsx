@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient.js';
 
 // SchoolsTableEditor — Section D, Component 3
@@ -31,6 +31,9 @@ const DISPLAY_COLUMNS = [
   { key: 'school_link_staging', label: 'School Link (Staging)', editable: true },
 ];
 
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
+const DEFAULT_PAGE_SIZE = 25;
+
 export default function SchoolsTableEditor({ adminEmail }) {
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +43,13 @@ export default function SchoolsTableEditor({ adminEmail }) {
   const [saveInProgress, setSaveInProgress] = useState({});
   const [saveErrors, setSaveErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+
+  // OBJ-1: Sort state (local in-memory, matches AdminTableEditor pattern)
+  const [sortConfig, setSortConfig] = useState(null); // { key, direction: 'asc'|'desc' }
+
+  // OBJ-2: Pagination state (client-side)
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const loadSchools = useCallback(async () => {
     setLoading(true);
@@ -91,6 +101,63 @@ export default function SchoolsTableEditor({ adminEmail }) {
   }, [loadSchools]);
 
   const cellKey = (rowId, column) => `${rowId}:${column}`;
+
+  // OBJ-1: Sort handler — toggle asc/desc/none on repeat clicks of same column
+  const handleSort = (colKey) => {
+    setSortConfig((prev) => {
+      if (prev?.key === colKey) {
+        return { key: colKey, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key: colKey, direction: 'asc' };
+    });
+    setPage(1); // Reset to first page when sort changes
+  };
+
+  // OBJ-1: Sorted schools (local in-memory, numeric-aware like AdminTableEditor)
+  const sortedSchools = useMemo(() => {
+    if (!sortConfig) return schools;
+    const { key, direction } = sortConfig;
+    return [...schools].sort((a, b) => {
+      const aVal = a[key] ?? '';
+      const bVal = b[key] ?? '';
+      const aNum = Number(aVal);
+      const bNum = Number(bVal);
+      if (!Number.isNaN(aNum) && !Number.isNaN(bNum) && aVal !== '' && bVal !== '') {
+        return direction === 'asc' ? aNum - bNum : bNum - aNum;
+      }
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+      if (aStr < bStr) return direction === 'asc' ? -1 : 1;
+      if (aStr > bStr) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [schools, sortConfig]);
+
+  // OBJ-2: Pagination derived values
+  const totalRows = sortedSchools.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalRows);
+  const paginatedSchools = useMemo(
+    () => sortedSchools.slice(startIndex, endIndex),
+    [sortedSchools, startIndex, endIndex]
+  );
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setPage(1); // Reset to first page on size change
+  };
+
+  const goToPage = (targetPage) => {
+    const clamped = Math.max(1, Math.min(targetPage, totalPages));
+    setPage(clamped);
+    // Cancel any in-progress edit when changing page to avoid orphaned state
+    if (editingCellKey) {
+      setEditingCellKey(null);
+      setEditValue('');
+    }
+  };
 
   const beginEdit = (school, column) => {
     const key = cellKey(school.id, column);
@@ -251,7 +318,7 @@ export default function SchoolsTableEditor({ adminEmail }) {
         Schools
       </h3>
       <p style={{ fontSize: '0.875rem', color: '#6B6B6B', margin: '0 0 16px 0' }}>
-        {schools.length} rows. Four link columns are editable — click a cell to edit.
+        {totalRows} rows total. Four link columns are editable — click a cell to edit. Click a column header to sort.
       </p>
 
       {successMessage && (
@@ -276,7 +343,7 @@ export default function SchoolsTableEditor({ adminEmail }) {
         </div>
       )}
 
-      <div style={{ overflowX: 'auto', border: '1px solid #E8E8E8', borderRadius: 4 }}>
+      <div className="admin-scroll-wrap">
         <table
           data-testid="schools-table"
           style={{
@@ -291,12 +358,16 @@ export default function SchoolsTableEditor({ adminEmail }) {
               {DISPLAY_COLUMNS.map((col) => (
                 <th
                   key={col.key}
+                  data-testid={`schools-th-${col.key}`}
+                  onClick={() => handleSort(col.key)}
                   style={{
                     padding: '10px 12px',
                     textAlign: 'left',
                     fontWeight: 700,
                     color: '#2C2C2C',
                     whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                    userSelect: 'none',
                   }}
                 >
                   {col.label}
@@ -305,12 +376,20 @@ export default function SchoolsTableEditor({ adminEmail }) {
                       (editable)
                     </span>
                   )}
+                  {sortConfig?.key === col.key && (
+                    <span
+                      style={{ marginLeft: 4, fontSize: '0.7rem' }}
+                      aria-label={`Sorted ${sortConfig.direction === 'asc' ? 'ascending' : 'descending'}`}
+                    >
+                      {sortConfig.direction === 'asc' ? ' \u25B2' : ' \u25BC'}
+                    </span>
+                  )}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {schools.map((school) => (
+            {paginatedSchools.map((school) => (
               <tr key={school.id} style={{ borderBottom: '1px solid #E8E8E8' }}>
                 {DISPLAY_COLUMNS.map((col) => {
                   const key = cellKey(school.id, col.key);
@@ -431,6 +510,93 @@ export default function SchoolsTableEditor({ adminEmail }) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* OBJ-2: Pagination controls */}
+      <div
+        data-testid="schools-pagination"
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          padding: '12px 4px 4px 4px',
+          marginTop: 8,
+          fontSize: '0.8125rem',
+          color: '#6B6B6B',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label htmlFor="schools-page-size" style={{ color: '#6B6B6B' }}>
+            Rows per page:
+          </label>
+          <select
+            id="schools-page-size"
+            data-testid="schools-page-size"
+            value={pageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            style={{
+              padding: '4px 8px',
+              border: '1px solid #D4D4D4',
+              borderRadius: 4,
+              backgroundColor: '#FFFFFF',
+              fontSize: '0.8125rem',
+              color: '#2C2C2C',
+              cursor: 'pointer',
+            }}
+          >
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div data-testid="schools-page-indicator" style={{ color: '#6B6B6B' }}>
+          {totalRows === 0
+            ? '0 of 0'
+            : `${startIndex + 1}\u2013${endIndex} of ${totalRows}`}
+          {' '}(page {currentPage} of {totalPages})
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            type="button"
+            data-testid="schools-page-prev"
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage <= 1}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: currentPage <= 1 ? '#FAFAFA' : '#FFFFFF',
+              color: currentPage <= 1 ? '#BDBDBD' : '#2C2C2C',
+              border: '1px solid #D4D4D4',
+              borderRadius: 4,
+              fontSize: '0.8125rem',
+              cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            data-testid="schools-page-next"
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: currentPage >= totalPages ? '#FAFAFA' : '#FFFFFF',
+              color: currentPage >= totalPages ? '#BDBDBD' : '#2C2C2C',
+              border: '1px solid #D4D4D4',
+              borderRadius: 4,
+              fontSize: '0.8125rem',
+              cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -247,16 +247,8 @@ export default function AdminTableEditor({
         </div>
       )}
 
-      {/* Table container */}
-      <div
-        style={{
-          overflowX: 'auto',
-          border: '1px solid #E8E8E8',
-          borderRadius: 4,
-          backgroundColor: '#FFFFFF',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-        }}
-      >
+      {/* Table container — shared scroll wrapper (OBJ-3) */}
+      <div className="admin-scroll-wrap">
         <table
           data-testid={`${tableName}-table`}
           style={{

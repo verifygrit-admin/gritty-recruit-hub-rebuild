@@ -115,3 +115,32 @@ input, select, button, textarea {
     gap: 16px !important;
   }
 }
+
+/* ── ADMIN TABLE HORIZONTAL SCROLL (OBJ-3, Quill spec) ──── */
+.admin-scroll-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+  border: 1px solid #E8E8E8;
+  border-radius: 4px;
+  background-color: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Styled scrollbar on desktop only */
+@media (min-width: 1024px) {
+  .admin-scroll-wrap::-webkit-scrollbar {
+    height: 6px;
+  }
+  .admin-scroll-wrap::-webkit-scrollbar-track {
+    background: #F5F5F5;
+  }
+  .admin-scroll-wrap::-webkit-scrollbar-thumb {
+    background: #D4D4D4;
+    border-radius: 3px;
+  }
+  .admin-scroll-wrap::-webkit-scrollbar-thumb:hover {
+    background: #A0A0A0;
+  }
+}
