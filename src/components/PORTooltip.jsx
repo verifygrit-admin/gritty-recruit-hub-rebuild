@@ -215,6 +215,38 @@ function HSCoachContent({ data }) {
   );
 }
 
+// --- §1.5.5 Audit Log (WT-B schema: admin_audit_log, 8 columns) ---
+// Service role EF required (inferred from admin-only SELECT — confirm before build).
+// id (uuid PK) is SUPPRESSED from display per Chris's ruling. Dexter non-blocking
+// observation: no CHECK constraint on action column.
+function AuditLogContent({ data }) {
+  // Action + admin email are the two primary fields per spec §1.5.5
+  const actionVal = data.actionType == null
+    ? <span style={{ color: '#9E9E9E', fontStyle: 'italic' }}>Unknown action</span>
+    : String(data.actionType);
+  const adminVal = data.adminEmail == null
+    ? <span style={{ color: '#9E9E9E', fontStyle: 'italic' }}>System</span>
+    : String(data.adminEmail);
+  return (
+    <>
+      <div style={{ fontSize: '0.85rem', color: '#2C2C2C', fontWeight: 600, marginBottom: 8 }}>
+        {actionVal}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+        <LabelRow label="Admin">{adminVal}</LabelRow>
+        <LabelRow label="Affected Table"><Val v={data.tableName} fallback="—" /></LabelRow>
+        <LabelRow label="Affected Row"><Val v={data.affectedRowId} fallback="—" /></LabelRow>
+        {data.changesSummary != null && (
+          <LabelRow label="Changes">{data.changesSummary}</LabelRow>
+        )}
+      </div>
+      <div style={{ fontSize: '0.625rem', fontStyle: 'italic', color: '#666' }}>
+        <Timestamp v={data.timestamp} />
+      </div>
+    </>
+  );
+}
+
 // --- §1.5.3 Parents (WT-B schema: users + profiles, parent row only) ---
 // STRUCTURAL GAP: no parent-child link table exists. Tooltip limited to parent's own
 // account info. No student data is accessible for parent POR tooltips.
@@ -245,8 +277,7 @@ function ParentContent({ data }) {
   );
 }
 
-// Content map — confirmed contexts + four §1.5 held contexts (Counselors, HS Coaches,
-// Parents, Recruiting Events). Audit Log held pending Scout re-gate on §1.5.5.
+// Content map — all nine tab contexts (§1.1–§1.5 fully cleared by Scout 2026-04-12).
 const CONTENT_RENDERERS = {
   'student-athletes': StudentAthleteContent,
   'college-coaches': CollegeCoachContent,
@@ -255,6 +286,7 @@ const CONTENT_RENDERERS = {
   'guidance-counselors': CounselorContent,
   'hs-coaches': HSCoachContent,
   'parents': ParentContent,
+  'audit-log': AuditLogContent,
 };
 
 // --- Shared card styles ---

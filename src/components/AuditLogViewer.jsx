@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient.js';
+import usePORTooltip from '../hooks/usePORTooltip.js';
+import PORTooltip from './PORTooltip.jsx';
 
 // AuditLogViewer — Section D, Component 4
 // Read-only tabular view of the admin_audit_log table.
@@ -48,11 +50,51 @@ function renderDatetime(value) {
   }
 }
 
+// --- POR tooltip config (spec §1.5.5) ---
+// Field names PROVISIONAL per POR_TOOLTIP_COMPONENT_SPEC.md §1 standing declaration.
+// id (uuid PK) is SUPPRESSED — used as row key only, never surfaced in tooltip content.
+function computeChangesSummary(oldValue, newValue) {
+  try {
+    const oldObj = typeof oldValue === 'string' ? JSON.parse(oldValue) : oldValue;
+    const newObj = typeof newValue === 'string' ? JSON.parse(newValue) : newValue;
+    if (!oldObj || !newObj || typeof oldObj !== 'object' || typeof newObj !== 'object') return null;
+    const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+    let diffCount = 0;
+    for (const k of allKeys) {
+      if (JSON.stringify(oldObj[k]) !== JSON.stringify(newObj[k])) diffCount += 1;
+    }
+    return diffCount === 0 ? null : `${diffCount} field${diffCount === 1 ? '' : 's'} changed`;
+  } catch {
+    return null;
+  }
+}
+
+const POR_CONFIG = {
+  tabContext: 'audit-log',
+  getTooltipData: (row) => ({
+    title: row.action
+      ? `${row.action} on ${row.table_name || 'unknown'}`
+      : `Entry #${(row.id && typeof row.id === 'string') ? row.id.slice(0, 8) : '?'}`,
+    actionType: row.action ?? null,
+    adminEmail: row.admin_email ?? null,
+    tableName: row.table_name ?? null,
+    affectedRowId: row.row_id ?? null, // NOT row.id — row.id is suppressed per §1.5.5
+    timestamp: row.created_at ?? null,
+    changesSummary:
+      row.action === 'UPDATE' && row.old_value != null && row.new_value != null
+        ? computeChangesSummary(row.old_value, row.new_value)
+        : null,
+  }),
+};
+
 export default function AuditLogViewer() {
   const [auditLog, setAuditLog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [expandedCell, setExpandedCell] = useState(null); // { rowId, key, fullValue }
+
+  // POR tooltip (spec §1.5.5)
+  const por = usePORTooltip();
 
   const loadAuditLog = useCallback(async () => {
     setLoading(true);
@@ -226,7 +268,26 @@ export default function AuditLogViewer() {
             </thead>
             <tbody>
               {auditLog.map((row) => (
-                <tr key={row.id} style={{ borderBottom: '1px solid #E8E8E8', verticalAlign: 'top' }}>
+                <tr
+                  key={row.id}
+                  tabIndex={0}
+                  aria-describedby={por.activeRowId === row.id ? 'por-tooltip' : undefined}
+                  style={{ borderBottom: '1px solid #E8E8E8', verticalAlign: 'top', outline: 'none' }}
+                  onMouseEnter={(e) => por.onRowMouseEnter(row.id, e)}
+                  onMouseLeave={() => por.onRowMouseLeave()}
+                  onTouchStart={(e) => por.onRowTouchStart(row.id, e)}
+                  onTouchEnd={() => por.onRowTouchEnd()}
+                  onFocus={(e) => {
+                    por.onRowFocus(row.id, e);
+                    e.currentTarget.style.outline = '2px solid #8B3A3A';
+                    e.currentTarget.style.outlineOffset = '-2px';
+                  }}
+                  onBlur={(e) => {
+                    por.onRowBlur();
+                    e.currentTarget.style.outline = '';
+                    e.currentTarget.style.outlineOffset = '';
+                  }}
+                >
                   {AUDIT_COLUMNS.map((col) => {
                     const value = row[col.key];
 
@@ -276,6 +337,21 @@ export default function AuditLogViewer() {
           </table>
         </div>
       )}
+
+      {/* POR Tooltip (spec §1.5.5) — renders when a row is hovered/focused */}
+      {por.activeRowId != null && (() => {
+        const activeRow = auditLog.find((r) => r.id === por.activeRowId);
+        if (!activeRow) return null;
+        return (
+          <PORTooltip
+            tabContext={POR_CONFIG.tabContext}
+            data={POR_CONFIG.getTooltipData(activeRow)}
+            triggerRect={por.triggerRect}
+            onMouseEnter={por.onTooltipMouseEnter}
+            onMouseLeave={por.onTooltipMouseLeave}
+          />
+        );
+      })()}
 
       {expandedCell && (
         <div
