@@ -76,3 +76,18 @@
 - **Blocked by:** None
 - **Blocks:** None
 - **Review trigger:** If Vermont State announces a migration of prospect camp infrastructure to a unified Vermont State domain, revisit this URL and update if necessary.
+
+---
+
+## BACKLOG-CI-001 — deploy.yml has no EF deployment step
+- **What:** The GitHub Actions CI/CD pipeline (`deploy.yml`) builds and deploys the frontend to Vercel but does not deploy Supabase Edge Functions. Any session that commits new EFs to `supabase/functions/` will produce a production gap — the EF source exists in the repo but is not live. This caused a production outage on 2026-04-12 when three new EFs (admin-read-users, admin-read-institutions, admin-read-recruiting-events) were committed but never deployed.
+- **File:** .github/workflows/deploy.yml
+- **Fix:** Add a deploy step that runs `npx supabase functions deploy <slug> --project-ref $SUPABASE_PROJECT_REF --use-api` for all EFs in `supabase/functions/`. Requires `SUPABASE_ACCESS_TOKEN` secret added to the GitHub repo. The `--use-api` flag bundles server-side without Docker (no Docker available in GitHub Actions runners by default). Consider a diff-based approach that only deploys EFs whose source changed in the current commit.
+- **Owner:** Rio
+- **Validator:** Dexter
+- **Priority:** HIGH — silent production failures on every new EF until resolved
+- **Date:** 2026-04-12
+- **Source:** Dexter production EF failure investigation, session 016-C
+- **Status:** Open
+- **Blocked by:** None
+- **Blocks:** Any future EF additions to the platform
