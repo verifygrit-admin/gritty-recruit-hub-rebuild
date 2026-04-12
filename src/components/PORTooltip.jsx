@@ -172,12 +172,89 @@ function RecruitingEventContent({ data }) {
   );
 }
 
-// Content map — four confirmed contexts. Held contexts return null (no renderer).
+// --- §1.5.1 Counselors (WT-B schema: users + profiles + hs_counselor_schools + hs_counselor_students) ---
+// Service role EF required — Dexter flagged broad SELECT on hs_counselor_schools.
+function CounselorContent({ data }) {
+  return (
+    <>
+      <div style={{ fontSize: '0.85rem', color: '#2C2C2C', fontWeight: 600, marginBottom: 8 }}>
+        <Val v={data.associatedSchools} fallback="No schools assigned" />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+        <LabelRow label="Students Supervised"><Val v={data.studentCount} /></LabelRow>
+        <LabelRow label="Last Login"><Val v={data.lastLogin} fallback="Never logged in" /></LabelRow>
+      </div>
+      <div style={{ fontSize: '0.625rem', fontStyle: 'italic', color: '#666' }}>
+        <Timestamp v={data.lastUpdated} />
+      </div>
+    </>
+  );
+}
+
+// --- §1.5.2 HS Coaches (WT-B schema: users + profiles + hs_coach_schools + hs_coach_students) ---
+// Service role EF required — Dexter flagged broad SELECT on hs_coach_schools.
+function HSCoachContent({ data }) {
+  const headCoachLabel =
+    data.isHeadCoach === true ? 'Head Coach'
+    : data.isHeadCoach === false ? 'Assistant Coach'
+    : null;
+  return (
+    <>
+      <div style={{ fontSize: '0.85rem', color: '#2C2C2C', fontWeight: 600, marginBottom: 8 }}>
+        <Val v={data.associatedSchools} fallback="No schools assigned" />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+        <LabelRow label="Role"><Val v={headCoachLabel} /></LabelRow>
+        <LabelRow label="Students Coached"><Val v={data.studentCount} /></LabelRow>
+        <LabelRow label="Last Login"><Val v={data.lastLogin} fallback="Never logged in" /></LabelRow>
+      </div>
+      <div style={{ fontSize: '0.625rem', fontStyle: 'italic', color: '#666' }}>
+        <Timestamp v={data.lastUpdated} />
+      </div>
+    </>
+  );
+}
+
+// --- §1.5.3 Parents (WT-B schema: users + profiles, parent row only) ---
+// STRUCTURAL GAP: no parent-child link table exists. Tooltip limited to parent's own
+// account info. No student data is accessible for parent POR tooltips.
+function ParentContent({ data }) {
+  return (
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+        <LabelRow label="Account Status"><Val v={data.accountStatus} /></LabelRow>
+        <LabelRow label="Last Login"><Val v={data.lastLogin} fallback="Never logged in" /></LabelRow>
+      </div>
+      <div
+        style={{
+          fontSize: '0.6875rem',
+          fontStyle: 'italic',
+          color: '#9E9E9E',
+          backgroundColor: '#FAFAFA',
+          border: '1px solid #E8E8E8',
+          borderRadius: 4,
+          padding: '6px 8px',
+          marginTop: 4,
+          lineHeight: 1.4,
+        }}
+      >
+        No student data available — parent account information only.
+        To view student information, switch to the Student Athletes tab.
+      </div>
+    </>
+  );
+}
+
+// Content map — confirmed contexts + four §1.5 held contexts (Counselors, HS Coaches,
+// Parents, Recruiting Events). Audit Log held pending Scout re-gate on §1.5.5.
 const CONTENT_RENDERERS = {
   'student-athletes': StudentAthleteContent,
   'college-coaches': CollegeCoachContent,
   'institutions': InstitutionContent,
   'recruiting-events': RecruitingEventContent,
+  'guidance-counselors': CounselorContent,
+  'hs-coaches': HSCoachContent,
+  'parents': ParentContent,
 };
 
 // --- Shared card styles ---

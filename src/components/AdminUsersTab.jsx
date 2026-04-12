@@ -292,8 +292,9 @@ const FIELD_GROUP_CONFIGS = {
   ],
 };
 
-// --- POR tooltip configs for confirmed tab contexts (spec §1.1, §1.2) ---
+// --- POR tooltip configs for confirmed + §1.5 contexts (spec §1.1, §1.2, §1.5.1–§1.5.3) ---
 // Field names are PROVISIONAL — pending WT-B Patch schema confirmation.
+// Audit Log (§1.5.5) held — not scaffolded here pending Scout re-gate.
 const POR_CONFIGS = {
   'student-athletes': {
     tabContext: 'student-athletes',
@@ -316,6 +317,41 @@ const POR_CONFIGS = {
       activePrograms: row.active_programs ?? null,
       successRate: row.success_rate ?? null,
       lastUpdated: row.updated_at ?? null,
+    }),
+  },
+  // §1.5.1 Counselors — users + profiles + hs_counselor_schools + hs_counselor_students.
+  // Service role EF required (Dexter: broad SELECT on hs_counselor_schools).
+  'guidance-counselors': {
+    tabContext: 'guidance-counselors',
+    getTooltipData: (row) => ({
+      title: `${row.first_name || ''} ${row.last_name || ''}`.trim() || `Counselor #${row.id}`,
+      associatedSchools: row.school_name ?? null,
+      studentCount: row.supervised_student_count ?? null,
+      lastLogin: row.last_login ?? null,
+      lastUpdated: row.last_updated ?? row.updated_at ?? null,
+    }),
+  },
+  // §1.5.2 HS Coaches — users + profiles + hs_coach_schools + hs_coach_students.
+  // Service role EF required (Dexter: broad SELECT on hs_coach_schools).
+  'hs-coaches': {
+    tabContext: 'hs-coaches',
+    getTooltipData: (row) => ({
+      title: `${row.first_name || ''} ${row.last_name || ''}`.trim() || `Coach #${row.id}`,
+      associatedSchools: row.primary_school ?? null,
+      isHeadCoach: typeof row.is_head_coach === 'boolean' ? row.is_head_coach : null,
+      studentCount: row.coached_student_count ?? null,
+      lastLogin: row.last_login ?? null,
+      lastUpdated: row.last_updated ?? row.updated_at ?? null,
+    }),
+  },
+  // §1.5.3 Parents — users + profiles (parent row only).
+  // STRUCTURAL GAP: no parent-child link table. Tooltip limited to account info only.
+  parents: {
+    tabContext: 'parents',
+    getTooltipData: (row) => ({
+      title: row.name || `Parent #${row.id}`,
+      accountStatus: row.account_status ?? null,
+      lastLogin: row.last_login ?? null,
     }),
   },
 };
