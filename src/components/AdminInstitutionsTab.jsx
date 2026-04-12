@@ -1,10 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabaseClient.js';
 import AdminTableEditor from './AdminTableEditor.jsx';
 import SlideOutForm from './SlideOutForm.jsx';
 import useIsDesktop from '../hooks/useIsDesktop.js';
 
 // AdminInstitutionsTab — Institutions tab for college metadata, division/conference data.
-// Decision 3: No Supabase calls. TODO comments mark where data fetching will go.
+// OBJ-4 (Session 016-C): Supabase data wired via admin-read-institutions Edge Function.
+// Backing table is public.schools (662 rows, PK unitid). UI calls them "institutions".
 // Decision 6: Sortable columns handled by AdminTableEditor.
 
 const INSTITUTIONS_COLUMNS = [
@@ -64,16 +66,16 @@ function getInstitutionFieldGroups(row) {
 }
 
 // --- POR tooltip config (spec §1.3) ---
-// Field names are PROVISIONAL pending WT-B Patch schema confirmation.
+// Field names confirmed against schools schema by Patch (Session 016-C).
+// Ghost columns stripped: active_coach_count, athlete_interest_count.
+// Renamed: updated_at → last_updated.
 const POR_CONFIG = {
   tabContext: 'institutions',
   getTooltipData: (row) => ({
     title: row.school_name || `Institution #${row.unitid}`,
     institutionType: row.ncaa_division ? `NCAA ${row.ncaa_division}` : null,
     state: row.state ?? null,
-    activeCoachCount: row.active_coach_count ?? null,
-    athleteInterestCount: row.athlete_interest_count ?? null,
-    lastUpdated: row.updated_at ?? null,
+    lastUpdated: row.last_updated ?? null,
   }),
 };
 
@@ -81,12 +83,59 @@ export default function AdminInstitutionsTab() {
   const isDesktop = useIsDesktop();
   const [selectedRow, setSelectedRow] = useState(null);
   const [formData, setFormData] = useState({});
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  // TODO: Wire Supabase data fetching for institutions/schools metadata.
-  // GET /functions/v1/admin-read-institutions
-  const rows = [];
-  const loading = false;
-  const loadError = '';
+  const loadInstitutions = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    setRows([]);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const jwt = sessionData?.session?.access_token;
+
+      if (!jwt) {
+        setLoadError('No active admin session. Please sign in again.');
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/admin-read-institutions`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt}`,
+          'apikey': anonKey,
+        },
+      });
+
+      if (!res.ok) {
+        setLoadError(`Failed to load institutions (HTTP ${res.status}). The admin-read-institutions Edge Function may not be deployed yet.`);
+        setLoading(false);
+        return;
+      }
+
+      const body = await res.json();
+      if (!body?.success) {
+        setLoadError(body?.error || 'Failed to load institutions.');
+        setLoading(false);
+        return;
+      }
+
+      setRows(body.institutions || []);
+      setLoading(false);
+    } catch (err) {
+      setLoadError('Network error loading institutions. Please try again.');
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadInstitutions();
+  }, [loadInstitutions]);
 
   const handleRowClick = useCallback((row) => {
     setSelectedRow(row);
@@ -103,7 +152,8 @@ export default function AdminInstitutionsTab() {
   }, []);
 
   const handleSave = useCallback(() => {
-    // TODO: Wire to Supabase Edge Function — PUT /functions/v1/admin-update-institution
+    // TODO (016-C follow-up): Wire to admin-update-institution Edge Function.
+    // Reads are wired; writes will follow the admin-update-school pattern.
     handleClose();
   }, [handleClose]);
 
@@ -118,6 +168,7 @@ export default function AdminInstitutionsTab() {
         tableName="institutions"
         loading={loading}
         loadError={loadError}
+        onRetry={loadInstitutions}
         isDesktop={isDesktop}
         onRowClick={handleRowClick}
         porConfig={POR_CONFIG}
