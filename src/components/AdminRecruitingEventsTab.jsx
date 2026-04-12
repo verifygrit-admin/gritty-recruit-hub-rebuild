@@ -52,6 +52,21 @@ function getEventFieldGroups(row) {
   ];
 }
 
+// --- POR tooltip config (spec §1.4) ---
+// Field names are PROVISIONAL pending WT-B Patch schema confirmation.
+const POR_CONFIG = {
+  tabContext: 'recruiting-events',
+  getTooltipData: (row) => ({
+    title: row.event_name || `Event #${row.id}`,
+    eventType: row.event_type ?? null,
+    eventDate: row.event_date ?? null,
+    location: row.location ?? null,
+    registeredCount: row.current_registrations ?? null,
+    associatedInstitution: row.host_school_id ?? null,
+    lastUpdated: row.updated_at ?? null,
+  }),
+};
+
 export default function AdminRecruitingEventsTab() {
   const isDesktop = useIsDesktop();
   const [selectedRow, setSelectedRow] = useState(null);
@@ -95,6 +110,7 @@ export default function AdminRecruitingEventsTab() {
         loadError={loadError}
         isDesktop={isDesktop}
         onRowClick={handleRowClick}
+        porConfig={POR_CONFIG}
       />
       <SlideOutForm
         isOpen={!!selectedRow}

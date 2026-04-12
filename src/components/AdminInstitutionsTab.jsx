@@ -63,6 +63,20 @@ function getInstitutionFieldGroups(row) {
   ];
 }
 
+// --- POR tooltip config (spec §1.3) ---
+// Field names are PROVISIONAL pending WT-B Patch schema confirmation.
+const POR_CONFIG = {
+  tabContext: 'institutions',
+  getTooltipData: (row) => ({
+    title: row.school_name || `Institution #${row.unitid}`,
+    institutionType: row.ncaa_division ? `NCAA ${row.ncaa_division}` : null,
+    state: row.state ?? null,
+    activeCoachCount: row.active_coach_count ?? null,
+    athleteInterestCount: row.athlete_interest_count ?? null,
+    lastUpdated: row.updated_at ?? null,
+  }),
+};
+
 export default function AdminInstitutionsTab() {
   const isDesktop = useIsDesktop();
   const [selectedRow, setSelectedRow] = useState(null);
@@ -106,6 +120,7 @@ export default function AdminInstitutionsTab() {
         loadError={loadError}
         isDesktop={isDesktop}
         onRowClick={handleRowClick}
+        porConfig={POR_CONFIG}
       />
       <SlideOutForm
         isOpen={!!selectedRow}

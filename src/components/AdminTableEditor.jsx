@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import usePORTooltip from '../hooks/usePORTooltip.js';
+import PORTooltip from './PORTooltip.jsx';
 
 // AdminTableEditor — Generic, reusable bulk-edit table for the admin panel.
 // Decision 2: All 8 admin tables share this single component via column configs.
@@ -15,6 +17,7 @@ import { useState, useMemo } from 'react';
 //   onRetry    — () => void
 //   isDesktop  — boolean — from useIsDesktop hook (controls edit mode visibility)
 //   onRowClick — (row) => void — optional callback when a row is clicked (opens slide-out form)
+//   porConfig  — { tabContext: string, getTooltipData: (row) => object } — optional POR tooltip
 
 export default function AdminTableEditor({
   columns,
@@ -26,7 +29,11 @@ export default function AdminTableEditor({
   onRetry,
   isDesktop = true,
   onRowClick,
+  porConfig,
 }) {
+  // --- POR tooltip hook (spec: POR_TOOLTIP_COMPONENT_SPEC.md) ---
+  const por = usePORTooltip();
+
   // --- Sort state (Decision 6) ---
   // Local only — no query params, no URL state, no Supabase ORDER BY.
   const [sortConfig, setSortConfig] = useState(null); // { key, direction: 'asc'|'desc' }
@@ -193,6 +200,12 @@ export default function AdminTableEditor({
     );
   }
 
+  // --- POR tooltip data for active row ---
+  const porActiveRow = porConfig && por.activeRowId != null
+    ? sortedRows.find((r) => r[rowKey] === por.activeRowId)
+    : null;
+  const porData = porActiveRow ? porConfig.getTooltipData(porActiveRow) : null;
+
   return (
     <div data-testid={`${tableName}-table-editor`} style={{ padding: 24, position: 'relative' }}>
       <h3
@@ -300,9 +313,12 @@ export default function AdminTableEditor({
             {sortedRows.map((row) => (
               <tr
                 key={row[rowKey]}
+                tabIndex={porConfig ? 0 : undefined}
+                aria-describedby={porConfig && por.activeRowId === row[rowKey] ? 'por-tooltip' : undefined}
                 style={{
                   borderBottom: '1px solid #E8E8E8',
                   cursor: onRowClick ? 'pointer' : 'default',
+                  outline: 'none',
                 }}
                 onClick={() => {
                   // Only fire row click if not currently editing a cell
@@ -310,10 +326,24 @@ export default function AdminTableEditor({
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = '#FAFAFA';
+                  if (porConfig) por.onRowMouseEnter(row[rowKey], e);
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = '';
+                  if (porConfig) por.onRowMouseLeave();
                 }}
+                onTouchStart={porConfig ? (e) => por.onRowTouchStart(row[rowKey], e) : undefined}
+                onTouchEnd={porConfig ? por.onRowTouchEnd : undefined}
+                onFocus={porConfig ? (e) => {
+                  por.onRowFocus(row[rowKey], e);
+                  e.currentTarget.style.outline = '2px solid #8B3A3A';
+                  e.currentTarget.style.outlineOffset = '-2px';
+                } : undefined}
+                onBlur={porConfig ? (e) => {
+                  por.onRowBlur();
+                  e.currentTarget.style.outline = '';
+                  e.currentTarget.style.outlineOffset = '';
+                } : undefined}
               >
                 {columns.map((col) => {
                   const key = cellKey(row[rowKey], col.key);
@@ -428,6 +458,17 @@ export default function AdminTableEditor({
           </tbody>
         </table>
       </div>
+
+      {/* POR Tooltip — renders when porConfig provided and a row is active */}
+      {porConfig && por.activeRowId != null && porData && (
+        <PORTooltip
+          tabContext={porConfig.tabContext}
+          data={porData}
+          triggerRect={por.triggerRect}
+          onMouseEnter={por.onTooltipMouseEnter}
+          onMouseLeave={por.onTooltipMouseLeave}
+        />
+      )}
     </div>
   );
 }

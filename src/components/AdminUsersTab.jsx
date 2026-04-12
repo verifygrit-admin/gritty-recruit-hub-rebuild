@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabaseClient.js';
 import AdminTableEditor from './AdminTableEditor.jsx';
 import SlideOutForm from './SlideOutForm.jsx';
 import useIsDesktop from '../hooks/useIsDesktop.js';
 
 // AdminUsersTab — Users tab with sub-nav for 6 entity tables.
-// Decision 3: No Supabase calls. TODO comments mark where data fetching will go.
+// OBJ-4 (Session 016-C): Supabase data wired via admin-read-users Edge Function.
 // Decision 6: Sortable columns handled by AdminTableEditor.
 
 const USERS_COLUMNS = [
@@ -74,12 +75,12 @@ const PARENTS_COLUMNS = [
 ];
 
 const SUB_TABLES = [
-  { key: 'users', label: 'Accounts', columns: USERS_COLUMNS, rowKey: 'id' },
-  { key: 'student-athletes', label: 'Student Athletes', columns: STUDENT_ATHLETES_COLUMNS, rowKey: 'id' },
-  { key: 'college-coaches', label: 'College Coaches', columns: COLLEGE_COACHES_COLUMNS, rowKey: 'id' },
-  { key: 'hs-coaches', label: 'HS Coaches', columns: HS_COACHES_COLUMNS, rowKey: 'id' },
-  { key: 'guidance-counselors', label: 'Counselors', columns: GUIDANCE_COUNSELORS_COLUMNS, rowKey: 'id' },
-  { key: 'parents', label: 'Parents', columns: PARENTS_COLUMNS, rowKey: 'id' },
+  { key: 'users', label: 'Accounts', columns: USERS_COLUMNS, rowKey: 'id', userType: null },
+  { key: 'student-athletes', label: 'Student Athletes', columns: STUDENT_ATHLETES_COLUMNS, rowKey: 'id', userType: 'student_athlete' },
+  { key: 'college-coaches', label: 'College Coaches', columns: COLLEGE_COACHES_COLUMNS, rowKey: 'id', userType: 'college_coach' },
+  { key: 'hs-coaches', label: 'HS Coaches', columns: HS_COACHES_COLUMNS, rowKey: 'id', userType: 'hs_coach' },
+  { key: 'guidance-counselors', label: 'Counselors', columns: GUIDANCE_COUNSELORS_COLUMNS, rowKey: 'id', userType: 'hs_guidance_counselor' },
+  { key: 'parents', label: 'Parents', columns: PARENTS_COLUMNS, rowKey: 'id', userType: 'parent' },
 ];
 
 // --- Entity-specific field group configs (per Quill spec Section 4) ---
@@ -291,6 +292,34 @@ const FIELD_GROUP_CONFIGS = {
   ],
 };
 
+// --- POR tooltip configs for confirmed tab contexts (spec §1.1, §1.2) ---
+// Field names are PROVISIONAL — pending WT-B Patch schema confirmation.
+const POR_CONFIGS = {
+  'student-athletes': {
+    tabContext: 'student-athletes',
+    getTooltipData: (row) => ({
+      title: row.name || `Athlete #${row.id}`,
+      confidenceScore: row.confidence_score ?? null,
+      primaryScore: row.primary_score ?? null,
+      gpaFit: row.gpa_fit ?? null,
+      athleticRating: row.athletic_rating ?? null,
+      recruitingStage: row.recruiting_status ?? null,
+      lastUpdated: row.updated_at ?? null,
+    }),
+  },
+  'college-coaches': {
+    tabContext: 'college-coaches',
+    getTooltipData: (row) => ({
+      title: `${row.first_name || ''} ${row.last_name || ''}`.trim() || `Coach #${row.id}`,
+      confidenceScore: row.confidence_score ?? null,
+      divisionBreakdown: row.division_breakdown ?? null,
+      activePrograms: row.active_programs ?? null,
+      successRate: row.success_rate ?? null,
+      lastUpdated: row.updated_at ?? null,
+    }),
+  },
+};
+
 // Form title generators per entity type
 const FORM_TITLES = {
   users: (row) => `Account — ${row.email || ''} (ID: ${row.id || ''})`,
@@ -306,19 +335,62 @@ export default function AdminUsersTab() {
   const [activeSubTable, setActiveSubTable] = useState('users');
   const [selectedRow, setSelectedRow] = useState(null);
   const [formData, setFormData] = useState({});
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const current = SUB_TABLES.find((t) => t.key === activeSubTable) || SUB_TABLES[0];
 
-  // TODO: Wire Supabase data fetching per sub-table.
-  // Each sub-table will fetch from its respective Edge Function:
-  //   GET /functions/v1/admin-read-users
-  //   GET /functions/v1/admin-read-student-athletes
-  //   GET /functions/v1/admin-read-college-coaches
-  //   GET /functions/v1/admin-read-hs-coaches
-  //   GET /functions/v1/admin-read-guidance-counselors
-  //   GET /functions/v1/admin-read-parents
-  const rows = [];
-  const loading = false;
-  const loadError = '';
+  const loadUsers = useCallback(async (userType) => {
+    setLoading(true);
+    setLoadError('');
+    setRows([]);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const jwt = sessionData?.session?.access_token;
+
+      if (!jwt) {
+        setLoadError('No active admin session. Please sign in again.');
+        setLoading(false);
+        return;
+      }
+
+      const params = userType ? `?user_type=${userType}` : '';
+      const res = await fetch(`${supabaseUrl}/functions/v1/admin-read-users${params}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt}`,
+          'apikey': anonKey,
+        },
+      });
+
+      if (!res.ok) {
+        setLoadError(`Failed to load users (HTTP ${res.status}). The admin-read-users Edge Function may not be deployed yet.`);
+        setLoading(false);
+        return;
+      }
+
+      const body = await res.json();
+      if (!body?.success) {
+        setLoadError(body?.error || 'Failed to load users.');
+        setLoading(false);
+        return;
+      }
+
+      setRows(body.users || []);
+      setLoading(false);
+    } catch (err) {
+      setLoadError('Network error loading users. Please try again.');
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch data on mount and when sub-tab changes
+  useEffect(() => {
+    loadUsers(current.userType);
+  }, [activeSubTable, current.userType, loadUsers]);
 
   const handleRowClick = useCallback((row) => {
     setSelectedRow(row);
@@ -335,7 +407,8 @@ export default function AdminUsersTab() {
   }, []);
 
   const handleSave = useCallback(() => {
-    // TODO: Wire to Supabase Edge Function — PUT /functions/v1/admin-update-<entity>
+    // TODO (016-C follow-up): Wire to admin-update-users Edge Function.
+    // Reads are wired; writes will follow the admin-update-school pattern.
     handleClose();
   }, [handleClose]);
 
@@ -391,8 +464,10 @@ export default function AdminUsersTab() {
         tableName={current.label.toLowerCase()}
         loading={loading}
         loadError={loadError}
+        onRetry={() => loadUsers(current.userType)}
         isDesktop={isDesktop}
         onRowClick={handleRowClick}
+        porConfig={POR_CONFIGS[activeSubTable] || null}
       />
 
       <SlideOutForm
