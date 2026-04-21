@@ -33,7 +33,9 @@ jobs:
         run: npm run build
 
       - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
+        # v42.2.0 bundles vercel CLI ^50.0.0 — required after Vercel's deploy
+        # API began rejecting CLI <47.2.2 (rejected builds starting ~2026-04-21).
+        uses: amondnet/vercel-action@v42.2.0
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
