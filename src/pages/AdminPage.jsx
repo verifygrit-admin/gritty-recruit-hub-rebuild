@@ -2,35 +2,16 @@ import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
-import SchoolsTableEditor from '../components/SchoolsTableEditor.jsx';
+import { ADMIN_TABS, deriveActiveTab } from '../lib/adminTabs.js';
 import AdminUsersTab from '../components/AdminUsersTab.jsx';
 import AdminInstitutionsTab from '../components/AdminInstitutionsTab.jsx';
 import AdminRecruitingEventsTab from '../components/AdminRecruitingEventsTab.jsx';
 import AuditLogViewer from '../components/AuditLogViewer.jsx';
 import DualAdminIndicator from '../components/DualAdminIndicator.jsx';
 
-// AdminPage — Section D parent layout
-// Composes the admin-panel leaf components under a 5-tab nav.
-// Hosted under AdminRoute in App.jsx (/admin/*),
-// so by the time this renders, the admin claim has already been verified.
-//
-// Intentionally does NOT use the Layout wrapper — the admin panel is a distinct
-// surface from the student/coach app shell.
-
-const TABS = [
-  { key: 'schools', label: 'Schools', path: '/admin/schools' },
-  { key: 'users', label: 'Users', path: '/admin/users' },
-  { key: 'institutions', label: 'Institutions', path: '/admin/institutions' },
-  { key: 'recruiting-events', label: 'Recruiting Events', path: '/admin/recruiting-events' },
-  { key: 'audit', label: 'Audit Log', path: '/admin/audit' },
-];
-
-function deriveActiveTab(pathname) {
-  // Match /admin/<tab> — default to 'schools' if bare /admin or unknown
-  const segment = pathname.replace(/^\/admin\/?/, '').split('/')[0];
-  const match = TABS.find((t) => t.key === segment);
-  return match ? match.key : 'schools';
-}
+// AdminPage — Section D parent layout (Sprint 001 D1).
+// Four-tab nav: Users, Institutions, Recruiting Events, Audit Log.
+// Hosted under AdminRoute in App.jsx (/admin/*); admin claim already verified.
 
 export default function AdminPage() {
   const { session } = useAuth();
@@ -40,10 +21,9 @@ export default function AdminPage() {
   const activeTab = deriveActiveTab(location.pathname);
   const adminEmail = session?.user?.email || '';
 
-  // Redirect bare /admin to /admin/schools (must be in useEffect, not render body)
   useEffect(() => {
     if (location.pathname === '/admin' || location.pathname === '/admin/') {
-      navigate('/admin/schools', { replace: true });
+      navigate('/admin/users', { replace: true });
     }
   }, [location.pathname, navigate]);
 
@@ -120,7 +100,7 @@ export default function AdminPage() {
           overflowX: 'auto',
         }}
       >
-        {TABS.map((tab) => (
+        {ADMIN_TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
@@ -149,7 +129,6 @@ export default function AdminPage() {
 
       {/* Tab content */}
       <main data-testid="admin-page-content">
-        {activeTab === 'schools' && <SchoolsTableEditor adminEmail={adminEmail} />}
         {activeTab === 'users' && <AdminUsersTab />}
         {activeTab === 'institutions' && <AdminInstitutionsTab />}
         {activeTab === 'recruiting-events' && <AdminRecruitingEventsTab />}

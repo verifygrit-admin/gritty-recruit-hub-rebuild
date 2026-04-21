@@ -3,9 +3,10 @@
 // Four confirmed tab contexts: student-athletes, college-coaches,
 // institutions, recruiting-events.
 // Five held contexts accepted as future tabContext values — render nothing.
-// All field names are PROVISIONAL pending WT-B schema confirmation.
+// Institutions: athletesInterested + athleteInterestCount wired Sprint 001 D3.
 
 import { useRef, useLayoutEffect, useState } from 'react';
+import { truncateAthletesInterested } from '../lib/athletesInterestedDisplay.js';
 
 const TOOLTIP_WIDTH = 260;
 const POS_OFFSET = 8;
@@ -136,6 +137,8 @@ function CollegeCoachContent({ data }) {
 }
 
 function InstitutionContent({ data }) {
+  const count = typeof data.athleteInterestCount === 'number' ? data.athleteInterestCount : 0;
+  const { names, overflowCount } = truncateAthletesInterested(data.athletesInterested);
   return (
     <>
       <div style={{ fontSize: '0.85rem', color: '#2C2C2C', fontWeight: 600, marginBottom: 8 }}>
@@ -143,8 +146,25 @@ function InstitutionContent({ data }) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
         <LabelRow label="State"><Val v={data.state} /></LabelRow>
-        <LabelRow label="Active Coaches"><Val v={data.activeCoachCount} /></LabelRow>
-        <LabelRow label="Athlete Interest"><Val v={data.athleteInterestCount} /></LabelRow>
+        <LabelRow label="Athlete Interest">{count}</LabelRow>
+        {count === 0 ? (
+          <LabelRow label="Athletes">
+            <span style={{ color: '#9E9E9E', fontStyle: 'italic' }}>No interest yet</span>
+          </LabelRow>
+        ) : (
+          <>
+            {names.map((name, i) => (
+              <LabelRow key={`athlete-${i}`} label={i === 0 ? 'Athletes' : ''}>
+                {name}
+              </LabelRow>
+            ))}
+            {overflowCount > 0 && (
+              <LabelRow label="">
+                <span style={{ color: '#6B6B6B', fontStyle: 'italic' }}>+ {overflowCount} more</span>
+              </LabelRow>
+            )}
+          </>
+        )}
       </div>
       <div style={{ fontSize: '0.625rem', fontStyle: 'italic', color: '#666' }}>
         <Timestamp v={data.lastUpdated} />

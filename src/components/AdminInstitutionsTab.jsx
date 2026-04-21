@@ -69,12 +69,17 @@ function getInstitutionFieldGroups(row) {
 // Field names confirmed against schools schema by Patch (Session 016-C).
 // Ghost columns stripped: active_coach_count, athlete_interest_count.
 // Renamed: updated_at → last_updated.
+// Sprint 001 D3 (2026-04-20): athletesInterested (string[]) + athleteInterestCount
+// (number) now surfaced from the row. Backend populates; frontend defaults to
+// empty array / 0 if absent.
 const POR_CONFIG = {
   tabContext: 'institutions',
   getTooltipData: (row) => ({
     title: row.school_name || `Institution #${row.unitid}`,
     institutionType: row.ncaa_division ? `NCAA ${row.ncaa_division}` : null,
     state: row.state ?? null,
+    athletesInterested: Array.isArray(row.athletesInterested) ? row.athletesInterested : [],
+    athleteInterestCount: typeof row.athleteInterestCount === 'number' ? row.athleteInterestCount : 0,
     lastUpdated: row.last_updated ?? null,
   }),
 };

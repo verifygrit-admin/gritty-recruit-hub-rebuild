@@ -1,6 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import usePORTooltip from '../hooks/usePORTooltip.js';
 import PORTooltip from './PORTooltip.jsx';
+import {
+  DEFAULT_PAGE_SIZE,
+  PAGE_SIZE_OPTIONS,
+  paginateRows,
+  getTotalPages,
+} from '../lib/pagination.js';
 
 // AdminTableEditor — Generic, reusable bulk-edit table for the admin panel.
 // Decision 2: All 8 admin tables share this single component via column configs.
@@ -38,6 +44,10 @@ export default function AdminTableEditor({
   // Local only — no query params, no URL state, no Supabase ORDER BY.
   const [sortConfig, setSortConfig] = useState(null); // { key, direction: 'asc'|'desc' }
 
+  // --- Pagination state (Sprint 001 D4) ---
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState(1);
+
   // --- Edit state ---
   const [editingCellKey, setEditingCellKey] = useState(null); // 'rowId:colKey'
   const [editValue, setEditValue] = useState('');
@@ -72,6 +82,16 @@ export default function AdminTableEditor({
       return 0;
     });
   }, [localRows, sortConfig]);
+
+  // --- Pagination (Sprint 001 D4) ---
+  // Reset to page 1 when the underlying row set, sort, or page size changes.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [rowsFingerprint, sortConfig, pageSize]);
+
+  const totalPages = getTotalPages(sortedRows.length, pageSize);
+  const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
+  const paginatedRows = paginateRows(sortedRows, pageSize, safeCurrentPage);
 
   // --- Sort handler ---
   const handleSort = (colKey) => {
@@ -202,7 +222,7 @@ export default function AdminTableEditor({
 
   // --- POR tooltip data for active row ---
   const porActiveRow = porConfig && por.activeRowId != null
-    ? sortedRows.find((r) => r[rowKey] === por.activeRowId)
+    ? paginatedRows.find((r) => r[rowKey] === por.activeRowId)
     : null;
   const porData = porActiveRow ? porConfig.getTooltipData(porActiveRow) : null;
 
@@ -218,11 +238,53 @@ export default function AdminTableEditor({
       >
         {tableName.charAt(0).toUpperCase() + tableName.slice(1)}
       </h3>
-      <p style={{ fontSize: '0.875rem', color: '#6B6B6B', margin: '0 0 16px 0' }}>
-        {sortedRows.length} rows.
-        {isDesktop && columns.some((c) => c.editable) && ' Click an editable cell to edit.'}
-        {!isDesktop && ' Read-only on mobile.'}
-      </p>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          margin: '0 0 16px 0',
+          flexWrap: 'wrap',
+        }}
+      >
+        <p style={{ fontSize: '0.875rem', color: '#6B6B6B', margin: 0 }}>
+          {sortedRows.length} rows.
+          {isDesktop && columns.some((c) => c.editable) && ' Click an editable cell to edit.'}
+          {!isDesktop && ' Read-only on mobile.'}
+        </p>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: '0.8125rem',
+            color: '#6B6B6B',
+          }}
+        >
+          Rows per page
+          <select
+            data-testid="admin-page-size-select"
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+            style={{
+              padding: '4px 8px',
+              border: '1px solid #D4D4D4',
+              borderRadius: 4,
+              fontSize: '0.8125rem',
+              color: '#2C2C2C',
+              backgroundColor: '#FFFFFF',
+              cursor: 'pointer',
+            }}
+          >
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
       {/* Success toast */}
       {successMessage && (
@@ -302,7 +364,7 @@ export default function AdminTableEditor({
 
           {/* Table body */}
           <tbody>
-            {sortedRows.map((row) => (
+            {paginatedRows.map((row) => (
               <tr
                 key={row[rowKey]}
                 tabIndex={porConfig ? 0 : undefined}
@@ -449,6 +511,57 @@ export default function AdminTableEditor({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination footer (Sprint 001 D4) */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          gap: 8,
+          marginTop: 16,
+          fontSize: '0.8125rem',
+          color: '#6B6B6B',
+        }}
+      >
+        <button
+          type="button"
+          data-testid="admin-page-prev"
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          disabled={safeCurrentPage <= 1}
+          style={{
+            padding: '6px 12px',
+            border: '1px solid #D4D4D4',
+            borderRadius: 4,
+            backgroundColor: safeCurrentPage <= 1 ? '#F5F5F5' : '#FFFFFF',
+            color: safeCurrentPage <= 1 ? '#9E9E9E' : '#2C2C2C',
+            cursor: safeCurrentPage <= 1 ? 'not-allowed' : 'pointer',
+            fontSize: '0.8125rem',
+          }}
+        >
+          Previous
+        </button>
+        <span data-testid="admin-page-indicator" style={{ minWidth: 100, textAlign: 'center' }}>
+          Page {safeCurrentPage} of {totalPages}
+        </span>
+        <button
+          type="button"
+          data-testid="admin-page-next"
+          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          disabled={safeCurrentPage >= totalPages}
+          style={{
+            padding: '6px 12px',
+            border: '1px solid #D4D4D4',
+            borderRadius: 4,
+            backgroundColor: safeCurrentPage >= totalPages ? '#F5F5F5' : '#FFFFFF',
+            color: safeCurrentPage >= totalPages ? '#9E9E9E' : '#2C2C2C',
+            cursor: safeCurrentPage >= totalPages ? 'not-allowed' : 'pointer',
+            fontSize: '0.8125rem',
+          }}
+        >
+          Next
+        </button>
       </div>
 
       {/* POR Tooltip — renders when porConfig provided and a row is active */}

@@ -1,12 +1,19 @@
 // admin-read-institutions Edge Function
 // Session 016-C — OBJ-4
+// Sprint 001 D3 (2026-04-20) — POR tooltip "Athletes Interested" fields added.
 //
 // Returns all rows from public.schools for the admin Institutions tab.
 // The UI calls them "institutions" but the backing table is public.schools.
 // Includes athletics_phone and athletics_email (migration 0036).
 //
+// Each institution row is enriched with:
+//   - athletesInterested: string[]   // "First Last" names from profiles.name,
+//                                    //   sorted alphabetically, soft-joined via
+//                                    //   short_list_items.user_id → profiles.user_id
+//   - athleteInterestCount: number   // length of athletesInterested (0 when none)
+//
 // Auth gate: Bearer JWT → getUser() → app_metadata.role === 'admin'
-// Query: service_role client → schools, ordered by school_name
+// Query: service_role client → schools + short_list_items + profiles
 //
 // Response shape:
 //   200 { success: true, institutions: [...rows] }
@@ -15,6 +22,7 @@
 //   500 { success: false, error: 'message' }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { aggregateAthletesByUnitid } from "./aggregate.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -104,7 +112,43 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return json({ success: false, error: "Failed to read institutions" }, 500);
     }
 
-    return json({ success: true, institutions: schools ?? [] });
+    // --- ATHLETE INTEREST ENRICHMENT (Sprint 001 D3) ---
+    // Soft join: short_list_items.user_id → profiles.user_id.
+    // No FK from short_list_items.unitid to schools.unitid (int-only join).
+
+    const { data: shortListItems, error: sliError } = await serviceClient
+      .from("short_list_items")
+      .select("user_id, unitid");
+
+    if (sliError) {
+      console.error("admin-read-institutions: short_list_items SELECT failed", sliError);
+      return json({ success: false, error: "Failed to read athlete interest" }, 500);
+    }
+
+    const { data: profiles, error: profilesError } = await serviceClient
+      .from("profiles")
+      .select("user_id, name");
+
+    if (profilesError) {
+      console.error("admin-read-institutions: profiles SELECT failed", profilesError);
+      return json({ success: false, error: "Failed to read profiles" }, 500);
+    }
+
+    const athletesByUnitid = aggregateAthletesByUnitid(
+      shortListItems ?? [],
+      profiles ?? [],
+    );
+
+    const enriched = (schools ?? []).map((row: Record<string, unknown>) => {
+      const entry = athletesByUnitid[row.unitid as number];
+      return {
+        ...row,
+        athletesInterested: entry?.athletesInterested ?? [],
+        athleteInterestCount: entry?.athleteInterestCount ?? 0,
+      };
+    });
+
+    return json({ success: true, institutions: enriched });
   } catch (err) {
     console.error("admin-read-institutions: unexpected error", err);
     return json({ success: false, error: "Internal server error" }, 500);
