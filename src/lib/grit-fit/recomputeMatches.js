@@ -40,6 +40,7 @@ export function recomputeMatches(trueProfile, schools, overrides, limit = MATCH_
     scoringResult.athFit,
     scoringResult.acadRigorScore,
     limit,
+    { profile, schoolsPool: schools || [] },
   );
 
   return {

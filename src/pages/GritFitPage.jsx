@@ -423,7 +423,13 @@ export default function GritFitPage() {
         const eligibleSorted = (result.scored || [])
           .filter(s => s.eligible)
           .sort((a, b) => b.acadScore - a.acadScore);
-        const top = applyMatchReturnLogic(eligibleSorted, result.athFit, result.acadRigorScore, MATCH_RETURN_LIMIT);
+        const top = applyMatchReturnLogic(
+          eligibleSorted,
+          result.athFit,
+          result.acadRigorScore,
+          MATCH_RETURN_LIMIT,
+          { profile: profileData, schoolsPool: schoolsData },
+        );
         const finalResult = { ...result, top30: top };
         setTrueScoringResult(finalResult);
 
@@ -469,7 +475,13 @@ export default function GritFitPage() {
     const eligibleSorted = (result.scored || [])
       .filter(s => s.eligible)
       .sort((a, b) => b.acadScore - a.acadScore);
-    const top = applyMatchReturnLogic(eligibleSorted, result.athFit, result.acadRigorScore, MATCH_RETURN_LIMIT);
+    const top = applyMatchReturnLogic(
+      eligibleSorted,
+      result.athFit,
+      result.acadRigorScore,
+      MATCH_RETURN_LIMIT,
+      { profile: freshProfile, schoolsPool: allSchools },
+    );
     const finalResult = { ...result, top30: top };
     setTrueScoringResult(finalResult);
 

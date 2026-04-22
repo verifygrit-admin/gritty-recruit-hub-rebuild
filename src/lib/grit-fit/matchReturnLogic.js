@@ -24,7 +24,21 @@
  *     array of scored school records, as produced by runGritFitScoring.
  *   - athFit: { [tier]: number }
  *   - academicRigorScore: number (0..1)
+ *
+ * Sprint 004 Phase 1 consolidation (Wave 5): applyMatchReturnLogic is now
+ * the single source of truth for all cap logic across the app. The G9
+ * subordinate step (src/lib/scoring/g9SubordinateStep.js) is invoked here
+ * as an OUTER gate — it runs after Sprint 003's D4 cap and replaces the
+ * result when G9's 3-trigger condition fires. This removes the
+ * double-pipeline bug where G9 was computed inside runGritFitScoring but
+ * silently overwritten at the view layer.
+ *
+ * The G9 gate fires only when both `options.profile` and `options.schoolsPool`
+ * are supplied. Callers that don't pass these (tests, legacy paths) get the
+ * pre-Wave-5 Sprint 003 behavior — backward compatible by construction.
  */
+
+import { applyG9SubordinateStep } from '../scoring/g9SubordinateStep.js';
 
 export const HIGH_ACADEMIC_THRESHOLD = 0.85;
 export const D2_QUALIFYING_UNITIDS = []; // operator-extendable; used if matching by unitid preferred
@@ -52,31 +66,70 @@ function isQualifyingD2(school) {
 }
 
 /**
- * Apply the D4 match-return logic.
+ * Apply the match-return logic.
  * Returns a new array (never mutates input).
+ *
+ * @param {Array} scoredEligible - filtered & sorted (desc by acadScore) scored schools
+ * @param {Object} athFit - { [tier]: number }
+ * @param {number} academicRigorScore - 0..1
+ * @param {number} [limit=MATCH_RETURN_LIMIT]
+ * @param {Object} [options] - Optional G9 outer-gate inputs. Both fields required
+ *   to engage G9; absence skips the G9 gate (preserves Sprint 003 behavior).
+ * @param {Object} [options.profile] - student profile (needs hs_lat/hs_lng)
+ * @param {Array}  [options.schoolsPool] - full schools pool for D2-count + D3 fill
  */
-export function applyMatchReturnLogic(scoredEligible, athFit, academicRigorScore, limit = MATCH_RETURN_LIMIT) {
+export function applyMatchReturnLogic(
+  scoredEligible,
+  athFit,
+  academicRigorScore,
+  limit = MATCH_RETURN_LIMIT,
+  options = {},
+) {
   if (!Array.isArray(scoredEligible)) return [];
+
+  // ── Sprint 003 cap logic ────────────────────────────────────────────────
+  let sprintThreeCap;
   if (!qualifiesForD2Cap(athFit, academicRigorScore)) {
-    return scoredEligible.slice(0, limit);
+    sprintThreeCap = scoredEligible.slice(0, limit);
+  } else {
+    const qualifyingD2s = scoredEligible.filter(s => isQualifyingD2(s)).slice(0, D2_CAP);
+    const d3s = scoredEligible.filter(s => s.type === 'D3');
+
+    // Keep any highest-ranked non-D2 non-D3 ineligible by default for this cohort —
+    // the spec defines the return as "remaining 28–30 slots filled with highest-
+    // qualifying D3 schools." Non-D2/D3 returns are not part of the cap rule.
+    const remainingSlots = Math.max(0, limit - qualifyingD2s.length);
+    const fill = d3s.slice(0, remainingSlots);
+
+    const seen = new Set();
+    const combined = [];
+    for (const s of [...qualifyingD2s, ...fill]) {
+      if (s.unitid != null && seen.has(s.unitid)) continue;
+      if (s.unitid != null) seen.add(s.unitid);
+      combined.push(s);
+      if (combined.length >= limit) break;
+    }
+    sprintThreeCap = combined;
   }
 
-  const qualifyingD2s = scoredEligible.filter(s => isQualifyingD2(s)).slice(0, D2_CAP);
-  const d3s = scoredEligible.filter(s => s.type === 'D3');
-
-  // Keep any highest-ranked non-D2 non-D3 ineligible by default for this cohort —
-  // the spec defines the return as "remaining 28–30 slots filled with highest-
-  // qualifying D3 schools." Non-D2/D3 returns are not part of the cap rule.
-  const remainingSlots = Math.max(0, limit - qualifyingD2s.length);
-  const fill = d3s.slice(0, remainingSlots);
-
-  const seen = new Set();
-  const combined = [];
-  for (const s of [...qualifyingD2s, ...fill]) {
-    if (s.unitid != null && seen.has(s.unitid)) continue;
-    if (s.unitid != null) seen.add(s.unitid);
-    combined.push(s);
-    if (combined.length >= limit) break;
+  // ── Sprint 004 G9 outer gate ────────────────────────────────────────────
+  // Only reshape the cap if G9's 3-trigger condition holds. If profile or
+  // schoolsPool absent (tests / callers that don't need G9 gating), return
+  // the Sprint 003 cap unchanged. When G9 fires, g9Result.top30 is a NEW
+  // array (Bentley + Mines + D3 fill); when it passes through, it's the
+  // same reference we passed in. Safe either way.
+  if (options.profile && options.schoolsPool) {
+    const scoringOutputShape = {
+      top30: sprintThreeCap,
+      athFit,
+      acadRigorScore: academicRigorScore,
+    };
+    const g9Result = applyG9SubordinateStep(
+      scoringOutputShape,
+      options.profile,
+      options.schoolsPool,
+    );
+    return g9Result.top30;
   }
-  return combined;
+  return sprintThreeCap;
 }

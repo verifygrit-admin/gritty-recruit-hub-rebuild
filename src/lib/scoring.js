@@ -8,7 +8,6 @@ import {
   SAT_PERCENTILES, STATE_CENTROIDS, EFC_TABLE,
 } from './constants.js';
 import { GPA_DISTRIBUTIONS, GPA_DISTRIBUTIONS_TEST_OPT } from './gpaDistributions.js';
-import { applyG9SubordinateStep } from './scoring/g9SubordinateStep.js';
 
 /**
  * Determine the DB class-year label for a given gradYear.
@@ -334,13 +333,9 @@ export function runGritFitScoring(profile, schools) {
   const passAcad = scored.filter(s => s.type === topTier && s.acadScore > 0).length;
   const passAll = top50.length;
 
-  const baseResult = {
+  return {
     top30, top50, scored, athFit, athFitBase, boost, topTier, recruitReach,
     acadRigorScore, acadTestOptScore,
     gates: { passAthletic, passDist, passAcad, passAll },
   };
-
-  // G9 subordinate step — pass-through unless all three trigger conditions
-  // hold (AF@D2 ≥ 0.50 AND AF@D3 ≥ 0.50, acadRigorScore ≥ 0.85, D2 pool ≥ 30).
-  return applyG9SubordinateStep(baseResult, profile, schools);
 }
