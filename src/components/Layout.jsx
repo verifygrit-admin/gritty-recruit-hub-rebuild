@@ -4,6 +4,8 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import teamPhoto from '../assets/bchigh-team.jpg';
 import HudlLogo from './HudlLogo.jsx';
+import { getSchoolShortName } from '../lib/schoolShortName.js';
+import { STUDENT_NAV_LINKS, COACH_NAV_LINKS } from '../lib/navLinks.js';
 
 /**
  * AvatarBadge — renders a circular avatar for the header.
@@ -53,17 +55,8 @@ function AvatarBadge({ storagePath, hudlUrl, name, size = 32, avatarError, onErr
   );
 }
 
-const studentNavLinks = [
-  { to: '/', label: 'HOME' },
-  { to: '/gritfit', label: 'MY GRIT FIT' },
-  { to: '/shortlist', label: 'SHORTLIST' },
-  { to: '/profile', label: 'PROFILE' },
-];
-
-const coachNavLinks = [
-  { to: '/', label: 'HOME' },
-  { to: '/coach', label: 'DASHBOARD' },
-];
+const studentNavLinks = STUDENT_NAV_LINKS;
+const coachNavLinks = COACH_NAV_LINKS;
 
 export default function Layout({ children }) {
   const location = useLocation();
@@ -88,8 +81,7 @@ export default function Layout({ children }) {
     supabase.from('profiles').select(selectFields).eq('user_id', session.user.id).single()
       .then(({ data }) => {
         if (data?.high_school) {
-          const name = data.high_school.toUpperCase();
-          setSchoolName(name.length > 20 ? name.substring(0, 20) : name);
+          setSchoolName(getSchoolShortName(data.high_school));
         } else if (userType === 'hs_coach' || userType === 'hs_guidance_counselor') {
           setSchoolName('BC HIGH');
         }
@@ -328,23 +320,17 @@ export default function Layout({ children }) {
         display: 'flex',
         justifyContent: 'center',
         position: 'relative',
-        ...(location.pathname !== '/browse-map' ? {
-          backgroundImage: `url(${teamPhoto})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-        } : {
-          backgroundColor: '#F5EFE0',
-        }),
+        backgroundImage: `url(${teamPhoto})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
       }}>
-        {location.pathname !== '/browse-map' && (
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundColor: 'rgba(245, 239, 224, 0.9)',
-            pointerEvents: 'none',
-          }} />
-        )}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'rgba(245, 239, 224, 0.9)',
+          pointerEvents: 'none',
+        }} />
         <div style={{ width: '100%', maxWidth: 1200, padding: 48, position: 'relative', zIndex: 1 }}>
           {children}
         </div>

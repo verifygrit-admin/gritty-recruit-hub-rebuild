@@ -17,9 +17,15 @@ import { runGritFitScoring } from '../lib/scoring.js';
 import GritFitActionBar from '../components/GritFitActionBar.jsx';
 import GritFitMapView from '../components/GritFitMapView.jsx';
 import GritFitTableView from '../components/GritFitTableView.jsx';
-import GritFitScoreDashboard from '../components/GritFitScoreDashboard.jsx';
 import MoneyMap from '../components/MoneyMap.jsx';
 import NextStepsDashboard from '../components/NextStepsDashboard.jsx';
+import { applyRecruitingListFilter } from '../lib/map/recruitingListFilter.js';
+import AthleticFitScorecard from '../components/grit-fit/AthleticFitScorecard.jsx';
+import AcademicRigorScorecard from '../components/grit-fit/AcademicRigorScorecard.jsx';
+import GritFitExplainer from '../components/grit-fit/GritFitExplainer.jsx';
+import WhatIfSliders from '../components/grit-fit/WhatIfSliders.jsx';
+import { applyMatchReturnLogic, MATCH_RETURN_LIMIT } from '../lib/grit-fit/matchReturnLogic.js';
+import { recomputeMatches } from '../lib/grit-fit/recomputeMatches.js';
 
 const toggleBtnBase = {
   padding: '8px 12px', border: '2px solid #8B3A3A', borderRadius: 4,
@@ -35,11 +41,15 @@ export default function GritFitPage() {
   const [profile, setProfile] = useState(null);
   const [allSchools, setAllSchools] = useState([]);
   const [shortlistIds, setShortlistIds] = useState(new Set());
-  const [scoringResult, setScoringResult] = useState(null);
+  const [trueScoringResult, setTrueScoringResult] = useState(null);
 
   // UI state
   const [view, setView] = useState('map'); // 'map' | 'table'
-  const [filters, setFilters] = useState({ conference: '', division: '', state: '', search: '' });
+  const [filters, setFilters] = useState({
+    conference: '', division: '', state: '', search: '', recruitingList: 'all',
+  });
+  // View-only what-if slider overrides (Sprint 003 D4). Empty = show true profile.
+  const [sliderOverrides, setSliderOverrides] = useState({});
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
   const [toast, setToast] = useState(null);
@@ -92,14 +102,21 @@ export default function GritFitPage() {
       // Run scoring
       if (profileData.position && profileData.gpa) {
         const result = runGritFitScoring(profileData, schoolsData);
-        setScoringResult(result);
+        // Sprint 003 D4 — apply the new match-return rule (D2-cap-at-2 + D3 fill)
+        // to the full eligible list. Non-qualifying profiles are untouched.
+        const eligibleSorted = (result.scored || [])
+          .filter(s => s.eligible)
+          .sort((a, b) => b.acadScore - a.acadScore);
+        const top = applyMatchReturnLogic(eligibleSorted, result.athFit, result.acadRigorScore, MATCH_RETURN_LIMIT);
+        const finalResult = { ...result, top30: top };
+        setTrueScoringResult(finalResult);
 
         // Write zero-match tracking to profiles (Item 3 — coach visibility)
         supabase
           .from('profiles')
           .update({
             last_grit_fit_run_at: new Date().toISOString(),
-            last_grit_fit_zero_match: result.top30.length === 0,
+            last_grit_fit_zero_match: top.length === 0,
           })
           .eq('user_id', session.user.id)
           .then(({ error: writeErr }) => {
@@ -133,21 +150,27 @@ export default function GritFitPage() {
 
     setProfile(freshProfile);
     const result = runGritFitScoring(freshProfile, allSchools);
-    setScoringResult(result);
+    const eligibleSorted = (result.scored || [])
+      .filter(s => s.eligible)
+      .sort((a, b) => b.acadScore - a.acadScore);
+    const top = applyMatchReturnLogic(eligibleSorted, result.athFit, result.acadRigorScore, MATCH_RETURN_LIMIT);
+    const finalResult = { ...result, top30: top };
+    setTrueScoringResult(finalResult);
 
     // Write zero-match tracking to profiles (Item 3 — coach visibility)
     supabase
       .from('profiles')
       .update({
         last_grit_fit_run_at: new Date().toISOString(),
-        last_grit_fit_zero_match: result.top30.length === 0,
+        last_grit_fit_zero_match: top.length === 0,
       })
       .eq('user_id', session.user.id)
       .then(({ error: writeErr }) => {
         if (writeErr) console.error('GRIT FIT profile write error:', writeErr);
       });
 
-    setFilters({ conference: '', division: '', state: '', search: '' });
+    setFilters({ conference: '', division: '', state: '', search: '', recruitingList: 'all' });
+    setSliderOverrides({});
     showToast('Results updated with your latest profile', 'success');
     setRecalculating(false);
   }, [session, allSchools, recalculating]);
@@ -203,31 +226,73 @@ export default function GritFitPage() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  // ── Filter results ──
-  const filteredResults = useMemo(() => {
-    if (!scoringResult?.top30) return [];
-    let arr = [...scoringResult.top30];
+  // Sprint 003 D4 — when sliders are active, derive a live scoring result from
+  // the true profile + overrides. Pure client-side recompute — zero network
+  // writes. The live result supersedes the true result for display only.
+  const hasOverrides = useMemo(() => {
+    if (!sliderOverrides) return false;
+    return Object.values(sliderOverrides).some(v => v !== undefined && v !== null && v !== '');
+  }, [sliderOverrides]);
 
+  const liveScoringResult = useMemo(() => {
+    if (!trueScoringResult) return null;
+    if (!hasOverrides || !profile || !allSchools.length) return trueScoringResult;
+    return recomputeMatches(profile, allSchools, sliderOverrides, MATCH_RETURN_LIMIT);
+  }, [trueScoringResult, hasOverrides, profile, allSchools, sliderOverrides]);
+
+  // Downstream memos read from `scoringResult` — this points at either the
+  // true result or the slider-overridden live result.
+  const scoringResult = liveScoringResult;
+
+  // Apply the text/dropdown filters common to both views.
+  const applyCommonFilters = useCallback((arr) => {
+    let out = arr;
     if (filters.conference) {
-      arr = arr.filter(s => s.conference === filters.conference);
+      out = out.filter(s => s.conference === filters.conference);
     }
     if (filters.division) {
-      arr = arr.filter(s => s.type === filters.division);
+      out = out.filter(s => s.type === filters.division);
     }
     if (filters.state) {
-      arr = arr.filter(s => s.state === filters.state);
+      out = out.filter(s => s.state === filters.state);
     }
     if (filters.search) {
       const q = filters.search.toLowerCase();
-      arr = arr.filter(s =>
+      out = out.filter(s =>
         (s.school_name || '').toLowerCase().includes(q) ||
         (s.city || '').toLowerCase().includes(q) ||
         (s.state || '').toLowerCase().includes(q)
       );
     }
+    return out;
+  }, [filters.conference, filters.division, filters.state, filters.search]);
 
-    return arr;
-  }, [scoringResult, filters]);
+  // Unitid sets used by the map for overlays and for the Recruiting List filter.
+  const gritFitUnitIds = useMemo(() => {
+    if (!scoringResult?.top30) return new Set();
+    return new Set(scoringResult.top30.map(s => s.unitid));
+  }, [scoringResult]);
+
+  // Table View still shows top30 (filtered by the common filters only — the
+  // Recruiting List dropdown is a map-view concept).
+  const filteredResults = useMemo(() => {
+    if (!scoringResult?.top30) return [];
+    return applyCommonFilters([...scoringResult.top30]);
+  }, [scoringResult, applyCommonFilters]);
+
+  // Map View renders the 662-school base layer filtered by Recruiting List
+  // plus the common filters. Grit Fit + Shortlist overlays are applied per-pin.
+  const mapSchools = useMemo(() => {
+    if (!allSchools.length) return [];
+    const scoredByUnitid = new Map();
+    if (scoringResult?.scored) {
+      for (const s of scoringResult.scored) scoredByUnitid.set(s.unitid, s);
+    }
+    // Prefer the scored record when available so popups can show ADLTV, etc.
+    const base = allSchools.map(s => scoredByUnitid.get(s.unitid) || s);
+    const afterList = applyRecruitingListFilter(base, filters.recruitingList || 'all', gritFitUnitIds, shortlistIds);
+    return applyCommonFilters(afterList);
+  }, [allSchools, scoringResult, filters.recruitingList, gritFitUnitIds, shortlistIds, applyCommonFilters]);
 
   // ── Loading state ──
   if (loading) {
@@ -302,15 +367,27 @@ export default function GritFitPage() {
         Showing {filteredResults.length} of {top30Count} schools matched to your profile
       </p>
 
-      {/* Score Dashboard */}
+      {/* Sprint 003 D4 — new scorecard pair (per-division Athletic Fit +
+          merged Academic Rigor), followed by the GRIT FIT Explainer and the
+          view-only What-If sliders. */}
       {scoringResult && (
-        <GritFitScoreDashboard
-          scores={{
-            athleticFit: scoringResult.athFit?.[scoringResult.topTier] ?? null,
-            academicRigor: scoringResult.acadRigorScore ?? null,
-            testOptional: scoringResult.acadTestOptScore ?? null,
-          }}
-          studentName={profile?.name?.split(' ')[0]}
+        <div data-testid="grit-fit-scorecards" style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
+          <AthleticFitScorecard athFit={scoringResult.athFit} />
+          <AcademicRigorScorecard
+            academicRigorScore={scoringResult.acadRigorScore ?? scoringResult.academicRigorScore ?? null}
+            testOptionalScore={scoringResult.acadTestOptScore ?? scoringResult.testOptionalScore ?? null}
+          />
+        </div>
+      )}
+
+      {scoringResult && <GritFitExplainer />}
+
+      {scoringResult && profile && (
+        <WhatIfSliders
+          trueProfile={profile}
+          overrides={sliderOverrides}
+          onChange={setSliderOverrides}
+          onReset={() => setSliderOverrides({})}
         />
       )}
 
@@ -404,7 +481,8 @@ export default function GritFitPage() {
       <div style={{ transition: 'opacity 200ms ease-in-out' }}>
         {view === 'map' ? (
           <GritFitMapView
-            matchedSchools={filteredResults}
+            schools={mapSchools}
+            gritFitUnitIds={gritFitUnitIds}
             shortlistIds={shortlistIds}
             onAddToShortlist={handleAddToShortlist}
           />

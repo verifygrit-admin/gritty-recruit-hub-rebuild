@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import HelmetAnim from '../components/HelmetAnim.jsx';
 import Tutorial from '../components/Tutorial.jsx';
+import JourneyStepper from '../components/home/JourneyStepper.jsx';
 
 const helpItems = [
   {
@@ -347,27 +348,32 @@ export default function LandingPage() {
             <p style={{ fontSize: '1.125rem', color: '#6B6B6B', margin: '0 0 16px 0' }}>
               Your results are in! Check out your GRIT FIT matches and update your college football Short List!
             </p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-              <Link to="/profile" style={{
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link to="/profile" data-testid="welcome-edit-profile" style={{
                 display: 'inline-block',
                 padding: '10px 24px',
-                border: '2px solid #8B3A3A',
+                backgroundColor: 'var(--brand-maroon)',
                 borderRadius: 4,
-                color: '#8B3A3A',
+                color: '#FFFFFF',
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '0.875rem',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
               }}>
                 Edit Profile
               </Link>
-              <Link to="/gritfit" style={{
-                color: '#D4AF37',
+              <Link to="/gritfit" data-testid="welcome-view-results" style={{
+                display: 'inline-block',
+                padding: '10px 24px',
+                backgroundColor: 'var(--brand-gold-dark)',
+                borderRadius: 4,
+                color: '#FFFFFF',
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '0.875rem',
-                padding: '12px 0',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
               }}>
-                View Results Now
+                View My Results Now
               </Link>
             </div>
           </>
@@ -376,25 +382,30 @@ export default function LandingPage() {
             <p style={{ fontSize: '1.125rem', color: '#6B6B6B', margin: '0 0 16px 0' }}>
               Almost there! Complete your profile to see your personalized matches.
             </p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-              <Link to="/profile" style={{
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link to="/profile" data-testid="welcome-edit-profile" style={{
                 display: 'inline-block',
                 padding: '10px 24px',
-                border: '2px solid #8B3A3A',
+                backgroundColor: 'var(--brand-maroon)',
                 borderRadius: 4,
-                color: '#8B3A3A',
+                color: '#FFFFFF',
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '0.875rem',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
               }}>
                 Edit Profile
               </Link>
-              <Link to="/profile" style={{
-                color: '#D4AF37',
+              <Link to="/profile" data-testid="welcome-get-started" style={{
+                display: 'inline-block',
+                padding: '10px 24px',
+                backgroundColor: 'var(--brand-gold-dark)',
+                borderRadius: 4,
+                color: '#FFFFFF',
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '0.875rem',
-                padding: '12px 0',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
               }}>
                 Get Started
               </Link>
@@ -405,112 +416,8 @@ export default function LandingPage() {
 
       <hr style={{ border: 'none', borderTop: '1px solid #E8E8E8', margin: '32px 0' }} />
 
-      {/* Two-path section */}
-      <section style={{ marginBottom: 32 }}>
-        <h3 style={{
-          fontSize: '1.25rem',
-          fontWeight: 600,
-          color: '#2C2C2C',
-          textAlign: 'center',
-          marginBottom: 24,
-        }}>
-          Choose how to explore colleges:
-        </h3>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: 16,
-        }}>
-          {/* Browse Map card */}
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            border: '2px solid #D4AF37',
-            borderRadius: 8,
-            padding: 24,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            textAlign: 'center',
-          }}>
-            <h3 style={{
-              fontSize: '1.5rem',
-              fontWeight: 600,
-              color: '#2C2C2C',
-              margin: '0 0 12px 0',
-            }}>
-              Browse Map
-            </h3>
-            <p style={{ color: '#6B6B6B', fontSize: '1rem', lineHeight: 1.6, marginBottom: 20 }}>
-              Explore all 662 college football programs on an interactive map. No filtering. See the full landscape at a glance.
-            </p>
-            <Link to="/browse-map" style={{
-              display: 'inline-block',
-              padding: '10px 24px',
-              border: '2px solid #D4AF37',
-              borderRadius: 4,
-              color: '#8B3A3A',
-              backgroundColor: 'transparent',
-              textDecoration: 'none',
-              fontWeight: 600,
-              fontSize: '0.875rem',
-            }}>
-              Browse Map
-            </Link>
-          </div>
-
-          {/* GRIT FIT card */}
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            border: '2px solid #8B3A3A',
-            borderRadius: 8,
-            padding: 24,
-            boxShadow: '0 4px 12px rgba(139,58,58,0.15)',
-            textAlign: 'center',
-          }}>
-            <h3 style={{
-              fontSize: '1.5rem',
-              fontWeight: 600,
-              color: '#2C2C2C',
-              margin: '0 0 12px 0',
-            }}>
-              GRIT FIT
-            </h3>
-            <p style={{ color: '#6B6B6B', fontSize: '1rem', lineHeight: 1.6, marginBottom: 20 }}>
-              Your personalized match results. Up to 30 schools that fit your athletic stats, academic profile, and financial situation. Ranked by fit.
-            </p>
-            {profileComplete ? (
-              <Link to="/gritfit" style={{
-                display: 'inline-block',
-                padding: '10px 24px',
-                backgroundColor: '#8B3A3A',
-                borderRadius: 4,
-                color: '#FFFFFF',
-                textDecoration: 'none',
-                fontWeight: 600,
-                fontSize: '0.875rem',
-                border: 'none',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-              }}>
-                View Results
-              </Link>
-            ) : (
-              <Link to="/profile" style={{
-                display: 'inline-block',
-                padding: '10px 24px',
-                backgroundColor: '#8B3A3A',
-                borderRadius: 4,
-                color: '#FFFFFF',
-                textDecoration: 'none',
-                fontWeight: 600,
-                fontSize: '0.875rem',
-                border: 'none',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-              }}>
-                Complete Profile
-              </Link>
-            )}
-          </div>
-        </div>
-      </section>
+      {/* Three-step user journey (Sprint 003 D2a) */}
+      <JourneyStepper />
 
       <hr style={{ border: 'none', borderTop: '1px solid #E8E8E8', margin: '32px 0' }} />
 

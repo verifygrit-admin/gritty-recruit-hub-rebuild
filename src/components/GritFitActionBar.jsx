@@ -1,8 +1,10 @@
 /**
  * GRIT FIT Action Bar — Recalculate button, school count, filter dropdowns, search.
  * UX Spec: COMPONENT 2 — Action Bar
+ * Sprint 003 D3 — adds the "Recruiting List" dropdown (All Schools / My Grit Fit / My Short List).
  */
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
+import { RECRUITING_LIST_OPTIONS } from '../lib/map/recruitingListFilter.js';
 
 const dropdownBase = {
   padding: '12px 16px', border: '1px solid #D4D4D4', borderRadius: 4,
@@ -13,35 +15,40 @@ const dropdownBase = {
 export default function GritFitActionBar({
   results,         // top30 array
   allSchools,      // all 662 schools
-  filters,         // { conference, division, state, search }
+  filters,         // { conference, division, state, search, recruitingList }
   onFilterChange,  // (newFilters) => void
   onRecalculate,   // () => void
   recalculating,   // boolean
 }) {
+  const recruitingList = filters.recruitingList || 'all';
   const matchCount = results?.length || 0;
   const totalSchools = allSchools?.length || 662;
 
-  // Derive filter options from current results
+  // Derive filter options from the superset (allSchools) so Competition Level
+  // / Conference / State dropdowns cover the full map when Recruiting List =
+  // "All Schools". Falls back to results if allSchools is unavailable.
+  const optionSource = (allSchools && allSchools.length) ? allSchools : (results || []);
+
   const conferences = useMemo(() => {
-    if (!results) return [];
-    const set = new Set(results.map(s => s.conference).filter(Boolean));
+    const set = new Set(optionSource.map(s => s.conference).filter(Boolean));
     return [...set].sort();
-  }, [results]);
+  }, [optionSource]);
 
   const divisions = useMemo(() => {
     return ['Power 4', 'G6', 'FCS', 'D2', 'D3'];
   }, []);
 
   const states = useMemo(() => {
-    if (!results) return [];
-    const set = new Set(results.map(s => s.state).filter(Boolean));
+    const set = new Set(optionSource.map(s => s.state).filter(Boolean));
     return [...set].sort();
-  }, [results]);
+  }, [optionSource]);
 
-  const hasActiveFilters = filters.conference || filters.division || filters.state || filters.search;
+  const hasActiveFilters =
+    filters.conference || filters.division || filters.state || filters.search ||
+    (filters.recruitingList && filters.recruitingList !== 'all');
 
   const handleClear = () => {
-    onFilterChange({ conference: '', division: '', state: '', search: '' });
+    onFilterChange({ conference: '', division: '', state: '', search: '', recruitingList: 'all' });
   };
 
   return (
@@ -91,6 +98,18 @@ export default function GritFitActionBar({
       {/* Row 2: Filter dropdowns + search */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <select
+          data-testid="filter-recruiting-list"
+          value={recruitingList}
+          onChange={(e) => onFilterChange({ ...filters, recruitingList: e.target.value })}
+          style={{ ...dropdownBase, borderColor: '#8B3A3A', fontWeight: 600 }}
+          aria-label="Recruiting List filter"
+        >
+          {RECRUITING_LIST_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+
+        <select
           data-testid="filter-conference"
           value={filters.conference}
           onChange={(e) => onFilterChange({ ...filters, conference: e.target.value })}
@@ -105,8 +124,9 @@ export default function GritFitActionBar({
           value={filters.division}
           onChange={(e) => onFilterChange({ ...filters, division: e.target.value })}
           style={dropdownBase}
+          aria-label="Competition Level filter"
         >
-          <option value="">All Divisions</option>
+          <option value="">All Competition Levels</option>
           {divisions.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
 

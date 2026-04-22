@@ -2,6 +2,11 @@
 :root {
   --font-heading: 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-body: 'DM Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  /* Brand color tokens — Sprint 003 D2c added --gold-dark for welcome CTA. */
+  --brand-maroon: #8B3A3A;
+  --brand-gold: #D4AF37;
+  --brand-gold-dark: #A8871D;
 }
 
 *, *::before, *::after {
