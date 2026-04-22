@@ -1,16 +1,33 @@
 /**
- * AcademicRigorScorecard — Sprint 003 D4.
+ * AcademicRigorScorecard — Sprint 003 D4 / Sprint 004 G1.
  *
  * Merged card showing Academic Rigor Score and Test Optional Score side by
  * side with the spec-mandated captions.
+ *
+ * Sprint 004 G1 (ruling A-5):
+ *   Title row is now a <CollapsibleTitleStrip> controlled by the parent via
+ *   { isCollapsed, onToggle, variant } props. When collapsed, the cell grid
+ *   is hidden; the strip remains visible. Unwired consumers keep the
+ *   original always-expanded rendering.
  */
+
+import CollapsibleTitleStrip from '../CollapsibleTitleStrip.jsx';
 
 function pct(v) {
   if (v == null || isNaN(v)) return '—';
   return `${(v * 100).toFixed(1)}%`;
 }
 
-export default function AcademicRigorScorecard({ academicRigorScore, testOptionalScore }) {
+export default function AcademicRigorScorecard({
+  academicRigorScore,
+  testOptionalScore,
+  isCollapsed,
+  onToggle,
+  variant = 'desktop',
+}) {
+  const hasCollapseWiring = typeof onToggle === 'function';
+  const collapsed = hasCollapseWiring ? Boolean(isCollapsed) : false;
+
   return (
     <div
       data-testid="academic-rigor-scorecard"
@@ -24,43 +41,62 @@ export default function AcademicRigorScorecard({ academicRigorScore, testOptiona
         boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       }}
     >
-      <div style={{
-        fontFamily: 'var(--font-body)',
-        fontSize: '0.75rem',
-        fontWeight: 600,
-        letterSpacing: '1px',
-        textTransform: 'uppercase',
-        color: '#6B6B6B',
-        marginBottom: 12,
-      }}>
-        Academic Rigor Scores
-      </div>
+      {hasCollapseWiring ? (
+        <div style={{ marginBottom: collapsed ? 0 : 12 }}>
+          <CollapsibleTitleStrip
+            title="Academic Rigor Scores"
+            isCollapsed={collapsed}
+            onToggle={onToggle}
+            variant={variant}
+            id="academic-rigor-scorecard-strip"
+            ariaControls="academic-rigor-scorecard-body"
+          />
+        </div>
+      ) : (
+        <div style={{
+          fontFamily: 'var(--font-body)',
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          letterSpacing: '1px',
+          textTransform: 'uppercase',
+          color: '#6B6B6B',
+          marginBottom: 12,
+        }}>
+          Academic Rigor Scores
+        </div>
+      )}
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <div data-testid="academic-rigor-cell" style={{ flex: '1 1 140px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontSize: '0.75rem', color: '#6B6B6B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Academic Rigor Score
+      {!collapsed && (
+        <div
+          id="academic-rigor-scorecard-body"
+          data-testid="academic-rigor-scorecard-body"
+          style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}
+        >
+          <div data-testid="academic-rigor-cell" style={{ flex: '1 1 140px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontSize: '0.75rem', color: '#6B6B6B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Academic Rigor Score
+            </div>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', lineHeight: 1.1 }}>
+              {pct(academicRigorScore)}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#6B6B6B', lineHeight: 1.3 }}>
+              Highest composite SAT + GPA admissions standards you currently qualify for.
+            </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', lineHeight: 1.1 }}>
-            {pct(academicRigorScore)}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#6B6B6B', lineHeight: 1.3 }}>
-            Highest composite SAT + GPA admissions standards you currently qualify for.
+
+          <div data-testid="test-optional-cell" style={{ flex: '1 1 140px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontSize: '0.75rem', color: '#6B6B6B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Test Optional Score
+            </div>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', lineHeight: 1.1 }}>
+              {pct(testOptionalScore)}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#6B6B6B', lineHeight: 1.3 }}>
+              Highest admissions standards you currently qualify for at test-optional schools.
+            </div>
           </div>
         </div>
-
-        <div data-testid="test-optional-cell" style={{ flex: '1 1 140px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontSize: '0.75rem', color: '#6B6B6B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Test Optional Score
-          </div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', lineHeight: 1.1 }}>
-            {pct(testOptionalScore)}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#6B6B6B', lineHeight: 1.3 }}>
-            Highest admissions standards you currently qualify for at test-optional schools.
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

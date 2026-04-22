@@ -4,6 +4,48 @@
  */
 import { useState, useMemo } from 'react';
 import { TIER_LABELS } from '../lib/constants.js';
+import useIsDesktop from '../hooks/useIsDesktop.js';
+import { sortSchoolsByMobileKey } from '../lib/grit-fit/tableSort.js';
+import SlideOutShell from './SlideOutShell.jsx';
+import SchoolDetailsCard from './SchoolDetailsCard.jsx';
+import { computeGritFitStatuses } from '../lib/gritFitStatus.js';
+import Tooltip from './Tooltip.jsx';
+import { TABLE_TOOLTIPS } from '../lib/copy/tooltipCopy.js';
+
+// Sprint 004 G8 — mapping from mobile sort key to desktop tooltip copy key.
+// ADLTV (mobile label) maps to TABLE_TOOLTIPS.ADTLV (desktop spelling) — the
+// cross-spelling is intentional per ruling A-9: both labels preserve their
+// respective visible strings, but the underlying field is the same and the
+// tooltip content is shared.
+const MOBILE_SORT_TOOLTIP_KEYS = {
+  rank: 'Rank',
+  distance: 'Distance',
+  adltv: 'ADTLV',
+  annualCost: 'Your Annual Cost',
+};
+
+// Sprint 004 G8 — desktop column keys that get tooltips. Not every column gets
+// one (School Name, State, Actions are self-explanatory).
+const DESKTOP_TOOLTIP_KEYS = {
+  matchRank: 'Rank',
+  type: 'Div',
+  conference: 'Conf',
+  dist: 'Distance',
+  adltv: 'ADTLV',
+  netCost: 'Your Annual Cost',
+};
+
+// Sprint 004 G7a — mobile-only sort controls.
+// Labels are the exact visible strings rendered in the segmented control.
+// ADLTV spelling is preserved per ruling A-9; G8 uses "ADTLV" — do NOT reconcile here.
+const MOBILE_SORT_LABELS = {
+  rank: 'GRIT FIT Rank',
+  distance: 'Distance',
+  // TODO(copy-qa): ADLTV spelling preserved per ruling A-9. G8 uses "ADTLV" spelling; operator will reconcile post-sprint.
+  adltv: 'ADLTV',
+  annualCost: 'Annual Cost',
+};
+const MOBILE_SORT_ORDER = ['rank', 'distance', 'adltv', 'annualCost'];
 
 const headerStyle = {
   padding: '12px 16px', textAlign: 'left', fontSize: '0.875rem',
@@ -37,12 +79,29 @@ export default function GritFitTableView({
   results,           // filtered top30 array (scored objects)
   shortlistIds,      // Set<unitid>
   onAddToShortlist,  // (school) => void
+  // Sprint 004 G7b — optional scoring context forwarded to SchoolDetailsCard
+  // status derivation. Both default to undefined; GritFitPage wires them when
+  // it forwards scoringResult. When undefined, computeGritFitStatuses() still
+  // runs (it tolerates null topTier) and the status pill falls back gracefully.
+  topTier,
+  recruitReach,
 }) {
   const [sortKey, setSortKey] = useState('matchRank');
   const [sortDir, setSortDir] = useState('asc');
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [isMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  // Sprint 004 G7b — mobile row-tap opens SC-3 SlideOutShell with SC-4
+  // SchoolDetailsCard. Desktop behavior is unchanged. State lives inline here
+  // (not a wrapper) to avoid a parent swap in GritFitPage.
+  const [selectedSchool, setSelectedSchool] = useState(null);
+
+  // Sprint 004 G7a — shared breakpoint hook (1024px). Mobile renders the
+  // card layout + the new segmented sort control; desktop keeps its
+  // header-click sort. State is component-local so the parent (GritFitPage)
+  // does not need to know about it.
+  const isDesktop = useIsDesktop();
+  const isMobile = !isDesktop;
+  const [mobileSortKey, setMobileSortKey] = useState('rank'); // 'rank' | 'distance' | 'adltv' | 'annualCost'
 
   // Sort results
   const sorted = useMemo(() => {
@@ -91,18 +150,113 @@ export default function GritFitTableView({
 
   // ── Mobile card layout ──
   if (isMobile) {
+    // Mobile sort path is independent from the desktop header-click sort.
+    // We sort off the raw `results` input (not the desktop `sorted` memo) so
+    // mobile semantics — "best rank first, distance ascending, ADLTV
+    // descending, annual cost ascending" — are guaranteed regardless of any
+    // stale desktop sortKey/sortDir state.
+    const mobileSorted = sortSchoolsByMobileKey(results || [], mobileSortKey);
+    // Sprint 004 G7b — derive status for the selected school. Array is already
+    // priority-sorted in gritFitStatus.js; first element is the top label.
+    // Empty array -> null statusKey -> SchoolDetailsCard renders no pill (A-2).
+    let selectedStatusKey = null;
+    if (selectedSchool) {
+      const labels = computeGritFitStatuses(selectedSchool, topTier, recruitReach);
+      selectedStatusKey = labels.length > 0 ? labels[0] : null;
+    }
     return (
       <div data-testid="grit-fit-results">
-        {sorted.map((school, i) => {
+        {/* Mobile sort control — segmented button group (4 keys, single-select).
+            Chosen over a native <select> to match the existing View Toggle
+            segmented pattern on GritFitPage and keep tap targets large. */}
+        <div
+          data-testid="mobile-sort-controls"
+          role="radiogroup"
+          aria-label="Sort results"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+            margin: '12px 0 8px',
+          }}
+        >
+          <span
+            style={{
+              width: '100%',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: '#6B6B6B',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Sort by
+          </span>
+          {MOBILE_SORT_ORDER.map(key => {
+            const active = mobileSortKey === key;
+            // Sprint 004 G8 — tooltip content is shared with desktop column
+            // headers via MOBILE_SORT_TOOLTIP_KEYS. Label strings stay as-is
+            // per ruling A-9 (ADLTV on mobile, ADTLV on desktop).
+            const tooltipKey = MOBILE_SORT_TOOLTIP_KEYS[key];
+            const tooltipContent = tooltipKey ? TABLE_TOOLTIPS[tooltipKey] : null;
+            return (
+              <button
+                key={key}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                data-testid={`mobile-sort-${key}`}
+                data-active={active ? 'true' : 'false'}
+                onClick={() => setMobileSortKey(key)}
+                style={{
+                  padding: '8px 12px',
+                  minHeight: 40,
+                  border: `1px solid ${active ? '#8B3A3A' : '#D4D4D4'}`,
+                  borderRadius: 4,
+                  fontSize: '0.8125rem',
+                  fontWeight: active ? 600 : 500,
+                  backgroundColor: active ? '#8B3A3A' : '#FFFFFF',
+                  color: active ? '#FFFFFF' : '#2C2C2C',
+                  cursor: 'pointer',
+                  flex: '1 1 auto',
+                }}
+              >
+                {tooltipContent ? (
+                  <Tooltip
+                    content={tooltipContent}
+                    showOn="both"
+                    placement="bottom"
+                    id={`tt-mobile-sort-${key}`}
+                  >
+                    <span data-testid={`mobile-sort-label-${key}`}>{MOBILE_SORT_LABELS[key]}</span>
+                  </Tooltip>
+                ) : (
+                  MOBILE_SORT_LABELS[key]
+                )}
+              </button>
+            );
+          })}
+        </div>
+        {mobileSorted.map((school, i) => {
           const inList = shortlistIds.has(school.unitid);
           return (
             <div
               key={school.unitid}
               data-testid={`result-card-${school.matchRank}`}
+              // Sprint 004 G7b — whole-card tap opens the SC-3 slide-out with
+              // SC-4 SchoolDetailsCard. Sort controls live OUTSIDE this card
+              // (rendered above, in the mobile-sort-controls row), so tapping a
+              // sort button does NOT bubble here. The Add-to-Shortlist button
+              // inside the card calls stopPropagation in its onClick to avoid
+              // opening the slide-out as a side effect.
+              onClick={() => setSelectedSchool(school)}
+              role="button"
+              tabIndex={0}
               style={{
                 backgroundColor: '#FFFFFF', border: '1px solid #E8E8E8',
                 padding: 16, margin: '8px 0', borderRadius: 8,
                 boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
               }}
             >
               <h3 style={{ margin: '0 0 4px', fontSize: '1.125rem', color: '#8B3A3A' }}>
@@ -122,7 +276,7 @@ export default function GritFitTableView({
                 data-testid="add-to-shortlist-btn"
                 data-school-id={school.unitid}
                 disabled={inList}
-                onClick={() => !inList && onAddToShortlist(school)}
+                onClick={(e) => { e.stopPropagation(); if (!inList) onAddToShortlist(school); }}
                 style={{
                   width: '100%', height: 44, border: 'none', borderRadius: 4,
                   fontSize: '0.875rem', fontWeight: 600, cursor: inList ? 'default' : 'pointer',
@@ -135,6 +289,15 @@ export default function GritFitTableView({
             </div>
           );
         })}
+        {/* Sprint 004 G7b — SC-3 SlideOutShell hosting SC-4 SchoolDetailsCard.
+            Rendered inside the mobile branch only; closed state renders null. */}
+        <SlideOutShell
+          isOpen={!!selectedSchool}
+          onClose={() => setSelectedSchool(null)}
+          ariaLabel="School details"
+        >
+          <SchoolDetailsCard school={selectedSchool} statusKey={selectedStatusKey} />
+        </SlideOutShell>
       </div>
     );
   }
@@ -155,19 +318,38 @@ export default function GritFitTableView({
         >
           <thead>
             <tr data-testid="table-header-row">
-              {COLUMNS.map(col => (
-                <th
-                  key={col.key}
-                  data-testid={`header-${col.key === 'matchRank' ? 'rank' : col.key === 'school_name' ? 'school' : col.key}`}
-                  data-sort={col.key}
-                  style={{ ...headerStyle, width: col.width, minWidth: col.width }}
-                  onClick={() => handleSort(col.key)}
-                  aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-                >
-                  {col.label}
-                  {renderSortIndicator(col.key)}
-                </th>
-              ))}
+              {COLUMNS.map(col => {
+                const tooltipKey = DESKTOP_TOOLTIP_KEYS[col.key];
+                const tooltipContent = tooltipKey ? TABLE_TOOLTIPS[tooltipKey] : null;
+                // Sprint 004 G8 — wrap the label text (not the <th>) so table
+                // semantics stay intact. The <th> still owns click-to-sort and
+                // aria-sort; the Tooltip wraps a focusable <span> so hover,
+                // tap, and keyboard focus all reveal the hint.
+                return (
+                  <th
+                    key={col.key}
+                    data-testid={`header-${col.key === 'matchRank' ? 'rank' : col.key === 'school_name' ? 'school' : col.key}`}
+                    data-sort={col.key}
+                    style={{ ...headerStyle, width: col.width, minWidth: col.width }}
+                    onClick={() => handleSort(col.key)}
+                    aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  >
+                    {tooltipContent ? (
+                      <Tooltip
+                        content={tooltipContent}
+                        showOn="both"
+                        placement="top"
+                        id={`tt-header-${col.key}`}
+                      >
+                        <span tabIndex={0} data-testid={`header-label-${col.key}`}>{col.label}</span>
+                      </Tooltip>
+                    ) : (
+                      col.label
+                    )}
+                    {renderSortIndicator(col.key)}
+                  </th>
+                );
+              })}
               <th style={{ ...headerStyle, width: 140, cursor: 'default' }}>Actions</th>
             </tr>
           </thead>

@@ -16,7 +16,7 @@ import { supabase } from '../lib/supabaseClient.js';
 import { runGritFitScoring } from '../lib/scoring.js';
 import { computeGritFitStatuses } from '../lib/gritFitStatus.js';
 import ShortlistFilters from '../components/ShortlistFilters.jsx';
-import ShortlistCard from '../components/ShortlistCard.jsx';
+import ShortlistRow from '../components/ShortlistRow.jsx';
 import PreReadLibrary from '../components/PreReadLibrary.jsx';
 
 /**
@@ -789,25 +789,19 @@ export default function ShortlistPage() {
         </div>
       )}
 
-      {/* Cards */}
-      <div data-testid="shortlist-cards">
-        {sortedItems.map(item => (
-          <ShortlistCard
+      {/* Rows (S2 — list layout replaces card layout) */}
+      <div data-testid="shortlist-rows" style={{ borderTop: '1px solid #E6D7C3' }}>
+        {sortedItems.map((item, idx) => (
+          <ShortlistRow
             key={item.id}
             item={item}
-            files={filesByUnitid[item.unitid] || []}
-            userId={session.user.id}
-            onToggleStep={handleToggleStep}
-            onRemove={(itemId) => setConfirmRemoveId(itemId)}
-            onUploadFile={handleUploadFile}
-            onDeleteFile={handleDeleteFile}
-            onDownloadFile={handleDownloadFile}
-            updatingStep={updatingStep[item.id] || null}
-            uploadingDoc={uploadingDoc[item.unitid] || null}
-            libraryDocs={libraryDocs}
-            shares={shares}
-            sharingSlot={sharingSlot}
-            onShareDoc={handleShareDoc}
+            rank={idx + 1}
+            totalFiltered={sortedItems.length}
+            onClick={(clicked) => {
+              // TODO(wave-4-s3): wire S3 slide-out detail panel
+              // eslint-disable-next-line no-console
+              console.log('S3 slide-out wave 4', clicked.unitid);
+            }}
           />
         ))}
       </div>

@@ -78,6 +78,11 @@ export default function GritFitMapView({
   gritFitUnitIds,       // Set<number> — user's top30 Grit Fit unitids
   shortlistIds,         // Set<number> — user's shortlist unitids
   onAddToShortlist,     // (school) => void
+  onSchoolMarkerClick,  // (school) => void — Sprint 004 G5; when provided, the
+                        //   Leaflet popup is skipped and this callback fires on
+                        //   marker click so the parent wrapper can open the SC-3
+                        //   SlideOutShell with SchoolDetailsCard. When omitted,
+                        //   behavior is unchanged (backward compatible).
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -234,23 +239,35 @@ export default function GritFitMapView({
           keyboard: true,
         });
 
-        marker.bindPopup(L.popup({ maxWidth: 360, minWidth: 320 }).setContent(buildPopupHtml(school, overlay)));
+        if (onSchoolMarkerClick) {
+          // Sprint 004 G5: slide-out takes over from the native Leaflet popup.
+          // Do NOT bind a popup — fire the callback on click so the parent
+          // wrapper can open SC-3 SlideOutShell with SchoolDetailsCard.
+          marker.on('click', () => {
+            onSchoolMarkerClick(school);
+          });
+        } else {
+          // Backward-compatible path: Leaflet popup with inline Add-to-Shortlist
+          // button. Preserved so the component still works if a parent mounts
+          // it without the G5 wrapper.
+          marker.bindPopup(L.popup({ maxWidth: 360, minWidth: 320 }).setContent(buildPopupHtml(school, overlay)));
 
-        marker.on('popupopen', () => {
-          const popupEl = marker.getPopup().getElement();
-          if (!popupEl) return;
-          const btn = popupEl.querySelector('[data-testid="add-to-shortlist-btn"]');
-          if (btn && !btn.disabled && onAddToShortlist) {
-            btn.addEventListener('click', () => {
-              onAddToShortlist(school);
-              btn.textContent = '✓ In Shortlist';
-              btn.disabled = true;
-              btn.style.background = '#E8E8E8';
-              btn.style.color = '#6B6B6B';
-              btn.style.cursor = 'default';
-            }, { once: true });
-          }
-        });
+          marker.on('popupopen', () => {
+            const popupEl = marker.getPopup().getElement();
+            if (!popupEl) return;
+            const btn = popupEl.querySelector('[data-testid="add-to-shortlist-btn"]');
+            if (btn && !btn.disabled && onAddToShortlist) {
+              btn.addEventListener('click', () => {
+                onAddToShortlist(school);
+                btn.textContent = '✓ In Shortlist';
+                btn.disabled = true;
+                btn.style.background = '#E8E8E8';
+                btn.style.color = '#6B6B6B';
+                btn.style.cursor = 'default';
+              }, { once: true });
+            }
+          });
+        }
 
         cluster.addLayer(marker);
       });
@@ -258,7 +275,7 @@ export default function GritFitMapView({
 
     cluster.addTo(map);
     markersLayerRef.current = cluster;
-  }, [schools, gritFitUnitIds, shortlistIds, buildPopupHtml, onAddToShortlist]);
+  }, [schools, gritFitUnitIds, shortlistIds, buildPopupHtml, onAddToShortlist, onSchoolMarkerClick]);
 
   return (
     <div>

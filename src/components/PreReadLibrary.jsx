@@ -12,6 +12,8 @@
  */
 import { useRef, useState } from 'react';
 import { DOCUMENT_TYPES } from '../lib/documentTypes.js';
+import CollapsibleTitleStrip from './CollapsibleTitleStrip.jsx';
+import { PRE_READ_DOCS_EXPLAINER } from '../lib/copy/shortlistCopy.js';
 
 export default function PreReadLibrary({
   userId,
@@ -24,6 +26,8 @@ export default function PreReadLibrary({
   const fileInputRef = useRef(null);
   const [pendingSlot, setPendingSlot] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  // S1a — Sprint 004 Wave 3a: default expanded, local state, no persistence
+  const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(false);
 
   const handleUploadClick = (docType, slotNumber) => {
     setPendingSlot({ type: docType, slot_number: slotNumber });
@@ -64,20 +68,29 @@ export default function PreReadLibrary({
         onChange={handleFileSelected}
       />
 
-      <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#2C2C2C', margin: '0 0 4px' }}>
-        Pre-Read Docs Library
-      </h3>
-      <p style={{ fontSize: '0.8125rem', color: '#6B6B6B', margin: '0 0 16px' }}>
-        Upload your documents once here, then share them to individual schools from each school card below.
-      </p>
+      <CollapsibleTitleStrip
+        title="Pre-Read Docs Library"
+        isCollapsed={isLibraryCollapsed}
+        onToggle={() => setIsLibraryCollapsed(v => !v)}
+        ariaControls="pre-read-library-body"
+      />
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-          gap: 12,
-        }}
-      >
+      {!isLibraryCollapsed && (
+        <div id="pre-read-library-body" data-testid="pre-read-library-body" style={{ marginTop: 16 }}>
+          <p
+            data-testid="pre-read-library-explainer"
+            style={{ fontSize: '0.8125rem', color: '#6B6B6B', margin: '0 0 16px' }}
+          >
+            {PRE_READ_DOCS_EXPLAINER}
+          </p>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: 12,
+            }}
+          >
         {DOCUMENT_TYPES.map(dt => {
           const slotKey = `${dt.type}_${dt.slot_number}`;
           const libraryDoc = libraryDocs.find(
@@ -220,7 +233,9 @@ export default function PreReadLibrary({
             </div>
           );
         })}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -22,9 +22,24 @@ export default function JourneyCard({ heading, body, cta, href, stepNumber }) {
         marginLeft: 'auto',
         marginRight: 'auto',
         position: 'relative',
+        // H3 mobile fix: prevent long unbreakable tokens from forcing the
+        // card wider than its container (flex children don't shrink by
+        // default when their intrinsic content exceeds the parent).
+        boxSizing: 'border-box',
+        overflowWrap: 'break-word',
+        wordBreak: 'break-word',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          // H3 mobile fix: allow the heading (flex child) to shrink below
+          // its intrinsic content width so long words wrap inside the card.
+          minWidth: 0,
+        }}
+      >
         <span
           aria-hidden
           style={{
@@ -51,13 +66,28 @@ export default function JourneyCard({ heading, body, cta, href, stepNumber }) {
             fontWeight: 700,
             color: '#2C2C2C',
             fontFamily: 'var(--font-heading)',
+            // H3 mobile fix: unblock flex shrinking + wrap long tokens.
+            minWidth: 0,
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
           }}
         >
           {heading}
         </h3>
       </div>
 
-      <p style={{ margin: 0, color: '#4A4A4A', fontSize: '1rem', lineHeight: 1.6 }}>
+      <p
+        style={{
+          margin: 0,
+          color: '#4A4A4A',
+          fontSize: '1rem',
+          lineHeight: 1.6,
+          // H3 mobile fix: wrap long tokens (URLs, compound phrases) at
+          // narrow viewports so body copy never exceeds the card width.
+          overflowWrap: 'break-word',
+          wordBreak: 'break-word',
+        }}
+      >
         {body}
       </p>
 

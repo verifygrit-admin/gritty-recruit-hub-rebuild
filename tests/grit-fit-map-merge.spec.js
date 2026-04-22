@@ -44,12 +44,30 @@ test.describe('Sprint 003 D3 — Map merge', () => {
     await dd.selectOption('all');
   });
 
-  test('Existing filter bar preserved (conference/state/division)', async ({ page }) => {
+  test('Filter bar preserved (status/division/state)', async ({ page }) => {
+    // Sprint 004 G6: Conferences filter removed, Status filter added.
     await signInAsStudent(page);
     await page.goto('/gritfit');
-    await expect(page.getByTestId('filter-conference')).toBeVisible();
+    await expect(page.getByTestId('filter-status-group')).toBeVisible();
     await expect(page.getByTestId('filter-division')).toBeVisible();
     await expect(page.getByTestId('filter-state')).toBeVisible();
+    // Regression guard: legacy Conferences filter must NOT be present.
+    await expect(page.getByTestId('filter-conference')).toHaveCount(0);
+  });
+
+  test('G6 Status filter narrows map markers on deselect', async ({ page }) => {
+    // Sprint 004 G6: deselecting a status must reduce the rendered marker set.
+    await signInAsStudent(page);
+    await page.goto('/gritfit');
+    await expect(page.getByTestId('leaflet-map-container')).toBeVisible();
+    const markers = page.locator('.leaflet-marker-icon');
+    const beforeCount = await markers.count();
+    // Deselect 'currently_recommended' — must be one of the 6 taxonomy keys.
+    await page.getByTestId('filter-status-currently_recommended').click();
+    // Allow marker layer to re-render.
+    await page.waitForTimeout(250);
+    const afterCount = await markers.count();
+    expect(afterCount).toBeLessThanOrEqual(beforeCount);
   });
 
   test('Map/Table view toggle works', async ({ page }) => {

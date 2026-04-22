@@ -12,15 +12,14 @@
  *   totalCount: number
  */
 import { useMemo } from 'react';
+import { STATUS_LABELS, STATUS_ORDER } from '../lib/statusLabels.js';
 
+// Sprint 004 S2 — consume SC-2 single source of truth for status filter
+// options. STATUS_ORDER mirrors LABEL_PRIORITY; STATUS_LABELS carries the
+// display strings. Previous local map retired to prevent drift.
 const STATUS_OPTIONS = [
   { value: '', label: 'All Status' },
-  { value: 'currently_recommended', label: 'Currently Recommended' },
-  { value: 'below_academic_fit', label: 'Below Academic Fit' },
-  { value: 'out_of_academic_reach', label: 'Academic Stretch' },
-  { value: 'out_of_athletic_reach', label: 'Athletic Stretch' },
-  { value: 'below_athletic_fit', label: 'Highly Recruitable' },
-  { value: 'outside_geographic_reach', label: 'Outside Geographic Reach' },
+  ...STATUS_ORDER.map((key) => ({ value: key, label: STATUS_LABELS[key].label })),
 ];
 
 // Values must match what is stored in short_list_items.div
