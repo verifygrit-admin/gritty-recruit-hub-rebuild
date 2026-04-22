@@ -39,6 +39,7 @@
  */
 
 import { applyG9SubordinateStep } from '../scoring/g9SubordinateStep.js';
+import { runGritFitScoring } from '../scoring.js';
 
 export const HIGH_ACADEMIC_THRESHOLD = 0.85;
 export const D2_QUALIFYING_UNITIDS = []; // operator-extendable; used if matching by unitid preferred
@@ -77,6 +78,11 @@ function isQualifyingD2(school) {
  *   to engage G9; absence skips the G9 gate (preserves Sprint 003 behavior).
  * @param {Object} [options.profile] - student profile (needs hs_lat/hs_lng)
  * @param {Array}  [options.schoolsPool] - full schools pool for D2-count + D3 fill
+ * @param {Array}  [options.scored] - OPTIONAL enriched school records (from
+ *   runGritFitScoring(profile, schoolsPool).scored). When absent, the G9 gate
+ *   re-runs scoring internally to derive it so G9's new top30 carries per-school
+ *   enrichments (matchRank, netCost, adltv, droi, breakEven, dist, isTestOpt).
+ *   Pass-through consumers can supply this to avoid the extra scoring pass.
  */
 export function applyMatchReturnLogic(
   scoredEligible,
@@ -118,11 +124,31 @@ export function applyMatchReturnLogic(
   // the Sprint 003 cap unchanged. When G9 fires, g9Result.top30 is a NEW
   // array (Bentley + Mines + D3 fill); when it passes through, it's the
   // same reference we passed in. Safe either way.
+  //
+  // Wave 5 Phase 1 F4 fix — supply `scored` to the G9 step so its rebuilt
+  // top30 carries per-school enrichments (netCost, adltv, droi, breakEven,
+  // matchRank, dist, isTestOpt, athleteAcad). The incoming `scoredEligible`
+  // is the enriched-AND-topTier-eligible slice; when topTier === D2, D3
+  // records are absent from it and the G9 D3 fill would otherwise return
+  // raw pool records stripped of Money Map data / ranking. We therefore
+  // derive (or accept) the full `scored` array here. If options.scored is
+  // provided by the caller, it is used directly (optimal). Otherwise the
+  // scoring engine is re-run on (profile, schoolsPool) as a fallback so
+  // the fix works without a consumer-file change.
   if (options.profile && options.schoolsPool) {
+    let scored = Array.isArray(options.scored) ? options.scored : null;
+    if (!scored) {
+      try {
+        scored = runGritFitScoring(options.profile, options.schoolsPool).scored || [];
+      } catch {
+        scored = [];
+      }
+    }
     const scoringOutputShape = {
       top30: sprintThreeCap,
       athFit,
       acadRigorScore: academicRigorScore,
+      scored,
     };
     const g9Result = applyG9SubordinateStep(
       scoringOutputShape,

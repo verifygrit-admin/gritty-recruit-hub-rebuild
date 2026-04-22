@@ -315,7 +315,84 @@ describe('GRIT FIT pipeline integration — Sprint 004 Wave 5 Phase 1', () => {
   });
 
   //
-  // (6) Pass-through purity: when G9 fires, the eligibleSorted input passed
+  // (6a) F4 enrichment preservation — when G9 fires, returned top30 records
+  //      carry the per-school enrichments produced by runGritFitScoring
+  //      (matchRank from scoring, dist (Distance), acadScore / isTestOpt
+  //      for Test Optional ranking, netCost (Annual Cost), and the Money
+  //      Map dimensions adltv / droi / breakEven).
+  //
+  it('F4: G9 fire → top30 carries matchRank / acadScore enrichments (table ranking + Test Optional)', () => {
+    const profile = triggerMatchingProfile();
+    const pool = poolTriggerPassing();
+    const { top } = runPipeline(profile, pool, { profile, schoolsPool: pool });
+
+    // Bentley should be enriched — isTestOpt / athleteAcad / acadScore set by scoring.
+    const bentley = top.find(s => s.school_name === 'Bentley University');
+    expect(bentley).toBeDefined();
+    expect(typeof bentley.acadScore).toBe('number');
+    expect(bentley.acadScore).toBeGreaterThan(0);
+    // isTestOpt is a scoring-engine derived boolean — presence confirms enrichment.
+    expect(typeof bentley.isTestOpt).toBe('boolean');
+    // athleteAcad is set per-school during scoring (either acadTestOptScore or acadRigorScore).
+    expect(typeof bentley.athleteAcad).toBe('number');
+  });
+
+  it('F4: G9 fire → top30 carries dist (Distance) and netCost (Annual Cost) for shortlist tracking', () => {
+    const profile = triggerMatchingProfile();
+    const pool = poolTriggerPassing();
+    const { top } = runPipeline(profile, pool, { profile, schoolsPool: pool });
+
+    // Every record in the G9-gated top30 should have a dist value (number)
+    // and either a finite numeric netCost or null (both are valid — netCost
+    // is null when EFC ineligibility leaves it uncomputable).
+    for (const s of top) {
+      expect(typeof s.dist).toBe('number');
+      expect(s.dist).toBeGreaterThanOrEqual(0);
+      expect(
+        s.netCost === null || typeof s.netCost === 'number',
+      ).toBe(true);
+    }
+  });
+
+  it('F4: G9 fire → top30 carries Money Map dimensions (adltv, droi, breakEven)', () => {
+    const profile = triggerMatchingProfile();
+    const pool = poolTriggerPassing();
+    const { top } = runPipeline(profile, pool, { profile, schoolsPool: pool });
+
+    // Money Map (src/components/MoneyMap.jsx) reads these four fields and
+    // shows empty-state cards when all records lack them. The pre-fix
+    // behavior built top30 from raw pool records which had none of these.
+    const hasAdltv = top.some(s => typeof s.adltv === 'number');
+    const hasDroi = top.some(s => typeof s.droi === 'number');
+    const hasBreakEven = top.some(s => s.breakEven !== undefined);
+    const hasNetCost = top.some(s => typeof s.netCost === 'number');
+
+    expect(hasAdltv).toBe(true);
+    expect(hasDroi).toBe(true);
+    expect(hasBreakEven).toBe(true);
+    expect(hasNetCost).toBe(true);
+  });
+
+  it('F4: non-G9-fire path enrichments preserved (regression guard — Sprint 003 behavior unchanged)', () => {
+    // Trigger-matching profile + pool where Trigger 3 fails — so G9 does
+    // NOT fire and the Sprint 003 cap path produces the output. The cap
+    // path operates on scoredEligible directly, so enrichments are
+    // trivially present. This guards against future refactors that might
+    // wrap the non-fire path and strip enrichments.
+    const profile = triggerMatchingProfile();
+    const pool = poolTrigger3Failing();
+    const { top } = runPipeline(profile, pool, { profile, schoolsPool: pool });
+
+    expect(top.length).toBeGreaterThan(0);
+    for (const s of top) {
+      expect(typeof s.acadScore).toBe('number');
+      expect(typeof s.dist).toBe('number');
+      expect(typeof s.matchRank).toBe('number');
+    }
+  });
+
+  //
+  // (7) Pass-through purity: when G9 fires, the eligibleSorted input passed
   //     into applyMatchReturnLogic is NOT mutated.
   //
   it('pipeline purity: eligibleSorted input is not mutated by the G9-gated call', () => {

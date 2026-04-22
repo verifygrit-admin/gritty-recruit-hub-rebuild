@@ -21,6 +21,17 @@
  *     schools (where student AF@D3 >= 0.50), descending on acadScore.
  *   - Total always <= 30; no synthetic padding if D3 pool exhausted.
  *
+ * ENRICHMENT PRESERVATION (Sprint 004 Wave 5 Phase 1 fix, F4):
+ *   - When building the new top30, each selected school is resolved through
+ *     `scoringOutput.scored` (enriched records from runGritFitScoring) BEFORE
+ *     falling back to the raw pool record. This preserves per-school
+ *     enrichments (acadScore, matchRank/matchTier, netCost, adltv, droi,
+ *     breakEven, dist, isTestOpt, athleteAcad, etc.) on the returned list
+ *     so downstream consumers (MoneyMap, table ranking, Test Optional
+ *     indicator, shortlist-add) see the same shape they see on the
+ *     non-G9-fire path. Fall-back to pool preserves backward-compat with
+ *     unit-test fixtures that do not supply `scored`.
+ *
  * PURITY:
  *   - Pure function. Returns a new scoringOutput-shaped object.
  *   - Does not mutate inputs (tests assert Object.is reference preservation
@@ -88,7 +99,39 @@ export function applyG9SubordinateStep(scoringOutput, studentProfile, schoolsPoo
 
   // ------------------------------------------------------------------
   // Trigger fired. Build a new top30.
+  //
+  // Per-school enrichment preservation (Wave 5 Phase 1 F4 fix): build a
+  // lookup over scoringOutput.scored (by unitid, then by school_name) so
+  // that each selected school carries the enrichments produced by
+  // runGritFitScoring. Fall back to the raw pool record when no enriched
+  // match exists (defensive; also preserves backward-compat with G9 unit
+  // test fixtures that do not supply an independent `scored` array).
   // ------------------------------------------------------------------
+
+  const scored = Array.isArray(scoringOutput.scored) ? scoringOutput.scored : [];
+  const scoredByUnitid = new Map();
+  const scoredByName = new Map();
+  for (const s of scored) {
+    if (!s) continue;
+    if (s.unitid != null && !scoredByUnitid.has(s.unitid)) scoredByUnitid.set(s.unitid, s);
+    if (s.school_name && !scoredByName.has(s.school_name)) scoredByName.set(s.school_name, s);
+  }
+
+  /**
+   * Resolve a raw pool record to its enriched counterpart in `scored` when
+   * available. Falls back to the raw pool record (defensive) so this change
+   * is backward-compatible with callers that do not populate `scored`.
+   */
+  function enrich(poolRecord) {
+    if (!poolRecord) return poolRecord;
+    if (poolRecord.unitid != null && scoredByUnitid.has(poolRecord.unitid)) {
+      return scoredByUnitid.get(poolRecord.unitid);
+    }
+    if (poolRecord.school_name && scoredByName.has(poolRecord.school_name)) {
+      return scoredByName.get(poolRecord.school_name);
+    }
+    return poolRecord;
+  }
 
   const refLat = studentProfile.hs_lat ? +studentProfile.hs_lat : null;
   const refLng = studentProfile.hs_lng ? +studentProfile.hs_lng : null;
@@ -101,15 +144,20 @@ export function applyG9SubordinateStep(scoringOutput, studentProfile, schoolsPoo
   }
 
   // (a) Named D2 cap — filter pool to {Bentley, Mines}, then order by proximity.
+  //     Resolve each to its enriched counterpart for the final list.
   const cappedD2s = schoolsPool
     .filter(s => s && s.type === 'D2' && D2_CAP_NAMES.includes(s.school_name))
     .slice()
-    .sort((a, b) => distTo(a) - distTo(b));
+    .sort((a, b) => distTo(a) - distTo(b))
+    .map(enrich);
 
   // (b) D3 fill — descending acadScore. Trigger1 already confirmed AF@D3 ≥ 0.50
-  //     at the student level, so all D3 schools in the pool qualify.
+  //     at the student level, so all D3 schools in the pool qualify. Resolve
+  //     each to its enriched counterpart so acadScore / matchRank / netCost /
+  //     adltv / droi / breakEven / dist / isTestOpt are present on the result.
   const d3Fill = schoolsPool
     .filter(s => s && s.type === 'D3')
+    .map(enrich)
     .slice()
     .sort((a, b) => (b.acadScore ?? 0) - (a.acadScore ?? 0));
 
