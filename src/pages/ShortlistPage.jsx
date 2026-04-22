@@ -20,6 +20,21 @@ import ShortlistCard from '../components/ShortlistCard.jsx';
 import PreReadLibrary from '../components/PreReadLibrary.jsx';
 
 /**
+ * Builds the default patch applied to a short_list_items row when its school
+ * is not present in the schools table (i.e. not scored). Cleared state:
+ * grit_fit_status = null, grit_fit_labels = []. No "not_evaluated" sentinel.
+ *
+ * Exported for unit testing.
+ */
+export function buildUnscoredShortlistDefault(nowIso = new Date().toISOString()) {
+  return {
+    grit_fit_status: null,
+    grit_fit_labels: [],
+    updated_at: nowIso,
+  };
+}
+
+/**
  * Re-runs GRIT FIT scoring and patches shortlist rows with scored fields and status labels.
  */
 async function backfillScoredFields(userId, profile, allSchools, currentItems) {
@@ -37,14 +52,10 @@ async function backfillScoredFields(userId, profile, allSchools, currentItems) {
     const scored = scoredByUnitid[item.unitid];
 
     if (!scored) {
-      // School not in schools table — mark as not_evaluated
+      // School not in schools table — clear status (null + empty labels)
       const { error } = await supabase
         .from('short_list_items')
-        .update({
-          grit_fit_status: 'not_evaluated',
-          grit_fit_labels: ['not_evaluated'],
-          updated_at: new Date().toISOString(),
-        })
+        .update(buildUnscoredShortlistDefault())
         .eq('id', item.id)
         .eq('user_id', userId);
       if (!error) updated++;

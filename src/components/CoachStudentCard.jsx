@@ -17,7 +17,6 @@ const STATUS_LABELS = {
   out_of_athletic_reach: 'Athletic Stretch',
   below_athletic_fit: 'Highly Recruitable',
   outside_geographic_reach: 'Outside Geographic Reach',
-  not_evaluated: 'Not Evaluated',
 };
 
 const STATUS_COLORS = {
@@ -27,7 +26,6 @@ const STATUS_COLORS = {
   out_of_athletic_reach: '#F44336',
   below_athletic_fit: '#D4A017',
   outside_geographic_reach: '#9C27B0',
-  not_evaluated: '#6B6B6B',
 };
 
 function getJourneyProgress(items) {
@@ -286,18 +284,20 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
                         </div>
                       </div>
 
-                      {/* Status badge */}
-                      <span style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 500,
-                        color: '#FFFFFF',
-                        backgroundColor: STATUS_COLORS[item.grit_fit_status] || '#6B6B6B',
-                        padding: '2px 8px',
-                        borderRadius: 12,
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {STATUS_LABELS[item.grit_fit_status] || item.grit_fit_status}
-                      </span>
+                      {/* Status badge — Sprint 004 CW-1: only render when a known label maps */}
+                      {STATUS_LABELS[item.grit_fit_status] && (
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          color: '#FFFFFF',
+                          backgroundColor: STATUS_COLORS[item.grit_fit_status] || '#6B6B6B',
+                          padding: '2px 8px',
+                          borderRadius: 12,
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {STATUS_LABELS[item.grit_fit_status]}
+                        </span>
+                      )}
 
                       {/* Mini progress */}
                       <div style={{ width: 80, flexShrink: 0 }}>

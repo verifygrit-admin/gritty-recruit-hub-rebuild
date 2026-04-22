@@ -14,7 +14,6 @@ const LABEL_PRIORITY = [
   'below_academic_fit',
   'below_athletic_fit',
   'outside_geographic_reach',
-  'not_evaluated',
 ];
 
 /**
@@ -22,7 +21,7 @@ const LABEL_PRIORITY = [
  * @param {Object} scoredSchool - from runGritFitScoring().scored[], with schoolRigor + athleteAcad
  * @param {string|null} topTier - from runGritFitScoring()
  * @param {number} recruitReach - from runGritFitScoring()
- * @returns {string[]} Ordered array of status keys. Never empty.
+ * @returns {string[]} Ordered array of status keys. May be empty (Sprint 004 CW-1) — caller renders no pill.
  */
 export function computeGritFitStatuses(scoredSchool, topTier, recruitReach) {
   const labels = [];
@@ -80,9 +79,21 @@ export function computeGritFitStatuses(scoredSchool, topTier, recruitReach) {
     labels.push('outside_geographic_reach');
   }
 
-  // Not Evaluated — fallback
+  // Sprint 004 CW-1: 'not_evaluated' removed from UI taxonomy (DEC accepted-inert-artifact).
+  // When no label applies, return empty array (no pill rendered). Diagnostic warn only.
   if (labels.length === 0) {
-    labels.push('not_evaluated');
+    // eslint-disable-next-line no-console
+    console.warn('[computeGritFitStatuses] No applicable GRIT FIT labels for scoredSchool', {
+      unitid: scoredSchool?.unitid,
+      schoolTier,
+      eligible,
+      matchRank,
+      dist,
+      schoolRigor,
+      athleteAcad,
+      topTier,
+      recruitReach,
+    });
   }
 
   // Sort by priority order

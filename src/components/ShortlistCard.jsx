@@ -23,7 +23,6 @@ const STATUS_CONFIG = {
   out_of_athletic_reach:   { label: 'Athletic Stretch',          bg: '#FF9800' },
   below_athletic_fit:      { label: 'Highly Recruitable',        bg: '#D4A017' },
   outside_geographic_reach:{ label: 'Outside Geographic Reach', bg: '#9C27B0' },
-  not_evaluated:           { label: 'Not Evaluated',            bg: '#6B6B6B' },
 };
 
 const BADGE_ORDER = [
@@ -33,7 +32,6 @@ const BADGE_ORDER = [
   'out_of_athletic_reach',
   'below_athletic_fit',
   'outside_geographic_reach',
-  'not_evaluated',
 ];
 
 const cardStyle = {
@@ -68,9 +66,10 @@ export default function ShortlistCard({
   sharingSlot,
   onShareDoc,
 }) {
+  // Sprint 004 CW-1: 'not_evaluated' removed from UI taxonomy. Empty => no pill rendered.
   const rawStatuses = Array.isArray(item.grit_fit_labels) && item.grit_fit_labels.length > 0
     ? item.grit_fit_labels
-    : [item.grit_fit_status || 'not_evaluated'];
+    : (item.grit_fit_status ? [item.grit_fit_status] : []);
   const activeStatuses = BADGE_ORDER
     .filter(key => rawStatuses.includes(key))
     .map(key => STATUS_CONFIG[key]);

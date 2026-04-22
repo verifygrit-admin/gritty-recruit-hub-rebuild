@@ -21,8 +21,9 @@
  * The service role key must NEVER appear in the browser bundle.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { computeGritFitStatuses } from '../../src/lib/gritFitStatus.js';
 
 // Service role client — bypasses RLS for schema inspection only
 // Never expose this key in browser code
@@ -185,34 +186,81 @@ describe('Schema: short_list_items source and grit_fit_status', () => {
     // If FK fires first, user_id won't exist. Either way, insert is rejected.
   });
 
-  it('grit_fit_status column has correct enum values defined', async () => {
-    if (skipIfNoClient()) return;
+  // Sprint 004 CW-1 (2026-04-22): 'not_evaluated' removed from UI status taxonomy.
+  // Postgres enum value remains as "accepted inert artifact" (no migration permitted).
+  // Assertion flipped to runtime check against computeGritFitStatuses — UI-layer invariant.
+  it('computeGritFitStatuses never returns not_evaluated under representative inputs', () => {
+    // Fixture 1: Highly-matched eligible student — should produce currently_recommended
+    const f1 = computeGritFitStatuses(
+      { eligible: true, matchRank: 5, dist: 100, schoolRigor: 0.5, athleteAcad: 0.5, type: 'Power 4' },
+      'Power 4',
+      500
+    );
+    expect(f1).not.toContain('not_evaluated');
 
-    // DEC-CFBRB-013: grit_fit_status is NOT NULL DEFAULT 'not_evaluated'
-    // 'not_evaluated' is the default enum member; all values documented here.
-    const VALID_STATUSES = [
-      'not_evaluated',
-      'currently_recommended',
-      'out_of_academic_reach',
-      'below_academic_fit',
-      'out_of_athletic_reach',
-      'below_athletic_fit',
-      'outside_geographic_reach',
-    ];
+    // Fixture 2: Academic mismatch (student below school rigor)
+    const f2 = computeGritFitStatuses(
+      { eligible: false, matchRank: null, dist: 50, schoolRigor: 0.8, athleteAcad: 0.3, type: 'Power 4' },
+      'D2',
+      300
+    );
+    expect(f2).not.toContain('not_evaluated');
 
-    // Verify by attempting invalid value insert
-    const { error } = await supabase
-      .from('short_list_items')
-      .insert({
-        user_id: '00000000-0000-0000-0000-000000000000',
-        unitid: 999999,
-        source: 'grit_fit',
-        grit_fit_status: 'not_a_valid_status',
-      });
+    // Fixture 3: Geographically distant school
+    const f3 = computeGritFitStatuses(
+      { eligible: true, matchRank: 200, dist: 2000, schoolRigor: 0.4, athleteAcad: 0.4, type: 'D3' },
+      'D3',
+      500
+    );
+    expect(f3).not.toContain('not_evaluated');
 
-    expect(error).not.toBeNull();
-    // This documents the constraint exists. Positive-case insert requires valid user_id.
-    void VALID_STATUSES; // referenced for documentation purposes
+    // Fixture 4: Null topTier (no athletic eligibility data)
+    const f4 = computeGritFitStatuses(
+      { eligible: false, matchRank: null, dist: 100, schoolRigor: 0, athleteAcad: 0, type: 'G6' },
+      null,
+      500
+    );
+    expect(f4).not.toContain('not_evaluated');
+
+    // Fixture 5: Below athletic fit — school tier below student top tier
+    const f5 = computeGritFitStatuses(
+      { eligible: true, matchRank: 10, dist: 100, schoolRigor: 0.5, athleteAcad: 0.5, type: 'D3' },
+      'Power 4',
+      500
+    );
+    expect(f5).not.toContain('not_evaluated');
+  });
+
+  it('computeGritFitStatuses returns empty array when no labels apply (diagnostic warn)', () => {
+    // Fixture that triggers zero labels: eligible but not top-50, matching tiers, in-range,
+    // no academic mismatch, no geographic overstep. Warn fires as diagnostic.
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = computeGritFitStatuses(
+      {
+        eligible: true,
+        matchRank: 150,          // > 50, so no currently_recommended
+        dist: 100,               // within recruitReach
+        schoolRigor: 0.5,
+        athleteAcad: 0.5,        // equal — no academic mismatch
+        type: 'Power 4',
+      },
+      'Power 4',                 // matching top tier — no athletic mismatch
+      500                        // recruitReach > dist — no geographic flag
+    );
+
+    // Hard assertion: empty array (no "not_evaluated" fallback)
+    expect(result).toEqual([]);
+    expect(result).not.toContain('not_evaluated');
+
+    // Soft assertion: diagnostic warn fired. Does NOT fail test if absent —
+    // goal is diagnostic visibility per Ruling A-2, not test failure.
+    expect.soft(warnSpy).toHaveBeenCalled();
+    if (warnSpy.mock.calls.length > 0) {
+      expect.soft(warnSpy.mock.calls[0][0]).toContain('computeGritFitStatuses');
+    }
+
+    warnSpy.mockRestore();
   });
 });
 

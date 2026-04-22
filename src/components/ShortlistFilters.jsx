@@ -21,7 +21,6 @@ const STATUS_OPTIONS = [
   { value: 'out_of_athletic_reach', label: 'Athletic Stretch' },
   { value: 'below_athletic_fit', label: 'Highly Recruitable' },
   { value: 'outside_geographic_reach', label: 'Outside Geographic Reach' },
-  { value: 'not_evaluated', label: 'Not Evaluated' },
 ];
 
 // Values must match what is stored in short_list_items.div
