@@ -18,6 +18,7 @@ import { computeGritFitStatuses } from '../lib/gritFitStatus.js';
 import ShortlistFilters from '../components/ShortlistFilters.jsx';
 import ShortlistRow from '../components/ShortlistRow.jsx';
 import PreReadLibrary from '../components/PreReadLibrary.jsx';
+import ShortlistSlideOut from '../components/ShortlistSlideOut.jsx';
 
 /**
  * Builds the default patch applied to a short_list_items row when its school
@@ -130,10 +131,64 @@ export default function ShortlistPage() {
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // S3 slide-out state (Sprint 004 Wave 4)
+  const [activeShortlistItem, setActiveShortlistItem] = useState(null);
+  const [contacts, setContacts] = useState({
+    hs_head_coach_email: null,
+    hs_guidance_counselor_email: null,
+  });
+  const [studentName, setStudentName] = useState({ first: '', last: '' });
+
   // ── Data loading ──
   useEffect(() => {
     if (!session) return;
     loadData();
+  }, [session]);
+
+  // S3: pre-fetch recruiting contacts + student name once per session.
+  // One EF call per page load, cached for every slide-out open.
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        // Profile name (split on first space — profiles.name is a single text column)
+        const { data: profileRow } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        if (!cancelled && profileRow?.name) {
+          const parts = profileRow.name.trim().split(/\s+/);
+          setStudentName({
+            first: parts[0] || '',
+            last: parts.slice(1).join(' ') || '',
+          });
+        }
+
+        // Recruiting contacts via EF
+        const accessToken = session.access_token;
+        if (!accessToken) return;
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/student-read-recruiting-contacts`;
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) {
+          console.error('student-read-recruiting-contacts: HTTP', res.status);
+          return;
+        }
+        const json = await res.json();
+        if (!cancelled && json?.success && json.contacts) {
+          setContacts(json.contacts);
+        }
+      } catch (err) {
+        console.error('Shortlist contacts pre-fetch failed:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [session]);
 
   const loadData = async () => {
@@ -797,14 +852,21 @@ export default function ShortlistPage() {
             item={item}
             rank={idx + 1}
             totalFiltered={sortedItems.length}
-            onClick={(clicked) => {
-              // TODO(wave-4-s3): wire S3 slide-out detail panel
-              // eslint-disable-next-line no-console
-              console.log('S3 slide-out wave 4', clicked.unitid);
-            }}
+            onClick={(clicked) => setActiveShortlistItem(clicked)}
           />
         ))}
       </div>
+
+      {/* S3 slide-out (Sprint 004 Wave 4) */}
+      <ShortlistSlideOut
+        isOpen={!!activeShortlistItem}
+        onClose={() => setActiveShortlistItem(null)}
+        item={activeShortlistItem}
+        userFirstName={studentName.first}
+        userLastName={studentName.last}
+        contacts={contacts}
+        files={activeShortlistItem ? (filesByUnitid[activeShortlistItem.unitid] || []) : []}
+      />
 
       {/* No results after filtering */}
       {sortedItems.length === 0 && items.length > 0 && (
