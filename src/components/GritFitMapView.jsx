@@ -20,6 +20,33 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { TIER_COLORS } from '../lib/constants.js';
 import { getOverlayState } from '../lib/map/overlayLogic.js';
+import { STATUS_LABELS } from '../lib/statusLabels.js';
+import { computeGritFitStatuses } from '../lib/gritFitStatus.js';
+
+/**
+ * Build the inline-HTML fragment for a GRIT FIT status pill inside the Leaflet
+ * popup. Returns '' when statusKey is falsy or unknown (A-2: no pill for empty
+ * status). Exported for testability — see tests/unit/g5-map-popup-status.test.js.
+ */
+export function buildStatusPillHtml(statusKey) {
+  if (!statusKey) return '';
+  const cfg = STATUS_LABELS[statusKey];
+  if (!cfg) return '';
+  return `<span data-testid="popup-status-pill" data-status="${statusKey}" style="display:inline-block;background:${cfg.bg};color:${cfg.textColor};border-radius:999px;padding:3px 10px;font-size:0.7rem;font-weight:700;margin-top:6px;letter-spacing:0.04em;">${cfg.label}</span>`;
+}
+
+/**
+ * Derive the primary GRIT FIT status key for a school in the popup context.
+ * Returns null when no label applies (A-2: no pill). Exported for testability.
+ */
+export function derivePopupStatusKey(school, topTier, recruitReach) {
+  try {
+    const labels = computeGritFitStatuses(school, topTier ?? null, recruitReach ?? null);
+    return labels.length > 0 ? labels[0] : null;
+  } catch (_e) {
+    return null;
+  }
+}
 
 const LEGEND_ITEMS = [
   { label: 'Power 4', color: TIER_COLORS['Power 4'] },
@@ -78,11 +105,8 @@ export default function GritFitMapView({
   gritFitUnitIds,       // Set<number> — user's top30 Grit Fit unitids
   shortlistIds,         // Set<number> — user's shortlist unitids
   onAddToShortlist,     // (school) => void
-  onSchoolMarkerClick,  // (school) => void — Sprint 004 G5; when provided, the
-                        //   Leaflet popup is skipped and this callback fires on
-                        //   marker click so the parent wrapper can open the SC-3
-                        //   SlideOutShell with SchoolDetailsCard. When omitted,
-                        //   behavior is unchanged (backward compatible).
+  topTier,              // from scoringResult; needed to compute per-school GRIT FIT status pill (F2)
+  recruitReach,         // from scoringResult; needed to compute per-school GRIT FIT status pill (F2)
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -138,10 +162,23 @@ export default function GritFitMapView({
       ? '<span style="display:inline-block;background:#FFF4CC;color:#8B6B00;border:1px solid #E6C860;border-radius:999px;padding:2px 8px;font-size:0.7rem;font-weight:700;margin-left:6px;">★ Grit Fit</span>'
       : '';
 
+    // Sprint 004 Phase 1 F2 — ADDITIVE: GRIT FIT StatusPill in popup header.
+    // computeGritFitStatuses requires schoolRigor + athleteAcad; schools not in
+    // the scored pool fall back to empty labels (no pill). A-2 compliant.
+    let statusPillHtml = '';
+    try {
+      const labels = computeGritFitStatuses(school, topTier ?? null, recruitReach ?? null);
+      const primary = labels.length > 0 ? labels[0] : null;
+      statusPillHtml = buildStatusPillHtml(primary);
+    } catch (_e) {
+      statusPillHtml = '';
+    }
+
     return `
       <div data-testid="school-popup-${school.unitid}" style="font-family:'Segoe UI',sans-serif;min-width:320px;max-width:360px;padding:16px;box-sizing:border-box;">
         <h3 data-testid="popup-school-name" style="margin:0 0 6px;color:#8B3A3A;font-size:1.1rem;font-weight:700;line-height:1.2;">${name}${statusChip}</h3>
         <p data-testid="popup-school-meta" style="margin:0 0 14px;color:#6B6B6B;font-size:0.875rem;font-weight:500;">${division} | ${conf}</p>
+        ${statusPillHtml ? `<div data-testid="popup-status-slot" style="margin:0 0 12px;">${statusPillHtml}</div>` : ''}
         <div data-testid="popup-metrics" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:14px;font-size:0.875rem;color:#2C2C2C;">
           <div>
             <p style="${lbl}">Location</p>
@@ -196,7 +233,7 @@ export default function GritFitMapView({
         </div>
       </div>
     `;
-  }, []);
+  }, [topTier, recruitReach]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -239,35 +276,26 @@ export default function GritFitMapView({
           keyboard: true,
         });
 
-        if (onSchoolMarkerClick) {
-          // Sprint 004 G5: slide-out takes over from the native Leaflet popup.
-          // Do NOT bind a popup — fire the callback on click so the parent
-          // wrapper can open SC-3 SlideOutShell with SchoolDetailsCard.
-          marker.on('click', () => {
-            onSchoolMarkerClick(school);
-          });
-        } else {
-          // Backward-compatible path: Leaflet popup with inline Add-to-Shortlist
-          // button. Preserved so the component still works if a parent mounts
-          // it without the G5 wrapper.
-          marker.bindPopup(L.popup({ maxWidth: 360, minWidth: 320 }).setContent(buildPopupHtml(school, overlay)));
+        // Sprint 004 Phase 1 F2 — revert to Leaflet popup (G5 slide-out removed).
+        // Popup now additively shows the GRIT FIT status pill (derived via
+        // computeGritFitStatuses inside buildPopupHtml).
+        marker.bindPopup(L.popup({ maxWidth: 360, minWidth: 320 }).setContent(buildPopupHtml(school, overlay)));
 
-          marker.on('popupopen', () => {
-            const popupEl = marker.getPopup().getElement();
-            if (!popupEl) return;
-            const btn = popupEl.querySelector('[data-testid="add-to-shortlist-btn"]');
-            if (btn && !btn.disabled && onAddToShortlist) {
-              btn.addEventListener('click', () => {
-                onAddToShortlist(school);
-                btn.textContent = '✓ In Shortlist';
-                btn.disabled = true;
-                btn.style.background = '#E8E8E8';
-                btn.style.color = '#6B6B6B';
-                btn.style.cursor = 'default';
-              }, { once: true });
-            }
-          });
-        }
+        marker.on('popupopen', () => {
+          const popupEl = marker.getPopup().getElement();
+          if (!popupEl) return;
+          const btn = popupEl.querySelector('[data-testid="add-to-shortlist-btn"]');
+          if (btn && !btn.disabled && onAddToShortlist) {
+            btn.addEventListener('click', () => {
+              onAddToShortlist(school);
+              btn.textContent = '✓ In Shortlist';
+              btn.disabled = true;
+              btn.style.background = '#E8E8E8';
+              btn.style.color = '#6B6B6B';
+              btn.style.cursor = 'default';
+            }, { once: true });
+          }
+        });
 
         cluster.addLayer(marker);
       });
@@ -275,7 +303,7 @@ export default function GritFitMapView({
 
     cluster.addTo(map);
     markersLayerRef.current = cluster;
-  }, [schools, gritFitUnitIds, shortlistIds, buildPopupHtml, onAddToShortlist, onSchoolMarkerClick]);
+  }, [schools, gritFitUnitIds, shortlistIds, buildPopupHtml, onAddToShortlist]);
 
   return (
     <div>

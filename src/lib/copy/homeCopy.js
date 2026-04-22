@@ -5,6 +5,8 @@
  * Template function pattern — safer for downstream use (escapes, substitution).
  */
 
+// Sprint 004 Phase 1 F1: second line ends with '.' (period), NOT '!'.
+// Spec: first line ends with '!'; second line ends with '.'.
 export const WELCOME_HEADER_TEMPLATE =
   'Welcome back, [First Name]!\nYour results are in! Check out your GRIT FIT matches and update your college football Short List.';
 

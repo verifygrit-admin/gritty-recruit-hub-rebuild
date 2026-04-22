@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import { runGritFitScoring } from '../lib/scoring.js';
-import GritFitMapWithSlideOut from '../components/GritFitMapWithSlideOut.jsx';
+import GritFitMapView from '../components/GritFitMapView.jsx';
 import GritFitTableView from '../components/GritFitTableView.jsx';
 import MoneyMap from '../components/MoneyMap.jsx';
 import NextStepsDashboard from '../components/NextStepsDashboard.jsx';
@@ -818,7 +818,7 @@ export default function GritFitPage() {
       {/* Conditional View Rendering */}
       <div style={{ transition: 'opacity 200ms ease-in-out' }}>
         {view === 'map' ? (
-          <GritFitMapWithSlideOut
+          <GritFitMapView
             schools={mapSchools}
             gritFitUnitIds={gritFitUnitIds}
             shortlistIds={shortlistIds}

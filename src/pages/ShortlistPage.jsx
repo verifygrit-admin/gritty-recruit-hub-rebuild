@@ -19,6 +19,7 @@ import ShortlistFilters from '../components/ShortlistFilters.jsx';
 import ShortlistRow from '../components/ShortlistRow.jsx';
 import PreReadLibrary from '../components/PreReadLibrary.jsx';
 import ShortlistSlideOut from '../components/ShortlistSlideOut.jsx';
+import ErrorBoundary from '../components/ErrorBoundary.jsx';
 
 /**
  * Builds the default patch applied to a short_list_items row when its school
@@ -857,16 +858,18 @@ export default function ShortlistPage() {
         ))}
       </div>
 
-      {/* S3 slide-out (Sprint 004 Wave 4) */}
-      <ShortlistSlideOut
-        isOpen={!!activeShortlistItem}
-        onClose={() => setActiveShortlistItem(null)}
-        item={activeShortlistItem}
-        userFirstName={studentName.first}
-        userLastName={studentName.last}
-        contacts={contacts}
-        files={activeShortlistItem ? (filesByUnitid[activeShortlistItem.unitid] || []) : []}
-      />
+      {/* S3 slide-out (Sprint 004 Wave 4) — wrapped in ErrorBoundary (F3) */}
+      <ErrorBoundary>
+        <ShortlistSlideOut
+          isOpen={!!activeShortlistItem}
+          onClose={() => setActiveShortlistItem(null)}
+          item={activeShortlistItem}
+          userFirstName={studentName.first}
+          userLastName={studentName.last}
+          contacts={contacts}
+          files={activeShortlistItem ? (filesByUnitid[activeShortlistItem.unitid] || []) : []}
+        />
+      </ErrorBoundary>
 
       {/* No results after filtering */}
       {sortedItems.length === 0 && items.length > 0 && (

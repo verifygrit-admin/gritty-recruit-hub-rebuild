@@ -213,6 +213,31 @@ describe('S2 — Shortlist list layout (row-based)', () => {
     expect(rankTexts).toEqual(['1/1']); // re-numbered against filtered total
   });
 
+  // Sprint 004 Phase 1 F5 — explicit regression guard that rank updates when
+  // the filter narrows 5 -> 2 rows (multi-row, not just 1). The bug was that
+  // rank was stuck at N/5 after a filter narrowed to 2 rows, producing "3/5"
+  // displays for the second row. Correct behavior: rank re-numbers against
+  // the filtered+sorted array so the second row shows "2/2".
+  it('(d2) F5 regression: multi-row filter transition re-numbers rank (5 -> 2 shows 1/2, 2/2)', () => {
+    const { container, getByTestId } = render(<Harness />);
+    // Baseline: 5 rows with ranks 1/5..5/5
+    const baselineRanks = Array.from(
+      container.querySelectorAll('[data-testid="row-rank-text"]')
+    ).map(el => el.textContent);
+    expect(baselineRanks).toEqual(['1/5', '2/5', '3/5', '4/5', '5/5']);
+
+    // Filter by Division=D2 — 2 matching rows (Aurora State + Evergreen Poly)
+    fireEvent.change(getByTestId('filter-division'), { target: { value: 'D2' } });
+    const rankTexts = Array.from(
+      container.querySelectorAll('[data-testid="row-rank-text"]')
+    ).map(el => el.textContent);
+    expect(rankTexts).toHaveLength(2);
+    expect(rankTexts).toEqual(['1/2', '2/2']);
+    // The "3/5" stale-rank artifact must NOT appear anywhere.
+    expect(rankTexts).not.toContain('3/5');
+    expect(rankTexts).not.toContain('1/5');
+  });
+
   it('(e) filtering by Division narrows', () => {
     const { container, getByTestId } = render(<Harness />);
     fireEvent.change(getByTestId('filter-division'), { target: { value: 'D2' } });

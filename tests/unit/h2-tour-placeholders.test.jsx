@@ -93,4 +93,17 @@ describe('H2 tour placeholders — rendered <img> per step', () => {
     // Inline style width should be 100% (or equivalent). display:block also set.
     expect(img.style.width).toBe('100%');
   });
+
+  // Sprint 004 Phase 1 F6 regression:
+  // portrait-aspect placeholders (e.g., browse step 2 @ 560x900 slideout) must
+  // NOT force the modal to grow — enforced via maxHeight + objectFit:contain.
+  it('(F6) image has maxHeight constraint + objectFit:contain (portrait-aspect guard)', () => {
+    const { container } = render(<Tutorial type="browse" onClose={() => {}} />);
+    const img = container.querySelector('img[data-tour-step]');
+    expect(img).not.toBeNull();
+    // maxHeight prevents modal blow-up; objectFit:contain letterboxes tall images.
+    expect(img.style.maxHeight).toBeTruthy();
+    expect(img.style.objectFit).toBe('contain');
+    expect(img.style.height).toBe('auto');
+  });
 });

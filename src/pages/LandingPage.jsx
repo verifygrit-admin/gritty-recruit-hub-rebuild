@@ -346,7 +346,7 @@ export default function LandingPage() {
         {profileComplete ? (
           <>
             <p style={{ fontSize: '1.125rem', color: '#6B6B6B', margin: '0 0 16px 0' }}>
-              Your results are in! Check out your GRIT FIT matches and update your college football Short List!
+              Your results are in! Check out your GRIT FIT matches and update your college football Short List.
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link to="/profile" data-testid="welcome-edit-profile" style={{

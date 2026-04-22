@@ -108,10 +108,26 @@ export default function ShortlistSlideOut({
   contacts = { hs_head_coach_email: null, hs_guidance_counselor_email: null },
   files = [],
 }) {
+  // ── ALL hooks MUST be declared unconditionally at the top, before ANY
+  // early return. Sprint 004 Phase 1 F3 — previously the useMemo below was
+  // placed AFTER the `if (!isOpen || !item) return` early-return, producing
+  // a "Rendered more hooks than during the previous render" crash whenever
+  // the slide-out transitioned from closed -> open or vice versa.
   const isNarrow = useIsNarrowViewport(400);
   const [journeyCollapsed, setJourneyCollapsed] = useState(false);
 
-  // Defensive: rendering a slide-out with no item is a no-op.
+  // Determine which docs have a submission on file. file_uploads.document_type
+  // is the join key; one submission per doc_type is enough to mark SUBMITTED.
+  const submittedByDocType = useMemo(() => {
+    const map = {};
+    for (const f of files || []) {
+      if (f && f.document_type) map[f.document_type] = true;
+    }
+    return map;
+  }, [files]);
+
+  // Defensive: rendering a slide-out with no item is a no-op. MUST come AFTER
+  // all hook declarations above (F3).
   if (!isOpen || !item) {
     return (
       <SlideOutShell
@@ -146,16 +162,6 @@ export default function ShortlistSlideOut({
     .toUpperCase();
 
   const schoolName = item.school_name || 'School';
-
-  // Determine which docs have a submission on file. file_uploads.document_type
-  // is the join key; one submission per doc_type is enough to mark SUBMITTED.
-  const submittedByDocType = useMemo(() => {
-    const map = {};
-    for (const f of files || []) {
-      if (f && f.document_type) map[f.document_type] = true;
-    }
-    return map;
-  }, [files]);
 
   // Viewport-dependent email button visual label (A-10 rule).
   const coachLabel = isNarrow ? 'Email Coach' : 'Email (Head) Coach';

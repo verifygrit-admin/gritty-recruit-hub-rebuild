@@ -16,4 +16,14 @@ describe('homeCopy — H1 welcome header', () => {
   it('template preserves the [First Name] placeholder literal', () => {
     expect(WELCOME_HEADER_TEMPLATE).toContain('[First Name]');
   });
+
+  // Sprint 004 Phase 1 F1 regression guard:
+  // Second line must end with '.' (period), NOT '!'.
+  // First line's trailing '!' after the name is preserved.
+  it('F1 regression: first line ends with "!" and second line ends with "."', () => {
+    const [line1, line2] = welcomeHeader('Chris').split('\n');
+    expect(line1.endsWith('!')).toBe(true);
+    expect(line2.endsWith('.')).toBe(true);
+    expect(line2.endsWith('!')).toBe(false);
+  });
 });

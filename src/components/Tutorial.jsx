@@ -166,10 +166,15 @@ export default function Tutorial({ type = 'browse', onClose }) {
           {/* tour-step-5: target viewport = desktop, placeholder 1440x900 */}
           {/* TODO(tour-screenshots): drop final PNGs into public/tour/ at the dimensions above; placeholders preserve aspect ratio so no layout reflow. */}
           {slide.img && vp && (
+            // Sprint 004 Phase 1 F6 — maxHeight:360 + objectFit:contain on the
+            // <img> lets portrait-aspect placeholders (slideout = 560x900)
+            // letterbox inside the modal instead of forcing it to grow and
+            // break layout. height:auto preserves aspect within the constraint.
             <div style={{
               width: '100%', marginBottom: 14, backgroundColor: '#F4F4F4',
               borderRadius: 6, overflow: 'hidden', border: '1px solid #E8E8E8',
-              aspectRatio: `${vp.width} / ${vp.height}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              maxHeight: 360,
             }}>
               <img
                 src={slide.img.src}
@@ -179,7 +184,13 @@ export default function Tutorial({ type = 'browse', onClose }) {
                 data-tour-viewport={vp.viewport}
                 data-tour-target-width={vp.width}
                 data-tour-target-height={vp.height}
-                style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
+                style={{
+                  width: '100%',
+                  maxHeight: 360,
+                  height: 'auto',
+                  display: 'block',
+                  objectFit: 'contain',
+                }}
               />
             </div>
           )}
