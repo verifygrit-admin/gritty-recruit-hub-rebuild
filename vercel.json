@@ -1,5 +1,8 @@
 {
   "rewrites": [
+    { "source": "/recruits/login", "destination": "/recruits/login.html" },
+    { "source": "/recruits/auth", "destination": "/api/recruits-auth" },
+    { "source": "/recruits/:path*", "destination": "/api/recruits-auth" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
