@@ -1,4 +1,6 @@
-export const runtime = 'edge';
+export const config = {
+  runtime: 'edge',
+};
 
 const COOKIE_NAME = 'grittyos_recruit_auth';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
