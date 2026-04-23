@@ -24,3 +24,5 @@ extracted/
 # Temporary working files (DEC-CFBRB-094)
 tmp_*
 scripts/__pycache__/
+
+.vercel
