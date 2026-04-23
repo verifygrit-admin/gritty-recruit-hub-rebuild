@@ -161,6 +161,17 @@
   .error.show {
     display: block;
   }
+  .notice {
+    display: none;
+    font-size: 13px;
+    color: var(--forest-mid);
+    background: rgba(192, 253, 114, 0.18);
+    border-left: 3px solid var(--chartreuse-muted);
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .notice.show { display: block; }
   button[type="submit"] {
     width: 100%;
     padding: 13px 20px;
@@ -224,6 +235,10 @@
     <h1>Enter the password <em>to continue</em>.</h1>
     <p class="sub">This guide was prepared for a specific family. If you received a password by email or text, enter it below to open the guide.</p>
 
+    <div class="notice" id="notice-box">
+      You've been logged out. Enter the password below to open the guide again.
+    </div>
+
     <div class="error" id="error-box">
       The password you entered was not recognized. Please check the password sent to your family and try again.
     </div>
@@ -260,6 +275,11 @@
 
     if (err) {
       document.getElementById('error-box').classList.add('show');
+    }
+
+    var loggedOut = params.get('logged_out');
+    if (loggedOut) {
+      document.getElementById('notice-box').classList.add('show');
     }
 
     // Scrub query params from URL so password form doesn't inherit them on resubmit

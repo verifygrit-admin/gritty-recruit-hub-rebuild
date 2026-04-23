@@ -102,6 +102,11 @@ export default async function handler(request: Request): Promise<Response> {
     return handleAuthSubmit(request, url);
   }
 
+  // Handle logout — clear the cookie and redirect to login
+  if (pathname === '/recruits/auth/logout') {
+    return handleLogout(request, url);
+  }
+
   // All other /recruits/{slug}/* paths require auth
   const parsed = parseRecruitPath(pathname);
   if (!parsed) {
@@ -197,6 +202,47 @@ async function handleAuthSubmit(request: Request, url: URL): Promise<Response> {
       'SameSite=Lax',
     ].join('; ')
   );
+
+  return new Response(null, { status: 302, headers });
+}
+
+async function handleLogout(request: Request, url: URL): Promise<Response> {
+  // Read the existing cookie to determine which slug's session to end.
+  // If there's no cookie, redirect to the bare login page.
+  const cookie = getCookieFromHeader(request.headers.get('cookie'), COOKIE_NAME);
+  let slug: string | null = null;
+  if (cookie) {
+    const parts = cookie.split('.');
+    if (parts.length === 2 && /^[a-z0-9-]+$/.test(parts[0])) {
+      slug = parts[0];
+    }
+  }
+
+  const headers = new Headers();
+
+  // Clear the auth cookie. Path must match how it was originally set
+  // (Path=/recruits/{slug}) or the browser won't discard it.
+  if (slug) {
+    headers.append(
+      'set-cookie',
+      [
+        `${COOKIE_NAME}=`,
+        `Path=/recruits/${slug}`,
+        'Max-Age=0',
+        'HttpOnly',
+        'Secure',
+        'SameSite=Lax',
+      ].join('; ')
+    );
+
+    const loginUrl = new URL('/recruits/login', url.origin);
+    loginUrl.searchParams.set('slug', slug);
+    loginUrl.searchParams.set('logged_out', '1');
+    headers.set('location', loginUrl.toString());
+  } else {
+    // No recognizable cookie — send them to a neutral destination
+    headers.set('location', '/');
+  }
 
   return new Response(null, { status: 302, headers });
 }
