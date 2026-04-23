@@ -136,24 +136,40 @@ export default async function handler(request: Request): Promise<Response> {
   // Proxy the request to the isolated guide project
   const targetUrl = origin.replace(/\/$/, '') + (rest || '/');
   const upstream = await fetch(targetUrl, {
-    method: 'GET',
+    method: request.method,
     headers: {
       'accept': request.headers.get('accept') || '*/*',
       'user-agent': request.headers.get('user-agent') || '',
+      'accept-encoding': 'identity', // force uncompressed so we don't have to re-encode
     },
     redirect: 'follow',
   });
 
-  // Strip transfer-encoding & content-encoding headers that Vercel will re-add
-  const headers = new Headers(upstream.headers);
-  headers.delete('content-encoding');
-  headers.delete('transfer-encoding');
-  headers.delete('content-length');
+  // If upstream didn't return success, pass the status through as-is
+  if (!upstream.ok) {
+    return new Response(`Upstream returned ${upstream.status}`, {
+      status: upstream.status,
+    });
+  }
 
-  // Prevent caching of authenticated content at shared caches
-  headers.set('cache-control', 'private, no-store');
+  // Read the response as an ArrayBuffer — works for binary AND text.
+  // Streaming upstream.body through Vercel's Edge Runtime can corrupt
+  // binary responses; buffering is safer for assets <5MB.
+  const body = await upstream.arrayBuffer();
 
-  return new Response(upstream.body, {
+  // Preserve upstream headers but strip any that Vercel will re-set
+  const headers = new Headers();
+  const contentType = upstream.headers.get('content-type');
+  if (contentType) headers.set('content-type', contentType);
+  const cacheControl = upstream.headers.get('cache-control');
+  if (cacheControl) {
+    headers.set('cache-control', cacheControl);
+  } else {
+    // No-cache default for authenticated content
+    headers.set('cache-control', 'private, no-store');
+  }
+
+  return new Response(body, {
     status: upstream.status,
     headers,
   });
