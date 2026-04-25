@@ -17,6 +17,24 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
 
+/* ── SPRINT 005 D8 — Mobile horizontal-parallax lock ───────
+   Lock the outermost app shell to prevent the page body from
+   translating horizontally on touch devices ("wobbly" feel).
+   Scope is intentionally minimal: overflow-x:hidden + max-width
+   on html/body/#root only. We deliberately do NOT set
+   touch-action:pan-y at the shell level because touch-action
+   intersects across ancestors and would block intentional
+   horizontal touch-panning inside inner scroll containers
+   (admin tables / .admin-scroll-wrap, GritFitTableView,
+   NextStepsDashboard, DeadlinePercentileTracker, CoachDashboard
+   weekly schedule, AdminPage tables). Those containers use
+   overflowX:'auto' and remain functional with this rule.
+*/
+html, body, #root {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 body {
   margin: 0;
   font-family: var(--font-body);

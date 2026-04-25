@@ -159,10 +159,16 @@ export default function GritFitTableView({
     // Sprint 004 G7b — derive status for the selected school. Array is already
     // priority-sorted in gritFitStatus.js; first element is the top label.
     // Empty array -> null statusKey -> SchoolDetailsCard renders no pill (A-2).
+    // Sprint 005 D3a — also pass the full `selectedStatusKeys` array so the
+    // detail card can render ALL applicable Fit Category badges (multi-badge
+    // display). Legacy `statusKey` is kept in scope for backward compat with
+    // any consumer still reading the old prop.
     let selectedStatusKey = null;
+    let selectedStatusKeys = [];
     if (selectedSchool) {
       const labels = computeGritFitStatuses(selectedSchool, topTier, recruitReach);
       selectedStatusKey = labels.length > 0 ? labels[0] : null;
+      selectedStatusKeys = labels;
     }
     return (
       <div data-testid="grit-fit-results">
@@ -296,7 +302,11 @@ export default function GritFitTableView({
           onClose={() => setSelectedSchool(null)}
           ariaLabel="School details"
         >
-          <SchoolDetailsCard school={selectedSchool} statusKey={selectedStatusKey} />
+          <SchoolDetailsCard
+            school={selectedSchool}
+            statusKey={selectedStatusKey}
+            statusKeys={selectedStatusKeys}
+          />
         </SlideOutShell>
       </div>
     );

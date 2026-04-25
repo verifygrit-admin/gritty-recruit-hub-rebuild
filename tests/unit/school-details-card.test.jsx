@@ -254,6 +254,79 @@ describe('SchoolDetailsCard — missing optional fields', () => {
   });
 });
 
+// ── Sprint 005 D3a — multi-badge display ─────────────────────────────────
+
+describe('SchoolDetailsCard — multi-badge display (Sprint 005 D3a)', () => {
+  it('renders all badges when statusKeys array is provided', () => {
+    const el = renderCard({
+      school: FIXTURE_A,
+      statusKeys: ['currently_recommended', 'below_athletic_fit', 'out_of_academic_reach'],
+    });
+    const pills = collect(el, (n) => n.type === StatusPill);
+    expect(pills).toHaveLength(3);
+    const statuses = pills.map(p => p.props.status);
+    expect(statuses).toContain('currently_recommended');
+    expect(statuses).toContain('below_athletic_fit');
+    expect(statuses).toContain('out_of_academic_reach');
+  });
+
+  it('renders all six Fit Categories without overflow when supplied', () => {
+    const el = renderCard({
+      school: FIXTURE_A,
+      statusKeys: [
+        'currently_recommended',
+        'out_of_academic_reach',
+        'out_of_athletic_reach',
+        'below_academic_fit',
+        'below_athletic_fit',
+        'outside_geographic_reach',
+      ],
+    });
+    const pills = collect(el, (n) => n.type === StatusPill);
+    expect(pills).toHaveLength(6);
+    // Wrapper must use flex-wrap so the six pills can flow onto multiple
+    // rows on narrow viewports without overflow.
+    const slot = findByTestId(el, 'sdc-status-slot');
+    expect(slot).not.toBeNull();
+    expect(slot.props.style.display).toBe('flex');
+    expect(slot.props.style.flexWrap).toBe('wrap');
+  });
+
+  it('preserves the order supplied in statusKeys', () => {
+    const order = ['below_athletic_fit', 'currently_recommended', 'outside_geographic_reach'];
+    const el = renderCard({ school: FIXTURE_A, statusKeys: order });
+    const pills = collect(el, (n) => n.type === StatusPill);
+    expect(pills.map(p => p.props.status)).toEqual(order);
+  });
+
+  it('treats statusKeys as the source of truth when both statusKey and statusKeys are passed', () => {
+    const el = renderCard({
+      school: FIXTURE_A,
+      statusKey: 'currently_recommended',
+      statusKeys: ['below_academic_fit', 'outside_geographic_reach'],
+    });
+    const pills = collect(el, (n) => n.type === StatusPill);
+    expect(pills).toHaveLength(2);
+    expect(pills.map(p => p.props.status)).toEqual([
+      'below_academic_fit',
+      'outside_geographic_reach',
+    ]);
+  });
+
+  it('renders no pill slot when statusKeys is empty', () => {
+    const el = renderCard({ school: FIXTURE_A, statusKeys: [] });
+    expect(findByTestId(el, 'sdc-status-slot')).toBeNull();
+    expect(collect(el, (n) => n.type === StatusPill)).toHaveLength(0);
+  });
+
+  it('falls back to legacy statusKey path for backward compat', () => {
+    const el = renderCard({ school: FIXTURE_A, statusKey: 'currently_recommended' });
+    const pills = collect(el, (n) => n.type === StatusPill);
+    expect(pills).toHaveLength(1);
+    expect(pills[0].props.status).toBe('currently_recommended');
+  });
+});
+
 // ── h) two fixture schools render distinctly ─────────────────────────────
 
 describe('SchoolDetailsCard — fixture distinctness', () => {

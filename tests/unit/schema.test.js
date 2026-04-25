@@ -231,10 +231,12 @@ describe('Schema: short_list_items source and grit_fit_status', () => {
     expect(f5).not.toContain('not_evaluated');
   });
 
-  it('computeGritFitStatuses returns empty array when no labels apply (diagnostic warn)', () => {
+  it('computeGritFitStatuses returns empty array when no labels apply (diagnostic debug)', () => {
     // Fixture that triggers zero labels: eligible but not top-50, matching tiers, in-range,
-    // no academic mismatch, no geographic overstep. Warn fires as diagnostic.
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // no academic mismatch, no geographic overstep. Debug fires as diagnostic
+    // (demoted from warn in Sprint 005 P2.5 to reduce console noise; DevTools hides
+    // debug by default — toggle Verbose to inspect).
+    const warnSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
 
     const result = computeGritFitStatuses(
       {

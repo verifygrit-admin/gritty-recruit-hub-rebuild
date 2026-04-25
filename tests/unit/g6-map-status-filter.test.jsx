@@ -29,11 +29,12 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// Silence the diagnostic warn emitted by computeGritFitStatuses() when a
+// Silence the diagnostic debug emitted by computeGritFitStatuses() when a
 // scored school yields zero labels — that branch is exercised on purpose in
-// the empty-label tests below (ruling A-2).
+// the empty-label tests below (ruling A-2). Demoted from warn to debug in
+// Sprint 005 P2.5.
 beforeEach(() => {
-  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.spyOn(console, 'debug').mockImplementation(() => {});
 });
 
 /** Harness that wires GritFitMapFilters to local state so toggles work. */

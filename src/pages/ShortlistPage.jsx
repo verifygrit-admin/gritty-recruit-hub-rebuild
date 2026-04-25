@@ -37,6 +37,100 @@ export function buildUnscoredShortlistDefault(nowIso = new Date().toISOString())
 }
 
 /**
+ * Sprint 005 D6 (Phase 2.7) — Pure handler for journey-step toggle writes.
+ *
+ * Exported so the write path can be unit-tested in isolation without
+ * rendering the full ShortlistPage. Three branches:
+ *
+ *   1. Supabase returns an error → toast + logError. No state update.
+ *   2. Supabase returns no error but 0 rows updated → 0-rows toast + logError.
+ *      No state update. (Typically RLS denying UPDATE silently.)
+ *   3. Supabase returns rows → setItems AND setActiveShortlistItem are both
+ *      updated so the open slide-out re-renders with the new step state.
+ *
+ * The .select() call is load-bearing: without it Supabase v2 returns no row
+ * data on update and a 0-row write (e.g. RLS denial) is indistinguishable
+ * from a successful write.
+ */
+export async function performStepToggle({
+  itemId,
+  stepId,
+  completed,
+  items,
+  userId,
+  supabaseClient,
+  setUpdatingStep,
+  setItems,
+  setActiveShortlistItem,
+  showToast,
+  logError = () => {},
+}) {
+  setUpdatingStep(prev => ({ ...prev, [itemId]: stepId }));
+
+  const item = items.find(i => i.id === itemId);
+  if (!item) {
+    setUpdatingStep(prev => ({ ...prev, [itemId]: null }));
+    return;
+  }
+
+  const updatedSteps = item.recruiting_journey_steps.map(s => {
+    if (s.step_id === stepId) {
+      return {
+        ...s,
+        completed,
+        completed_at: completed ? new Date().toISOString() : null,
+      };
+    }
+    return s;
+  });
+
+  // Sprint 005 D6 — write path with .select() so the call returns the
+  // affected rows. Without .select() Supabase v2 returns no row data and
+  // a silent 0-row write (e.g. RLS denying UPDATE) looks identical to a
+  // successful write. The 0-row branch below makes that case visible.
+  const { data: updatedRows, error } = await supabaseClient
+    .from('short_list_items')
+    .update({
+      recruiting_journey_steps: updatedSteps,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', itemId)
+    .eq('user_id', userId)
+    .select();
+
+  if (error) {
+    showToast('Failed to update step. Please try again.', 'error');
+    logError('Step toggle error:', error);
+  } else if (!updatedRows || updatedRows.length === 0) {
+    // Write returned no error but updated 0 rows — typically an RLS
+    // policy denying UPDATE on short_list_items for this user. Surface
+    // it loudly so the failure is not silent.
+    showToast('Step update was blocked (no rows affected). Check permissions.', 'error');
+    logError('Step toggle: 0 rows updated', {
+      itemId,
+      stepId,
+      userId,
+    });
+  } else {
+    // Sprint 005 D6 stale-snapshot fix — update both the items array AND
+    // the activeShortlistItem snapshot so the open slide-out re-renders
+    // with the new step state. activeShortlistItem is a copied reference
+    // taken at row-click time; without this update it stays stale even
+    // though items[] is fresh.
+    setItems(prev => prev.map(i =>
+      i.id === itemId ? { ...i, recruiting_journey_steps: updatedSteps } : i
+    ));
+    setActiveShortlistItem(prev =>
+      prev && prev.id === itemId
+        ? { ...prev, recruiting_journey_steps: updatedSteps }
+        : prev
+    );
+  }
+
+  setUpdatingStep(prev => ({ ...prev, [itemId]: null }));
+}
+
+/**
  * Re-runs GRIT FIT scoring and patches shortlist rows with scored fields and status labels.
  */
 async function backfillScoredFields(userId, profile, allSchools, currentItems) {
@@ -284,47 +378,19 @@ export default function ShortlistPage() {
 
   // ── Toggle journey step ──
   const handleToggleStep = useCallback(async (itemId, stepId, completed) => {
-    setUpdatingStep(prev => ({ ...prev, [itemId]: stepId }));
-
-    // Find current item
-    const item = items.find(i => i.id === itemId);
-    if (!item) {
-      setUpdatingStep(prev => ({ ...prev, [itemId]: null }));
-      return;
-    }
-
-    // Clone and update the step
-    const updatedSteps = item.recruiting_journey_steps.map(s => {
-      if (s.step_id === stepId) {
-        return {
-          ...s,
-          completed,
-          completed_at: completed ? new Date().toISOString() : null,
-        };
-      }
-      return s;
+    await performStepToggle({
+      itemId,
+      stepId,
+      completed,
+      items,
+      userId: session.user.id,
+      supabaseClient: supabase,
+      setUpdatingStep,
+      setItems,
+      setActiveShortlistItem,
+      showToast,
+      logError: (...args) => console.error(...args),
     });
-
-    const { error } = await supabase
-      .from('short_list_items')
-      .update({
-        recruiting_journey_steps: updatedSteps,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', itemId)
-      .eq('user_id', session.user.id);
-
-    if (error) {
-      showToast('Failed to update step. Please try again.', 'error');
-      console.error('Step toggle error:', error);
-    } else {
-      // Update local state
-      setItems(prev => prev.map(i =>
-        i.id === itemId ? { ...i, recruiting_journey_steps: updatedSteps } : i
-      ));
-    }
-
-    setUpdatingStep(prev => ({ ...prev, [itemId]: null }));
   }, [items, session]);
 
   // ── Remove from shortlist ──
@@ -619,38 +685,51 @@ export default function ShortlistPage() {
   }, [items, filters]);
 
   // ── Sorting ──
+  // Sprint 005 D5 — six sort modes drive the dynamic ranking column. A stable
+  // secondary tie-break by school_name ASC applies to ALL six modes including
+  // Date Added (operator decision — do NOT tie-break by timestamp precision).
   const sortedItems = useMemo(() => {
     const arr = [...filteredItems];
+    const byName = (a, b) => (a.school_name || '').localeCompare(b.school_name || '');
+
+    const compareWithNameTiebreak = (primaryCmp) => (a, b) => {
+      const r = primaryCmp(a, b);
+      return r !== 0 ? r : byName(a, b);
+    };
 
     switch (sortBy) {
       case 'name_asc':
-        arr.sort((a, b) => (a.school_name || '').localeCompare(b.school_name || ''));
-        break;
-      case 'name_desc':
-        arr.sort((a, b) => (b.school_name || '').localeCompare(a.school_name || ''));
+        arr.sort(byName);
         break;
       case 'added_newest':
-        arr.sort((a, b) => new Date(b.added_at) - new Date(a.added_at));
-        break;
-      case 'added_oldest':
-        arr.sort((a, b) => new Date(a.added_at) - new Date(b.added_at));
+        arr.sort(compareWithNameTiebreak(
+          (a, b) => new Date(b.added_at) - new Date(a.added_at)
+        ));
         break;
       case 'dist_asc':
-        arr.sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
-        break;
-      case 'dist_desc':
-        arr.sort((a, b) => (b.dist ?? -Infinity) - (a.dist ?? -Infinity));
+        arr.sort(compareWithNameTiebreak(
+          (a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity)
+        ));
         break;
       case 'droi_desc':
-        arr.sort((a, b) => (b.droi ?? -Infinity) - (a.droi ?? -Infinity));
+        arr.sort(compareWithNameTiebreak(
+          (a, b) => (b.droi ?? -Infinity) - (a.droi ?? -Infinity)
+        ));
         break;
       case 'net_cost_asc':
-        arr.sort((a, b) => (a.net_cost ?? Infinity) - (b.net_cost ?? Infinity));
+        arr.sort(compareWithNameTiebreak(
+          (a, b) => (a.net_cost ?? Infinity) - (b.net_cost ?? Infinity)
+        ));
         break;
       case 'payback_asc':
-        arr.sort((a, b) => (a.break_even ?? Infinity) - (b.break_even ?? Infinity));
+        arr.sort(compareWithNameTiebreak(
+          (a, b) => (a.break_even ?? Infinity) - (b.break_even ?? Infinity)
+        ));
         break;
       default:
+        // Unknown sort key — fall back to name_asc so the rank column is
+        // always deterministic regardless of stale persisted state.
+        arr.sort(byName);
         break;
     }
 
@@ -846,13 +925,34 @@ export default function ShortlistPage() {
       )}
 
       {/* Rows (S2 — list layout replaces card layout) */}
+      {/* Sprint 005 D5 — minimal "Rank ↑" header strip. Shortlist intentionally
+          retains its no-field-headers design; only the rank column is labeled. */}
       <div data-testid="shortlist-rows" style={{ borderTop: '1px solid #E6D7C3' }}>
+        {sortedItems.length > 0 && (
+          <div
+            data-testid="shortlist-rank-header"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px 18px',
+              backgroundColor: '#F5EFE0',
+              borderBottom: '2px solid #D4D4D4',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              color: '#2C2C2C',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            <span style={{ minWidth: 32 }}>Rank {'↑'}</span>
+          </div>
+        )}
         {sortedItems.map((item, idx) => (
           <ShortlistRow
             key={item.id}
             item={item}
             rank={idx + 1}
-            totalFiltered={sortedItems.length}
+            index={idx}
             onClick={(clicked) => setActiveShortlistItem(clicked)}
           />
         ))}
@@ -868,6 +968,8 @@ export default function ShortlistPage() {
           userLastName={studentName.last}
           contacts={contacts}
           files={activeShortlistItem ? (filesByUnitid[activeShortlistItem.unitid] || []) : []}
+          onToggleStep={handleToggleStep}
+          updatingStepId={activeShortlistItem ? (updatingStep[activeShortlistItem.id] ?? null) : null}
         />
       </ErrorBoundary>
 

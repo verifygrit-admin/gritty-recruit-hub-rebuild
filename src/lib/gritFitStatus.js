@@ -80,10 +80,11 @@ export function computeGritFitStatuses(scoredSchool, topTier, recruitReach) {
   }
 
   // Sprint 004 CW-1: 'not_evaluated' removed from UI taxonomy (DEC accepted-inert-artifact).
-  // When no label applies, return empty array (no pill rendered). Diagnostic warn only.
+  // When no label applies, return empty array (no pill rendered). Diagnostic debug only —
+  // DevTools default-hides debug; toggle Verbose to inspect.
   if (labels.length === 0) {
     // eslint-disable-next-line no-console
-    console.warn('[computeGritFitStatuses] No applicable GRIT FIT labels for scoredSchool', {
+    console.debug('[computeGritFitStatuses] No applicable GRIT FIT labels for scoredSchool', {
       unitid: scoredSchool?.unitid,
       schoolTier,
       eligible,

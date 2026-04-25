@@ -1,18 +1,27 @@
 /**
  * ShortlistRow — list-layout row renderer for the Shortlist main view.
- * Sprint 004 Wave 3b S2. Replaces the card layout (ShortlistCard.jsx) with a
- * single-line row matching the PDF page 7 screenshot.
  *
- * Layout (left -> right):
- *   - School name (primary, maroon) + Division | Conference (secondary, muted)
- *   - StatusPill (highest-priority label per STATUS_ORDER, or none)
- *   - Rank indicator "N/total" with maroon progress-bar accent
+ * Sprint 005 Track C — D4 + D5:
+ *   D4: Alternating row backgrounds matching the Grit Fit Table View tokens.
+ *       Odd index -> '#F5EFE0' (cream stripe), Even index -> '#FFFFFF'.
+ *       Border 1px solid '#E8E8E8' (matches table-row borders).
+ *   D5: A leftmost RANK cell whose body is unlabeled (mirrors the Grit Fit
+ *       Table rank visual). The header strip is rendered by ShortlistPage,
+ *       not here. Mobile pairing: on narrow viewports the rank is the
+ *       leading element of the row card.
+ *
+ * Sprint 004 Wave 3b S2 layout (preserved): School name (primary, maroon) +
+ * Division | Conference subline (muted), then the highest-priority StatusPill.
+ * The trailing "N/total" rank indicator from S2 is REMOVED in Sprint 005 — the
+ * leftmost rank column replaces it.
  *
  * Props:
  *   item:           short_list_items row (unitid, school_name, div,
  *                   conference, grit_fit_status, grit_fit_labels, ...)
  *   rank:           1-indexed position in the filtered+sorted list
- *   totalFiltered:  count of the filtered list (denominator)
+ *   index:          0-indexed position used to pick the alternating background
+ *                   token (D4). Optional; defaults to (rank - 1) so callers
+ *                   that only pass `rank` keep working.
  *   onClick:        (item) => void
  *
  * Empty status handling (A-2): if both grit_fit_status is falsy and
@@ -22,7 +31,12 @@
 import StatusPill from './StatusPill.jsx';
 import { STATUS_ORDER } from '../lib/statusLabels.js';
 
-const CREAM_BG = '#F5EADF';
+// D4 — Grit Fit Table View row tokens (re-used as-is, no extraction needed).
+// Source: src/components/GritFitTableView.jsx — desktop tbody row styling.
+const ROW_BG_ODD = '#F5EFE0';   // cream stripe
+const ROW_BG_EVEN = '#FFFFFF';  // white
+const ROW_BORDER = '1px solid #E8E8E8';
+
 const MAROON = '#8B3A3A';
 const MUTED = '#6B6B6B';
 
@@ -40,12 +54,16 @@ export function pickPrimaryStatus(item) {
   return item?.grit_fit_status || '';
 }
 
-export default function ShortlistRow({ item, rank, totalFiltered, onClick }) {
+export default function ShortlistRow({ item, rank, index, onClick }) {
   const primaryStatus = pickPrimaryStatus(item);
 
   const subline = [item.div, item.conference].filter(Boolean).join(' • ');
 
-  const pct = totalFiltered > 0 ? Math.max(0, Math.min(1, rank / totalFiltered)) : 0;
+  // D4 — alternating background. `index` is preferred; fall back to (rank-1)
+  // so existing callers that only pass `rank` still alternate correctly.
+  const idx = typeof index === 'number' ? index : (Number(rank) || 1) - 1;
+  const isOdd = idx % 2 === 1;
+  const bg = isOdd ? ROW_BG_ODD : ROW_BG_EVEN;
 
   const handleKey = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -57,6 +75,7 @@ export default function ShortlistRow({ item, rank, totalFiltered, onClick }) {
   return (
     <div
       data-testid={`shortlist-row-${item.unitid}`}
+      data-row-parity={isOdd ? 'odd' : 'even'}
       role="button"
       tabIndex={0}
       onClick={() => { if (onClick) onClick(item); }}
@@ -66,13 +85,33 @@ export default function ShortlistRow({ item, rank, totalFiltered, onClick }) {
         alignItems: 'center',
         gap: 16,
         padding: '14px 18px',
-        backgroundColor: CREAM_BG,
-        borderBottom: '1px solid #E6D7C3',
+        backgroundColor: bg,
+        borderBottom: ROW_BORDER,
         cursor: 'pointer',
         flexWrap: 'wrap',
       }}
     >
-      {/* Left: school identity */}
+      {/* D5 — Leftmost RANK cell. Body is unlabeled (just the number) per
+          the Shortlist no-field-headers design. On mobile, this cell is the
+          leading element of each row card (it sits first in the flex row,
+          and on flex-wrap the card-style row keeps rank on the leading line). */}
+      <div
+        data-testid={`row-rank-${item.unitid}`}
+        aria-label={`Rank ${rank}`}
+        style={{
+          flex: '0 0 auto',
+          minWidth: 32,
+          fontSize: '1rem',
+          fontWeight: 700,
+          color: MAROON,
+          fontVariantNumeric: 'tabular-nums',
+          textAlign: 'left',
+        }}
+      >
+        <span data-testid="row-rank-text">{rank}</span>
+      </div>
+
+      {/* School identity */}
       <div style={{ flex: '1 1 240px', minWidth: 0 }}>
         <div
           data-testid="row-school-name"
@@ -101,56 +140,12 @@ export default function ShortlistRow({ item, rank, totalFiltered, onClick }) {
         )}
       </div>
 
-      {/* Center-right: status pill */}
+      {/* Status pill */}
       <div
         data-testid="row-status-slot"
         style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center' }}
       >
         {primaryStatus && <StatusPill status={primaryStatus} size="md" />}
-      </div>
-
-      {/* Right: rank indicator */}
-      <div
-        data-testid={`row-rank-${item.unitid}`}
-        aria-label={`Rank ${rank} of ${totalFiltered}`}
-        style={{
-          flex: '0 0 auto',
-          minWidth: 96,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: 4,
-        }}
-      >
-        <div
-          data-testid="row-rank-text"
-          style={{
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            color: MAROON,
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          {rank}/{totalFiltered}
-        </div>
-        <div
-          aria-hidden="true"
-          style={{
-            width: 80,
-            height: 6,
-            backgroundColor: '#E6D7C3',
-            borderRadius: 3,
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              width: `${pct * 100}%`,
-              height: '100%',
-              backgroundColor: MAROON,
-            }}
-          />
-        </div>
       </div>
     </div>
   );

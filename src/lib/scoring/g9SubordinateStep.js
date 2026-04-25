@@ -21,6 +21,22 @@
  *     schools (where student AF@D3 >= 0.50), descending on acadScore.
  *   - Total always <= 30; no synthetic padding if D3 pool exhausted.
  *
+ * SPRINT 005 D2 FIX — RECRUIT REACH RADIUS:
+ *   The pre-Sprint-005 implementation of this subordinate step did NOT
+ *   re-apply the Recruit Reach radius filter to the academically-mixed
+ *   D2+D3 pool. Result: D3 fill could include schools far outside the
+ *   student's realistic recruit reach (e.g. Pacific-coast D3 schools for
+ *   a Boston student). The Sprint 005 fix re-applies a radius filter as
+ *   the FINAL step in both halves of the mix:
+ *     - The named D2 cap (Bentley/Mines) is filtered by D2 radius (600 mi).
+ *     - The D3 fill is filtered by D3 radius (450 mi).
+ *   Per-tier radius is sourced from RECRUIT_BUDGETS in src/lib/constants.js
+ *   so this stays in sync with the rest of the engine. Schools missing
+ *   lat/lng (or with student lat/lng absent) are EXCLUDED — failing-
+ *   closed is consistent with the rest of the engine's gateDist
+ *   treatment (scoring.js distance defaults to 9999 when lat/lng missing,
+ *   which fails the radius gate).
+ *
  * ENRICHMENT PRESERVATION (Sprint 004 Wave 5 Phase 1 fix, F4):
  *   - When building the new top30, each selected school is resolved through
  *     `scoringOutput.scored` (enriched records from runGritFitScoring) BEFORE
@@ -38,11 +54,19 @@
  *     on the input scoringOutput).
  */
 
+import { RECRUIT_BUDGETS } from '../constants.js';
+
 const AF_THRESHOLD = 0.50;
 const ACAD_RIGOR_THRESHOLD = 0.85;
 const D2_COUNT_THRESHOLD = 30;
 const MATCH_RETURN_LIMIT = 30;
 const D2_CAP_NAMES = ['Bentley University', 'Colorado School of Mines'];
+
+// Sprint 005 D2 fix — per-tier radius (miles) for the post-mixer Recruit Reach
+// filter. Sourced from RECRUIT_BUDGETS so a future radius change in
+// constants.js propagates here without a code change in this file.
+const D2_RADIUS = RECRUIT_BUDGETS.D2;
+const D3_RADIUS = RECRUIT_BUDGETS.D3;
 
 /**
  * Local haversine (miles) — inlined to avoid a circular import with scoring.js.
@@ -143,20 +167,40 @@ export function applyG9SubordinateStep(scoringOutput, studentProfile, schoolsPoo
     return haversine(refLat, refLng, lat, lng);
   }
 
+  // Sprint 005 D2 fix — Recruit Reach radius predicate. Applied as the FINAL
+  // filter to both the named D2 cap and the D3 fill. Schools whose distance
+  // cannot be computed (missing lat/lng on either side) are excluded —
+  // mirrors the fail-closed behavior of the engine's primary gateDist
+  // (which assigns dist = 9999 in the same scenario).
+  function withinRadius(school, radiusMiles) {
+    const d = distTo(school);
+    return Number.isFinite(d) && d <= radiusMiles;
+  }
+
   // (a) Named D2 cap — filter pool to {Bentley, Mines}, then order by proximity.
   //     Resolve each to its enriched counterpart for the final list.
+  //     Sprint 005 D2 fix: also drop any that fall outside the D2 recruit reach
+  //     radius (600 mi). Bentley/Mines are typically far apart, so for a given
+  //     student often only one will qualify — that is intentional and matches
+  //     the existing G9 single-school cases (g/h).
   const cappedD2s = schoolsPool
     .filter(s => s && s.type === 'D2' && D2_CAP_NAMES.includes(s.school_name))
+    .filter(s => withinRadius(s, D2_RADIUS))
     .slice()
     .sort((a, b) => distTo(a) - distTo(b))
     .map(enrich);
 
   // (b) D3 fill — descending acadScore. Trigger1 already confirmed AF@D3 ≥ 0.50
-  //     at the student level, so all D3 schools in the pool qualify. Resolve
-  //     each to its enriched counterpart so acadScore / matchRank / netCost /
-  //     adltv / droi / breakEven / dist / isTestOpt are present on the result.
+  //     at the student level, so all D3 schools in the pool qualify on tier.
+  //     Sprint 005 D2 fix: re-apply the D3 Recruit Reach radius (450 mi) here
+  //     so the high-academic mixer cannot return D3 schools outside the
+  //     student's realistic reach. This is the bug the fix targets — pre-fix,
+  //     the mixer ignored radius and could surface cross-country D3s.
+  //     Resolve each to its enriched counterpart so acadScore / matchRank /
+  //     netCost / adltv / droi / breakEven / dist / isTestOpt are present.
   const d3Fill = schoolsPool
     .filter(s => s && s.type === 'D3')
+    .filter(s => withinRadius(s, D3_RADIUS))
     .map(enrich)
     .slice()
     .sort((a, b) => (b.acadScore ?? 0) - (a.acadScore ?? 0));

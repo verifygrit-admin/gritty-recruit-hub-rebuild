@@ -107,6 +107,8 @@ export default function ShortlistSlideOut({
   userLastName = '',
   contacts = { hs_head_coach_email: null, hs_guidance_counselor_email: null },
   files = [],
+  onToggleStep = null,
+  updatingStepId = null,
 }) {
   // ── ALL hooks MUST be declared unconditionally at the top, before ANY
   // early return. Sprint 004 Phase 1 F3 — previously the useMemo below was
@@ -333,6 +335,113 @@ export default function ShortlistSlideOut({
                   }}
                 />
               </div>
+
+              {/* Sprint 005 D6 — 15-step Recruiting Journey task list rendered
+                  under the progress bar. Read-only display of completion state
+                  from short_list_items.recruiting_journey_steps (existing JSONB
+                  column from migration 0009; no new tables / no schema change).
+                  Mobile slide-out scroll behavior is provided by the parent
+                  SlideOutShell panel (overflowY: auto). The list itself caps at
+                  a max-height of 320px and gets its own internal scroll on
+                  narrow viewports so the task list never crowds out the
+                  Pre-Read Documents section beneath it. */}
+              <ul
+                data-testid="sso-journey-tasklist"
+                aria-label="Recruiting journey tasks"
+                style={{
+                  listStyle: 'none',
+                  margin: '14px 0 0',
+                  padding: '8px 10px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                  maxHeight: isNarrow ? 280 : 360,
+                  overflowY: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                  border: '1px solid #E6D7C3',
+                  borderRadius: 4,
+                  backgroundColor: '#FAF5EE',
+                }}
+              >
+                {steps.map((step) => {
+                  const isComplete = Boolean(step && step.completed);
+                  const stepId = step && step.step_id != null ? step.step_id : '?';
+                  const label = (step && step.label) || `Step ${stepId}`;
+                  const isInteractive = typeof onToggleStep === 'function' && item && item.id != null;
+                  const isUpdating = updatingStepId != null && updatingStepId === stepId;
+                  const handleToggle = () => {
+                    if (!isInteractive || isUpdating) return;
+                    onToggleStep(item.id, stepId, !isComplete);
+                  };
+                  const handleKeyDown = (e) => {
+                    if (!isInteractive || isUpdating) return;
+                    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                      e.preventDefault();
+                      onToggleStep(item.id, stepId, !isComplete);
+                    }
+                  };
+                  return (
+                    <li
+                      key={stepId}
+                      data-testid={`sso-journey-step-${stepId}`}
+                      data-complete={isComplete ? 'true' : 'false'}
+                      role={isInteractive ? 'button' : undefined}
+                      tabIndex={isInteractive ? 0 : undefined}
+                      aria-checked={isComplete}
+                      aria-disabled={isUpdating ? true : undefined}
+                      onClick={isInteractive ? handleToggle : undefined}
+                      onKeyDown={isInteractive ? handleKeyDown : undefined}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '10px 8px',
+                        minHeight: 44,
+                        fontSize: '0.875rem',
+                        color: isComplete ? '#2C2C2C' : '#5C5C5C',
+                        cursor: isInteractive ? (isUpdating ? 'not-allowed' : 'pointer') : 'default',
+                        opacity: isUpdating ? 0.6 : 1,
+                        pointerEvents: isUpdating ? 'none' : 'auto',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        data-testid={`sso-journey-step-icon-${stepId}`}
+                        style={{
+                          flex: '0 0 auto',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 20,
+                          height: 20,
+                          borderRadius: 4,
+                          fontSize: '0.875rem',
+                          fontWeight: 700,
+                          backgroundColor: isComplete ? '#8B3A3A' : '#FFFFFF',
+                          color: isComplete ? '#FFFFFF' : 'transparent',
+                          border: isComplete ? '2px solid #8B3A3A' : '2px solid #B89B7A',
+                          boxSizing: 'border-box',
+                          lineHeight: 1,
+                          transition: 'background-color 150ms, border-color 150ms',
+                        }}
+                      >
+                        {isComplete ? '✓' : ''}
+                      </span>
+                      <span
+                        data-testid={`sso-journey-step-label-${stepId}`}
+                        style={{
+                          flex: '1 1 auto',
+                          textDecoration: isComplete ? 'line-through' : 'none',
+                          textDecorationColor: '#9A9A9A',
+                        }}
+                      >
+                        {label}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
         </div>

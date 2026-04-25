@@ -163,13 +163,19 @@ export default function GritFitMapView({
       : '';
 
     // Sprint 004 Phase 1 F2 — ADDITIVE: GRIT FIT StatusPill in popup header.
+    // Sprint 005 D3a — render the FULL set of applicable Fit Category badges
+    // (priority-ordered by computeGritFitStatuses), not just the top label.
+    // Each pill is concatenated into a single inline-flex container so the
+    // existing data-testid="popup-status-slot" still resolves and the popup
+    // wraps cleanly when 3+ badges apply.
     // computeGritFitStatuses requires schoolRigor + athleteAcad; schools not in
     // the scored pool fall back to empty labels (no pill). A-2 compliant.
     let statusPillHtml = '';
     try {
       const labels = computeGritFitStatuses(school, topTier ?? null, recruitReach ?? null);
-      const primary = labels.length > 0 ? labels[0] : null;
-      statusPillHtml = buildStatusPillHtml(primary);
+      if (labels.length > 0) {
+        statusPillHtml = labels.map(buildStatusPillHtml).filter(Boolean).join(' ');
+      }
     } catch (_e) {
       statusPillHtml = '';
     }

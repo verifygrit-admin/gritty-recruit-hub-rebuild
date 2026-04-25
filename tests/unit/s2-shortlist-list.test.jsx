@@ -158,7 +158,7 @@ function Harness({ items = FIXTURES, onRowClick = () => {}, initialSort = 'name_
             key={item.id}
             item={item}
             rank={idx + 1}
-            totalFiltered={sortedItems.length}
+            index={idx}
             onClick={onRowClick}
           />
         ))}
@@ -183,22 +183,21 @@ describe('S2 — Shortlist list layout (row-based)', () => {
 
   it('(b) row renders school name, div+conference subline, status pill, rank indicator', () => {
     const { getByTestId } = render(
-      <ShortlistRow item={FIXTURES[0]} rank={1} totalFiltered={5} onClick={() => {}} />
+      <ShortlistRow item={FIXTURES[0]} rank={1} index={0} onClick={() => {}} />
     );
     expect(getByTestId('row-school-name').textContent).toBe('Aurora State');
     expect(getByTestId('row-subline').textContent).toBe('D2 • MIAA');
     // status pill rendered for currently_recommended
     expect(getByTestId('status-pill').getAttribute('data-status')).toBe('currently_recommended');
-    // rank indicator
-    expect(getByTestId('row-rank-text').textContent).toBe('1/5');
+    // Sprint 005 D5 — rank body is unlabeled; just the 1-indexed number.
+    expect(getByTestId('row-rank-text').textContent).toBe('1');
   });
 
-  it('(c) rank indicator uses N/total format — e.g. 3/5 for the 3rd row of 5', () => {
+  it('(c) rank shows 1-indexed numbers across N rows (no /total suffix in body — D5)', () => {
     const { container } = render(<Harness />);
     const rankTexts = Array.from(container.querySelectorAll('[data-testid="row-rank-text"]'))
       .map(el => el.textContent);
-    expect(rankTexts).toEqual(['1/5', '2/5', '3/5', '4/5', '5/5']);
-    expect(rankTexts).toContain('3/5');
+    expect(rankTexts).toEqual(['1', '2', '3', '4', '5']);
   });
 
   it('(d) filtering by Status narrows the list AND re-numbers the rank', () => {
@@ -210,21 +209,19 @@ describe('S2 — Shortlist list layout (row-based)', () => {
     expect(rows.length).toBe(1);
     const rankTexts = Array.from(container.querySelectorAll('[data-testid="row-rank-text"]'))
       .map(el => el.textContent);
-    expect(rankTexts).toEqual(['1/1']); // re-numbered against filtered total
+    expect(rankTexts).toEqual(['1']); // re-numbered against filtered list
   });
 
-  // Sprint 004 Phase 1 F5 — explicit regression guard that rank updates when
-  // the filter narrows 5 -> 2 rows (multi-row, not just 1). The bug was that
-  // rank was stuck at N/5 after a filter narrowed to 2 rows, producing "3/5"
-  // displays for the second row. Correct behavior: rank re-numbers against
-  // the filtered+sorted array so the second row shows "2/2".
-  it('(d2) F5 regression: multi-row filter transition re-numbers rank (5 -> 2 shows 1/2, 2/2)', () => {
+  // Sprint 004 Phase 1 F5 — multi-row filter transition re-numbers rank.
+  // Sprint 005 D5 — rank body is now plain "1, 2, 3..." instead of "1/5,
+  // 2/5..."; the regression guarantee is preserved (no stale rank).
+  it('(d2) F5 regression: multi-row filter transition re-numbers rank (5 -> 2 shows 1, 2)', () => {
     const { container, getByTestId } = render(<Harness />);
-    // Baseline: 5 rows with ranks 1/5..5/5
+    // Baseline: 5 rows with ranks 1..5
     const baselineRanks = Array.from(
       container.querySelectorAll('[data-testid="row-rank-text"]')
     ).map(el => el.textContent);
-    expect(baselineRanks).toEqual(['1/5', '2/5', '3/5', '4/5', '5/5']);
+    expect(baselineRanks).toEqual(['1', '2', '3', '4', '5']);
 
     // Filter by Division=D2 — 2 matching rows (Aurora State + Evergreen Poly)
     fireEvent.change(getByTestId('filter-division'), { target: { value: 'D2' } });
@@ -232,10 +229,7 @@ describe('S2 — Shortlist list layout (row-based)', () => {
       container.querySelectorAll('[data-testid="row-rank-text"]')
     ).map(el => el.textContent);
     expect(rankTexts).toHaveLength(2);
-    expect(rankTexts).toEqual(['1/2', '2/2']);
-    // The "3/5" stale-rank artifact must NOT appear anywhere.
-    expect(rankTexts).not.toContain('3/5');
-    expect(rankTexts).not.toContain('1/5');
+    expect(rankTexts).toEqual(['1', '2']);
   });
 
   it('(e) filtering by Division narrows', () => {
@@ -255,21 +249,10 @@ describe('S2 — Shortlist list layout (row-based)', () => {
     expect(rows.length).toBe(1);
     const rankTexts = Array.from(container.querySelectorAll('[data-testid="row-rank-text"]'))
       .map(el => el.textContent);
-    expect(rankTexts).toEqual(['1/1']);
+    expect(rankTexts).toEqual(['1']);
   });
 
   describe('(g) sorting — first row differs from baseline per sort key', () => {
-    // Baseline is name_asc — first row is Aurora State.
-    const BASELINE_FIRST = 'Aurora State';
-
-    it('name_desc: first row is not Aurora State (Z->A order)', () => {
-      const { container, getByTestId } = render(<Harness />);
-      fireEvent.change(getByTestId('sort-by'), { target: { value: 'name_desc' } });
-      const first = getRowOrder(container)[0];
-      expect(first).not.toBe(BASELINE_FIRST);
-      expect(first).toBe('Evergreen Poly'); // lexical tail
-    });
-
     it('added_newest: first row is the most recently added (Delphi Tech, 2026-03-03)', () => {
       const { container, getByTestId } = render(<Harness />);
       fireEvent.change(getByTestId('sort-by'), { target: { value: 'added_newest' } });

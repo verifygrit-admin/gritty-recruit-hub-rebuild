@@ -86,7 +86,8 @@ describe('F2 map popup status pill — derivePopupStatusKey', () => {
   });
 
   it('no-applicable-labels school yields null (A-2: no pill)', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Sprint 005 P2.5: diagnostic emit demoted from warn to debug.
+    const warnSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     const school = {
       unitid: 3,
       type: 'FCS',
@@ -116,7 +117,8 @@ describe('F2 map popup status pill — derivePopupStatusKey', () => {
   });
 
   it('unknown/broken school returns null rather than throwing', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Sprint 005 P2.5: diagnostic emit demoted from warn to debug.
+    const warnSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     const result = derivePopupStatusKey(undefined, null, null);
     // Either returns null or throws — must return null per contract.
     expect(result).toBeNull();

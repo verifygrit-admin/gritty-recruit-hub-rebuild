@@ -87,7 +87,11 @@ import { describe, it, expect } from 'vitest';
 import { applyG9SubordinateStep } from '../../src/lib/scoring/g9SubordinateStep.js';
 
 // ---------------------------------------------------------------------------
-// Real-world lat/lng for the two named D2 schools
+// Real-world lat/lng for the two named D2 schools (used in radius-filter
+// regression assertions added in Sprint 005 D2). For ordering tests in cases
+// (a) and (b), we use synthetic coordinates that place BOTH Bentley and Mines
+// within the student's recruit reach, so the existing ordering-by-proximity
+// semantics can be exercised without colliding with the new radius filter.
 // ---------------------------------------------------------------------------
 const BENTLEY_LAT = 42.388;
 const BENTLEY_LNG = -71.217; // Waltham, MA
@@ -221,14 +225,24 @@ describe('applyG9SubordinateStep — Sprint 004 G9 (Wave 0 failing-test scaffold
   // --- (a) All triggers met; Bentley closer than Mines -----------------------
   //
   it('a) all triggers met + Bentley closer → Bentley first, Mines second, D3 fill', () => {
+    // Sprint 005 D2 — Recruit Reach is now applied as a final filter to the
+    // mixed D2/D3 pool. To test ORDERING semantics independently of the new
+    // radius filter, both D2 cap schools are placed within reach of the
+    // student here (synthetic coordinates near the student), and Bentley is
+    // placed strictly closer.
     const profile = makeProfile({ lat: EAST_COAST_LAT, lng: EAST_COAST_LNG });
     const d3Pool = makeD3Pool(40);
-    const pool = [makeBentley(), makeMines(), ...makeGenericD2s(30), ...d3Pool];
+    const pool = [
+      makeBentley({ latitude: EAST_COAST_LAT + 0.10, longitude: EAST_COAST_LNG }), // ~7 mi
+      makeMines({ latitude: EAST_COAST_LAT + 1.50, longitude: EAST_COAST_LNG }),    // ~104 mi
+      ...makeGenericD2s(30),
+      ...d3Pool,
+    ];
     const scoringOutput = makeScoringOutput({
       athFit: { D2: 0.60, D3: 0.70 },
       acadRigorScore: 0.90,
       scored: pool,
-      top30: [makeBentley(), makeMines(), ...d3Pool.slice(0, 28)],
+      top30: [pool[0], pool[1], ...d3Pool.slice(0, 28)],
     });
 
     const result = applyG9SubordinateStep(scoringOutput, profile, pool);
@@ -246,14 +260,27 @@ describe('applyG9SubordinateStep — Sprint 004 G9 (Wave 0 failing-test scaffold
   // --- (b) All triggers met; Mines closer than Bentley -----------------------
   //
   it('b) all triggers met + Mines closer → Mines first, Bentley second, D3 fill', () => {
+    // Sprint 005 D2 — same fixture pattern as (a): both D2 cap schools placed
+    // within reach of the student so ordering is tested independent of the
+    // new radius filter.
     const profile = makeProfile({ lat: DENVER_LAT, lng: DENVER_LNG });
-    const d3Pool = makeD3Pool(40);
-    const pool = [makeBentley(), makeMines(), ...makeGenericD2s(30), ...d3Pool];
+    const d3Pool = makeD3Pool(40, 300000)
+      .map((s, i) => ({
+        ...s,
+        latitude: DENVER_LAT + 0.05 + i * 0.01,
+        longitude: DENVER_LNG + 0.05 + i * 0.01,
+      }));
+    const pool = [
+      makeBentley({ latitude: DENVER_LAT + 1.50, longitude: DENVER_LNG }), // ~104 mi
+      makeMines({ latitude: DENVER_LAT + 0.10, longitude: DENVER_LNG }),   // ~7 mi
+      ...makeGenericD2s(30),
+      ...d3Pool,
+    ];
     const scoringOutput = makeScoringOutput({
       athFit: { D2: 0.60, D3: 0.70 },
       acadRigorScore: 0.90,
       scored: pool,
-      top30: [makeMines(), makeBentley(), ...d3Pool.slice(0, 28)],
+      top30: [pool[1], pool[0], ...d3Pool.slice(0, 28)],
     });
 
     const result = applyG9SubordinateStep(scoringOutput, profile, pool);
@@ -374,8 +401,16 @@ describe('applyG9SubordinateStep — Sprint 004 G9 (Wave 0 failing-test scaffold
   // --- (h) All triggers met, but only Mines available for this student ------
   //
   it('h) all triggers met; only Mines qualifies → Mines returns, D3 fill expands', () => {
+    // Sprint 005 D2 — D3 fill must be within radius of the student. Mines
+    // (real lat/lng) is ~22 mi from Denver, well inside D2 reach. The D3
+    // pool is generated near Denver so the fill is non-empty post-radius.
     const profile = makeProfile({ lat: DENVER_LAT, lng: DENVER_LNG });
-    const d3Pool = makeD3Pool(40);
+    const d3Pool = makeD3Pool(40, 300000)
+      .map((s, i) => ({
+        ...s,
+        latitude: DENVER_LAT + 0.05 + i * 0.01,
+        longitude: DENVER_LNG + 0.05 + i * 0.01,
+      }));
     // Pool contains Mines but NOT Bentley, plus enough generic D2s to satisfy trigger 3.
     const pool = [makeMines(), ...makeGenericD2s(30), ...d3Pool];
     const scoringOutput = makeScoringOutput({
@@ -392,5 +427,174 @@ describe('applyG9SubordinateStep — Sprint 004 G9 (Wave 0 failing-test scaffold
     expect(d2s[0].school_name).toBe('Colorado School of Mines');
     const d3s = result.top30.filter(s => s.type === 'D3');
     expect(d3s[0].school_name).toBe('D3 School 0');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Sprint 005 D2 — Recruit Reach radius applied AFTER the academic mixer
+  // ---------------------------------------------------------------------------
+  // The high-academic D2/D3 mixer (G9) used to skip the radius check. After
+  // the Sprint 005 fix, both halves of the mix (the named D2 cap and the D3
+  // fill) must drop schools outside the per-tier RECRUIT_BUDGETS radius.
+  // The four assertions below pin that contract.
+  // ---------------------------------------------------------------------------
+
+  describe('Sprint 005 D2 — Recruit Reach radius post-mixer', () => {
+    it('i) drops D3 schools outside the D3 radius (450 mi) after the mixer fires', () => {
+      const profile = makeProfile({ lat: EAST_COAST_LAT, lng: EAST_COAST_LNG });
+      // 5 nearby D3s (within radius), 5 far D3s (Pacific coast, > 2000 mi).
+      const nearD3s = makeD3Pool(5, 300000).map((s, i) => ({
+        ...s,
+        latitude: EAST_COAST_LAT + i * 0.05,
+        longitude: EAST_COAST_LNG + i * 0.05,
+      }));
+      const farD3s = makeD3Pool(5, 310000).map((s, i) => ({
+        ...s,
+        latitude: 47.6 + i * 0.05,   // Seattle-ish
+        longitude: -122.3 + i * 0.05,
+        // Boost acadScore so absent the radius filter, these would rank first.
+        acadScore: 0.99 - i * 0.001,
+        schoolRigor: 0.99 - i * 0.001,
+      }));
+      const pool = [
+        makeBentley({ latitude: EAST_COAST_LAT + 0.10, longitude: EAST_COAST_LNG }),
+        makeMines({ latitude: EAST_COAST_LAT + 1.50, longitude: EAST_COAST_LNG }),
+        ...makeGenericD2s(30),
+        ...nearD3s,
+        ...farD3s,
+      ];
+      const scoringOutput = makeScoringOutput({
+        athFit: { D2: 0.60, D3: 0.70 },
+        acadRigorScore: 0.90,
+        scored: pool,
+        top30: [],
+      });
+
+      const result = applyG9SubordinateStep(scoringOutput, profile, pool);
+      const d3s = result.top30.filter(s => s.type === 'D3');
+      // Every D3 returned must be a near (in-radius) one — none of the
+      // higher-acadScore Pacific-coast D3s should leak through despite
+      // ranking better academically.
+      const nearIds = new Set(nearD3s.map(s => s.unitid));
+      d3s.forEach(s => expect(nearIds.has(s.unitid)).toBe(true));
+    });
+
+    it('j) drops the Bentley/Mines D2 cap entry that is outside D2 radius (600 mi)', () => {
+      // Real-coord positions: student in Boston, Mines in Golden CO -> ~1700 mi
+      // -> Mines must be filtered out by the new D2-radius check. Bentley
+      // remains and is the only D2 in the result.
+      const profile = makeProfile({ lat: EAST_COAST_LAT, lng: EAST_COAST_LNG });
+      const nearD3s = makeD3Pool(20, 300000).map((s, i) => ({
+        ...s,
+        latitude: EAST_COAST_LAT + i * 0.05,
+        longitude: EAST_COAST_LNG + i * 0.05,
+      }));
+      const pool = [
+        makeBentley(),                     // real coords: ~3 mi from student -> in radius
+        makeMines(),                       // real coords: ~1700 mi from student -> out of radius
+        ...makeGenericD2s(30),
+        ...nearD3s,
+      ];
+      const scoringOutput = makeScoringOutput({
+        athFit: { D2: 0.60, D3: 0.70 },
+        acadRigorScore: 0.90,
+        scored: pool,
+        top30: [],
+      });
+
+      const result = applyG9SubordinateStep(scoringOutput, profile, pool);
+      const d2s = result.top30.filter(s => s.type === 'D2');
+      expect(d2s).toHaveLength(1);
+      expect(d2s[0].school_name).toBe('Bentley University');
+    });
+
+    it('k) every returned school passes the per-tier Recruit Reach radius', () => {
+      // Mixed pool: in- and out-of-radius schools at every tier we touch.
+      const profile = makeProfile({ lat: EAST_COAST_LAT, lng: EAST_COAST_LNG });
+      const inRadiusD3s = makeD3Pool(10, 300000).map((s, i) => ({
+        ...s,
+        latitude: EAST_COAST_LAT + i * 0.05,
+        longitude: EAST_COAST_LNG + i * 0.05,
+      }));
+      const outOfRadiusD3s = makeD3Pool(10, 310000).map((s, i) => ({
+        ...s,
+        latitude: 47.6 + i * 0.05,
+        longitude: -122.3 + i * 0.05,
+      }));
+      const pool = [
+        makeBentley(),
+        makeMines(),                                         // out of D2 radius for east-coast student
+        ...makeGenericD2s(30),
+        ...inRadiusD3s,
+        ...outOfRadiusD3s,
+      ];
+      const scoringOutput = makeScoringOutput({
+        athFit: { D2: 0.60, D3: 0.70 },
+        acadRigorScore: 0.90,
+        scored: pool,
+        top30: [],
+      });
+
+      const result = applyG9SubordinateStep(scoringOutput, profile, pool);
+      // Every returned school's haversine distance must be <= the per-tier
+      // RECRUIT_BUDGETS radius.
+      const R = 3959;
+      function hav(lat1, lng1, lat2, lng2) {
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 +
+          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+          Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.asin(Math.sqrt(a));
+      }
+      const radiusByTier = { D2: 600, D3: 450 };
+      result.top30.forEach(s => {
+        const d = hav(EAST_COAST_LAT, EAST_COAST_LNG, +s.latitude, +s.longitude);
+        const r = radiusByTier[s.type];
+        expect(d).toBeLessThanOrEqual(r);
+      });
+    });
+
+    it('l) radius is applied AFTER the mixer (academic ordering preserved within in-radius D3s)', () => {
+      // High-academic-but-far D3s should be dropped; mid-academic in-radius
+      // D3s should fill the slots in DESCENDING acadScore order. Asserts
+      // the radius filter is the LAST filter, not interleaved with sort.
+      const profile = makeProfile({ lat: EAST_COAST_LAT, lng: EAST_COAST_LNG });
+      const inRadiusMid = [
+        { unitid: 400001, school_name: 'Near-Mid A', type: 'D3',
+          latitude: EAST_COAST_LAT + 0.10, longitude: EAST_COAST_LNG,
+          acadScore: 0.70, schoolRigor: 0.70, eligible: true },
+        { unitid: 400002, school_name: 'Near-Mid B', type: 'D3',
+          latitude: EAST_COAST_LAT + 0.20, longitude: EAST_COAST_LNG,
+          acadScore: 0.85, schoolRigor: 0.85, eligible: true },
+        { unitid: 400003, school_name: 'Near-Mid C', type: 'D3',
+          latitude: EAST_COAST_LAT + 0.30, longitude: EAST_COAST_LNG,
+          acadScore: 0.60, schoolRigor: 0.60, eligible: true },
+      ];
+      const farHigh = [
+        { unitid: 400101, school_name: 'Far-High A', type: 'D3',
+          latitude: 47.6, longitude: -122.3,
+          acadScore: 0.99, schoolRigor: 0.99, eligible: true },
+      ];
+      const pool = [
+        makeBentley({ latitude: EAST_COAST_LAT + 0.10, longitude: EAST_COAST_LNG }),
+        ...makeGenericD2s(30),
+        ...inRadiusMid,
+        ...farHigh,
+      ];
+      const scoringOutput = makeScoringOutput({
+        athFit: { D2: 0.60, D3: 0.70 },
+        acadRigorScore: 0.90,
+        scored: pool,
+        top30: [],
+      });
+
+      const result = applyG9SubordinateStep(scoringOutput, profile, pool);
+      const d3s = result.top30.filter(s => s.type === 'D3');
+      // Far-High A must be dropped despite being top-acadScore.
+      expect(d3s.find(s => s.school_name === 'Far-High A')).toBeUndefined();
+      // The three near-mid D3s appear in descending acadScore.
+      const order = d3s.slice(0, 3).map(s => s.school_name);
+      expect(order).toEqual(['Near-Mid B', 'Near-Mid A', 'Near-Mid C']);
+    });
   });
 });

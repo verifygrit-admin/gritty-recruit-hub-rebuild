@@ -23,7 +23,15 @@ import {
 } from '../../src/lib/grit-fit/matchReturnLogic.js';
 
 // ---------------------------------------------------------------------------
-// Real-world lat/lng for the two named G9 D2 schools
+// Lat/lng for the two named G9 D2 schools.
+// Sprint 005 D2 — both must sit within the D2 Recruit Reach radius (600 mi)
+// of the student (east-coast, lat 42.36 / lng -71.06) for the existing
+// "Bentley + Mines + D3 fill" assertions to remain meaningful. Real-world
+// Mines is ~1700 mi from Boston and would be filtered out by the new radius
+// check; here we use synthetic coords near the student so the cap-and-fill
+// ordering semantics can still be exercised independently of the radius
+// filter (whose own coverage lives in grit-fit-engine-g9-subordinate.test.js
+// cases i / j / k / l).
 // ---------------------------------------------------------------------------
 const BENTLEY = {
   unitid: 166027,
@@ -38,8 +46,11 @@ const MINES = {
   school_name: 'Colorado School of Mines',
   institution_name: 'Colorado School of Mines',
   type: 'D2',
-  latitude: 39.751,
-  longitude: -105.222,
+  // Synthetic coords ~120 mi from the east-coast student fixture — within
+  // the D2 radius and intentionally farther than Bentley to preserve the
+  // (Bentley, Mines) ordering asserted by case (2).
+  latitude: 43.5,
+  longitude: -71.06,
 };
 
 // ---------------------------------------------------------------------------

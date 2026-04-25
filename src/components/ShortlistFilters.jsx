@@ -33,13 +33,14 @@ const DIVISION_OPTIONS = [
   { value: 'D3', label: 'D3' },
 ];
 
+// Sprint 005 D5 \u2014 six sort modes per the dynamic ranking column spec.
+// Tie-break across ALL six modes is a stable secondary sort by name ASC
+// (operator decision; including Date Added \u2014 do NOT tie-break by timestamp
+// precision). See ShortlistPage.jsx sortedItems memo.
 const SORT_OPTIONS = [
   { value: 'name_asc', label: 'Name (A\u2013Z)' },
-  { value: 'name_desc', label: 'Name (Z\u2013A)' },
-  { value: 'added_newest', label: 'Added (newest first)' },
-  { value: 'added_oldest', label: 'Added (oldest first)' },
+  { value: 'added_newest', label: 'Date Added (newest first)' },
   { value: 'dist_asc', label: 'Distance (closest)' },
-  { value: 'dist_desc', label: 'Distance (farthest)' },
   { value: 'droi_desc', label: 'Degree ROI (highest)' },
   { value: 'net_cost_asc', label: 'Annual Net Cost (lowest)' },
   { value: 'payback_asc', label: 'Fastest Payback' },

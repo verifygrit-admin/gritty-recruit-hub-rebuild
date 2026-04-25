@@ -25,7 +25,7 @@
 
 import React from 'react';
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { render, fireEvent, cleanup } from '@testing-library/react';
+import { render, fireEvent, cleanup, act } from '@testing-library/react';
 
 // Mutable hook mock — reset per test.
 let mockIsDesktop = false;
@@ -114,27 +114,38 @@ describe('G7b — mobile row tap opens SchoolDetailsCard in SlideOutShell', () =
 
   it('(d) close button, backdrop, and Escape all close the slide-out', () => {
     mockIsDesktop = false;
-    const { getByTestId, queryByTestId } = renderView();
+    // Sprint 005 D7 — close path now keeps the panel mounted for the 240ms
+    // exit animation. Use fake timers to advance past the unmount delay so
+    // the existing close-contract assertions still hold.
+    vi.useFakeTimers();
+    try {
+      const { getByTestId, queryByTestId } = renderView();
 
-    // Open via tap.
-    fireEvent.click(getByTestId('result-card-1'));
-    expect(queryByTestId('slide-out-shell-panel')).toBeTruthy();
+      // Open via tap.
+      fireEvent.click(getByTestId('result-card-1'));
+      expect(queryByTestId('slide-out-shell-panel')).toBeTruthy();
 
-    // Close button.
-    fireEvent.click(getByTestId('slide-out-shell-close'));
-    expect(queryByTestId('slide-out-shell-panel')).toBeNull();
+      // Close button.
+      fireEvent.click(getByTestId('slide-out-shell-close'));
+      act(() => { vi.advanceTimersByTime(260); }); // > 240ms exit animation
+      expect(queryByTestId('slide-out-shell-panel')).toBeNull();
 
-    // Open again, close via backdrop.
-    fireEvent.click(getByTestId('result-card-1'));
-    expect(queryByTestId('slide-out-shell-panel')).toBeTruthy();
-    fireEvent.click(getByTestId('slide-out-shell-backdrop'));
-    expect(queryByTestId('slide-out-shell-panel')).toBeNull();
+      // Open again, close via backdrop.
+      fireEvent.click(getByTestId('result-card-1'));
+      expect(queryByTestId('slide-out-shell-panel')).toBeTruthy();
+      fireEvent.click(getByTestId('slide-out-shell-backdrop'));
+      act(() => { vi.advanceTimersByTime(260); });
+      expect(queryByTestId('slide-out-shell-panel')).toBeNull();
 
-    // Open again, close via Escape.
-    fireEvent.click(getByTestId('result-card-1'));
-    expect(queryByTestId('slide-out-shell-panel')).toBeTruthy();
-    fireEvent.keyDown(window, { key: 'Escape' });
-    expect(queryByTestId('slide-out-shell-panel')).toBeNull();
+      // Open again, close via Escape.
+      fireEvent.click(getByTestId('result-card-1'));
+      expect(queryByTestId('slide-out-shell-panel')).toBeTruthy();
+      fireEvent.keyDown(window, { key: 'Escape' });
+      act(() => { vi.advanceTimersByTime(260); });
+      expect(queryByTestId('slide-out-shell-panel')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('(e) status pill renders inside SC-4 when school yields a valid status', () => {
@@ -180,30 +191,37 @@ describe('G7b — mobile row tap opens SchoolDetailsCard in SlideOutShell', () =
 
   it('(h) after open+close, sort controls remain functional', () => {
     mockIsDesktop = false;
-    const { container, getByTestId, queryByTestId } = renderView();
+    // Sprint 005 D7 — fake timers cover the 240ms exit animation.
+    vi.useFakeTimers();
+    try {
+      const { container, getByTestId, queryByTestId } = renderView();
 
-    // Default rank order: 1, 2, 3, 4.
-    const initialOrder = Array.from(
-      container.querySelectorAll('[data-testid^="result-card-"]')
-    ).map(el => el.getAttribute('data-testid'));
-    expect(initialOrder).toEqual([
-      'result-card-1', 'result-card-2', 'result-card-3', 'result-card-4',
-    ]);
+      // Default rank order: 1, 2, 3, 4.
+      const initialOrder = Array.from(
+        container.querySelectorAll('[data-testid^="result-card-"]')
+      ).map(el => el.getAttribute('data-testid'));
+      expect(initialOrder).toEqual([
+        'result-card-1', 'result-card-2', 'result-card-3', 'result-card-4',
+      ]);
 
-    // Open slide-out, then close it.
-    fireEvent.click(getByTestId('result-card-1'));
-    expect(queryByTestId('slide-out-shell-panel')).toBeTruthy();
-    fireEvent.click(getByTestId('slide-out-shell-close'));
-    expect(queryByTestId('slide-out-shell-panel')).toBeNull();
+      // Open slide-out, then close it.
+      fireEvent.click(getByTestId('result-card-1'));
+      expect(queryByTestId('slide-out-shell-panel')).toBeTruthy();
+      fireEvent.click(getByTestId('slide-out-shell-close'));
+      act(() => { vi.advanceTimersByTime(260); });
+      expect(queryByTestId('slide-out-shell-panel')).toBeNull();
 
-    // Distance ascending — Charlie (45), Alpha (120), Delta (220), Bravo (300).
-    // matchRanks: 2, 3, 4, 1
-    fireEvent.click(getByTestId('mobile-sort-distance'));
-    const postSortOrder = Array.from(
-      container.querySelectorAll('[data-testid^="result-card-"]')
-    ).map(el => el.getAttribute('data-testid'));
-    expect(postSortOrder).toEqual([
-      'result-card-2', 'result-card-3', 'result-card-4', 'result-card-1',
-    ]);
+      // Distance ascending — Charlie (45), Alpha (120), Delta (220), Bravo (300).
+      // matchRanks: 2, 3, 4, 1
+      fireEvent.click(getByTestId('mobile-sort-distance'));
+      const postSortOrder = Array.from(
+        container.querySelectorAll('[data-testid^="result-card-"]')
+      ).map(el => el.getAttribute('data-testid'));
+      expect(postSortOrder).toEqual([
+        'result-card-2', 'result-card-3', 'result-card-4', 'result-card-1',
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

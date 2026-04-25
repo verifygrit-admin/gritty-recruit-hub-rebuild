@@ -22,10 +22,18 @@
  *               label used in both legend and pin color), city, state, dist,
  *               school_type (Adm. Selectivity label), adltv, adltv_rank,
  *               admissions_rate, graduation_rate, matchRank.
- *   statusKey:  string | null (optional) — one of the six STATUS_LABELS keys.
- *               When provided, renders <StatusPill status={statusKey} />.
+ *   statusKey:  string | null (optional, LEGACY) — one of the six
+ *               STATUS_LABELS keys. Sprint 005 D3a deprecated this single-
+ *               value prop in favor of `statusKeys` (array). Still accepted
+ *               for backward compatibility with the SC-4 test scaffold —
+ *               when supplied, it is treated as a single-element list.
  *               When null / undefined / unknown / 'not_evaluated', renders
  *               nothing (StatusPill enforces this internally per A-2).
+ *   statusKeys: string[] | null (optional, Sprint 005 D3a) — the full list
+ *               of STATUS_LABELS keys that apply to this school, as
+ *               produced by computeGritFitStatuses(). All applicable badges
+ *               are rendered in priority order. Empty / null / undefined =>
+ *               no pills. Takes precedence over the legacy `statusKey`.
  *   onClose:    () => void (optional) — when rendered INSIDE SC-3
  *               <SlideOutShell>, the shell owns close; leave this unset. When
  *               rendered outside a shell, pass a handler and a close affordance
@@ -91,8 +99,19 @@ const valueStyle = {
   color: '#2C2C2C',
 };
 
-export default function SchoolDetailsCard({ school, statusKey, onClose }) {
+export default function SchoolDetailsCard({ school, statusKey, statusKeys, onClose }) {
   if (!school) return null;
+
+  // Sprint 005 D3a — coalesce the new `statusKeys` array prop with the legacy
+  // single `statusKey` prop. `statusKeys` wins when supplied. Empty / missing
+  // arrays produce no pills (matches the pre-D3a "null statusKey -> no pill"
+  // semantics one-for-one for callers that still pass `statusKey`).
+  let resolvedStatusKeys = [];
+  if (Array.isArray(statusKeys)) {
+    resolvedStatusKeys = statusKeys.filter(k => typeof k === 'string' && k.length > 0);
+  } else if (typeof statusKey === 'string' && statusKey.length > 0) {
+    resolvedStatusKeys = [statusKey];
+  }
 
   const name = school.school_name || 'Unknown';
   const division = school.type || null;
@@ -144,12 +163,32 @@ export default function SchoolDetailsCard({ school, statusKey, onClose }) {
         </p>
       )}
 
-      {/* Status pill. StatusPill renders null internally for null / unknown /
-          'not_evaluated' (A-2). No conditional needed here, but we gate the
-          wrapper <div> so we don't emit an empty flex row. */}
-      {statusKey && (
-        <div data-testid="sdc-status-slot" style={{ marginTop: 10 }}>
-          <StatusPill status={statusKey} />
+      {/* Sprint 005 D3a — Multi-badge Fit Category display.
+          Renders ALL applicable Fit Category badges, not just the highest-
+          priority one. StatusPill still renders null internally for any
+          unknown / retired key (A-2), so it is safe to map directly.
+          Layout: flex-wrap so up to all six badges can stack onto two rows
+          on mobile without overflow. The slot wrapper is gated on whether
+          ANY status was supplied so we keep the legacy "no slot when empty"
+          geometry guard intact. */}
+      {resolvedStatusKeys.length > 0 && (
+        <div
+          data-testid="sdc-status-slot"
+          style={{
+            marginTop: 10,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 6,
+            // Allocate vertical room for up to two rows of pills on the
+            // narrowest mobile breakpoint (~360px) — six pills can fit on
+            // two rows without overflow given each pill's intrinsic width
+            // (rendered as nowrap inside StatusPill).
+            maxWidth: '100%',
+          }}
+        >
+          {resolvedStatusKeys.map((key) => (
+            <StatusPill key={key} status={key} />
+          ))}
         </div>
       )}
 

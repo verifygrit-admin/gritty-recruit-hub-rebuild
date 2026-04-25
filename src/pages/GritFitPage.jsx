@@ -293,7 +293,7 @@ export function GritFitMapFilters({
         </span>
         {STATUS_ORDER.map(key => {
           const cfg = STATUS_LABELS[key];
-          const selected = selectedStatuses.includes(key);
+          const selected = selectedStatuses.includes(key);  // user-controlled only
           return (
             <button
               key={key}
