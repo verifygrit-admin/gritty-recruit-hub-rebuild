@@ -263,7 +263,7 @@ export default function ShortlistPage() {
         // R4 templates need for token resolution.
         const { data: profileRow } = await supabase
           .from('profiles')
-          .select('name, grad_year, position, high_school')
+          .select('name, grad_year, position, high_school, height, weight, speed_40, expected_starter, captain, all_conference, all_state')
           .eq('user_id', session.user.id)
           .maybeSingle();
         if (!cancelled && profileRow) {
@@ -275,10 +275,17 @@ export default function ShortlistPage() {
             });
           }
           setStudentProfile({
-            name:        profileRow.name,
-            grad_year:   profileRow.grad_year,
-            position:    profileRow.position,
-            high_school: profileRow.high_school,
+            name:             profileRow.name,
+            grad_year:        profileRow.grad_year,
+            position:         profileRow.position,
+            high_school:      profileRow.high_school,
+            height:           profileRow.height,
+            weight:           profileRow.weight,
+            speed_40:         profileRow.speed_40,
+            expected_starter: profileRow.expected_starter,
+            captain:          profileRow.captain,
+            all_conference:   profileRow.all_conference,
+            all_state:        profileRow.all_state,
           });
         }
 
