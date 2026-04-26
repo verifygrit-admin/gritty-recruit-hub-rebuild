@@ -940,6 +940,7 @@ export default function ShortlistPage() {
       <RecruitingScoreboard
         items={items}
         studentProfile={studentProfile}
+        onSchoolClick={(item) => setActiveShortlistItem(item)}
       />
 
       {/* Pre-Read Docs Library */}

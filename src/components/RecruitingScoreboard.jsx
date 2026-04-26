@@ -164,8 +164,15 @@ export function extractScoreboardBooleans(item) {
 const C = {
   burgundyDeep: '#5C1620',
   burgundy:     '#7B1F2C',
-  burgundyMid:  '#8B2A37',
-  burgundySoft: '#A14A56',
+  // Quality bar — deeper, more saturated dark red. Sprint 007 hotfix CHG-4:
+  // raised contrast against the lighter Ath Fit pink so the two bands read
+  // as distinct semantic series at a glance. Also surfaces in the legend
+  // chip ("Quality Offer Score (live)").
+  burgundyMid:  '#9B1C2C',
+  // Ath Fit bar — clearly lighter / pinker. Sprint 007 hotfix CHG-4: paired
+  // shift with burgundyMid so the dark-red / muted-pink semantic is preserved
+  // but readable. Legend chip ("Athletic Fit Score (Grit Fit Engine)") tracks.
+  burgundySoft: '#E8B5BE',
   parchmentBg:  '#FAF5EE',
   paper:        '#FAF6EA',
   ink:          '#2A1F1A',
@@ -199,6 +206,9 @@ export default function RecruitingScoreboard({
   onCollapseChange = null,
   /** Optional initial collapse state. Default: expanded. */
   initialCollapsed = false,
+  /** Optional click handler — receives the shortlist item when its school
+   *  name is clicked. ShortlistPage uses this to open the matching slide-out. */
+  onSchoolClick = null,
 }) {
   const [isCollapsed, setIsCollapsed] = useState(Boolean(initialCollapsed));
 
@@ -213,18 +223,24 @@ export default function RecruitingScoreboard({
   const athFit = useMemo(() => computeAthFit(studentProfile), [studentProfile]);
   const measurablesMissing = athFit === null;
 
-  // Enrich + sort once per items / athFit change.
+  // Enrich + sort once per items / athFit change. Sprint 007 hotfix CHG-7:
+  // schools with Quality Offer Score == 0 are filtered out of the Scoreboard
+  // render. The shortlist below is unaffected — this filter is Scoreboard-only.
+  // Post-filter rows are re-ranked at render time so the displayed Rank starts
+  // at 1 and increments without gaps.
   const rows = useMemo(() => {
     if (!items || items.length === 0) return [];
-    const enriched = items.map((item) => {
-      const bools = extractScoreboardBooleans(item);
-      const quality = qualityOfferScore(bools);
-      const tier = tierFromDiv(item.div);
-      const athFitPctRaw = athFit && tier ? athFit[tier] : null;
-      const athFitPct = athFitPctRaw != null ? athFitPctRaw * 100 : null;
-      const profile = athFitPct != null ? offerProfile(quality, athFitPct) : null;
-      return { item, bools, quality, tier, athFitPct, profile };
-    });
+    const enriched = items
+      .map((item) => {
+        const bools = extractScoreboardBooleans(item);
+        const quality = qualityOfferScore(bools);
+        const tier = tierFromDiv(item.div);
+        const athFitPctRaw = athFit && tier ? athFit[tier] : null;
+        const athFitPct = athFitPctRaw != null ? athFitPctRaw * 100 : null;
+        const profile = athFitPct != null ? offerProfile(quality, athFitPct) : null;
+        return { item, bools, quality, tier, athFitPct, profile };
+      })
+      .filter((row) => row.quality > 0);
     // Sort descending by profile. Rows with no profile (missing tier or no
     // athFit) sort to the bottom in order of descending quality.
     enriched.sort((a, b) => {
@@ -235,6 +251,11 @@ export default function RecruitingScoreboard({
     });
     return enriched;
   }, [items, athFit]);
+
+  // CHG-7: distinguish "no shortlist at all" from "shortlist exists but every
+  // row is filtered out by Quality == 0". The two states show different copy.
+  const hasItems = items && items.length > 0;
+  const allFilteredOut = hasItems && rows.length === 0;
 
   // Boundary index — first row whose Profile drops below PROFILE_THRESHOLD.
   const boundaryIdx = useMemo(() => {
@@ -257,7 +278,7 @@ export default function RecruitingScoreboard({
 
   const toggleStyle = {
     background: C.burgundy,
-    color: '#F4ECD8',
+    color: 'var(--brand-gold)',
     padding: '14px 22px',
     minHeight: 56, // ≥ 44px tap target per Phase B Addition Part 2
     display: 'flex',
@@ -315,7 +336,7 @@ export default function RecruitingScoreboard({
   };
 
   const groupRowThStyle = {
-    fontFamily: "'Cormorant Garamond', serif",
+    fontFamily: 'var(--font-body)',
     fontWeight: 600,
     fontSize: '0.875rem',
     letterSpacing: '0.04em',
@@ -327,7 +348,7 @@ export default function RecruitingScoreboard({
   };
 
   const colRowThStyle = {
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: 'var(--font-body)',
     fontWeight: 500,
     fontSize: '0.6875rem',
     padding: '9px 8px',
@@ -418,7 +439,7 @@ export default function RecruitingScoreboard({
         <div
           style={{
             flex: 1,
-            height: 8,
+            height: 12,
             background: C.barTrack,
             borderRadius: 2,
             overflow: 'hidden',
@@ -476,6 +497,7 @@ export default function RecruitingScoreboard({
             transition: 'transform 0.3s',
             fontFamily: "'Inter', sans-serif",
             fontWeight: 500,
+            color: 'var(--brand-gold)',
           }}
         >
           ▾
@@ -571,13 +593,20 @@ export default function RecruitingScoreboard({
                       tdBaseStyle={tdBaseStyle}
                       BoolCell={BoolCell}
                       ProfileViz={ProfileViz}
+                      onSchoolClick={onSchoolClick}
                     />
                   );
                 })}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={13} style={{ ...tdBaseStyle, textAlign: 'center', padding: '24px 16px', color: C.inkMute }}>
-                      No schools yet. Add to your shortlist to see your Recruiting Scoreboard fill in.
+                    <td
+                      data-testid={allFilteredOut ? 'scoreboard-no-activity' : 'scoreboard-no-items'}
+                      colSpan={13}
+                      style={{ ...tdBaseStyle, textAlign: 'center', padding: '24px 16px', color: C.inkMute }}
+                    >
+                      {allFilteredOut
+                        ? 'No recruiting activity yet. Mark journey steps complete on your Shortlist below to populate the Scoreboard.'
+                        : 'No schools yet. Add to your shortlist to see your Recruiting Scoreboard fill in.'}
                     </td>
                   </tr>
                 )}
@@ -619,8 +648,8 @@ function LegendChip({ swatchColor, swatchBorder, label, striped = false }) {
         aria-hidden="true"
         style={{
           display: 'inline-block',
-          width: 16,
-          height: 8,
+          width: 20,
+          height: 12,
           borderRadius: 2,
           background: swatchColor,
           backgroundImage: striped
@@ -635,9 +664,10 @@ function LegendChip({ swatchColor, swatchBorder, label, striped = false }) {
   );
 }
 
-function ScoreboardRowGroup({ row, rank, showBoundary, threshold, tdBaseStyle, BoolCell, ProfileViz }) {
+function ScoreboardRowGroup({ row, rank, showBoundary, threshold, tdBaseStyle, BoolCell, ProfileViz, onSchoolClick }) {
   const { item, bools, quality, athFitPct, profile, tier } = row;
   const qualityColor = tierClass(quality);
+  const schoolNameIsLink = typeof onSchoolClick === 'function';
 
   return (
     <>
@@ -647,8 +677,9 @@ function ScoreboardRowGroup({ row, rank, showBoundary, threshold, tdBaseStyle, B
             colSpan={13}
             style={{
               padding: '6px 14px',
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: 'var(--font-body)',
               fontStyle: 'italic',
+              fontWeight: 700,
               fontSize: '0.75rem',
               color: '#7B1F2C',
               letterSpacing: '0.05em',
@@ -656,7 +687,7 @@ function ScoreboardRowGroup({ row, rank, showBoundary, threshold, tdBaseStyle, B
               borderBottom: '1px solid rgba(92, 22, 32, 0.32)',
             }}
           >
-            — Active prospects (Offer Profile ≥ {threshold}%) above. Below: lower-priority outreach.
+            — Active prospects (Offer Profile ≥ {threshold}%) above. Below: Increase outreach to coaches, attend more recruiting events, or make lower priority.
           </td>
         </tr>
       )}
@@ -700,7 +731,33 @@ function ScoreboardRowGroup({ row, rank, showBoundary, threshold, tdBaseStyle, B
             minWidth: 220,
           }}
         >
-          <span style={{ display: 'block', fontWeight: 500 }}>{item.school_name}</span>
+          {schoolNameIsLink ? (
+            <button
+              type="button"
+              data-testid="scoreboard-school-link"
+              onClick={() => onSchoolClick(item)}
+              style={{
+                display: 'block',
+                fontWeight: 500,
+                fontSize: 'inherit',
+                color: '#8B3A3A',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                margin: 0,
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                textDecoration: 'none',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+            >
+              {item.school_name}
+            </button>
+          ) : (
+            <span style={{ display: 'block', fontWeight: 500 }}>{item.school_name}</span>
+          )}
           {item.conference && (
             <span
               style={{
