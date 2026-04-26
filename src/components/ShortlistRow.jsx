@@ -40,6 +40,28 @@ const ROW_BORDER = '1px solid #E8E8E8';
 const MAROON = '#8B3A3A';
 const MUTED = '#6B6B6B';
 
+// Sprint 007 hotfix HF-5 — Recruiting Journey progress denominator. Matches
+// the 15-step JSONB structure post-0037 and the inline progressOf reducer
+// in ShortlistPage.jsx (the same producer used for the Most Progress /
+// Least Progress sort modes added in HF-3). Kept inline here rather than
+// extracted to a shared helper to keep this hotfix surgical.
+export const JOURNEY_STEP_TOTAL = 15;
+
+/**
+ * Count completed=true entries across the recruiting_journey_steps JSONB.
+ * Null-safe: missing or malformed JSONB returns 0. Mirrors the inline
+ * progressOf reducer in ShortlistPage.jsx so the bar fill and the sort
+ * order stay in lockstep without a cross-file dependency.
+ */
+export function countCompletedSteps(item) {
+  const steps = Array.isArray(item?.recruiting_journey_steps)
+    ? item.recruiting_journey_steps
+    : [];
+  let n = 0;
+  for (const s of steps) if (s && s.completed === true) n += 1;
+  return n;
+}
+
 /**
  * Pick the highest-priority status key for display.
  * Prefers grit_fit_labels (multi-label array) ordered by STATUS_ORDER;
@@ -58,6 +80,15 @@ export default function ShortlistRow({ item, rank, index, onClick }) {
   const primaryStatus = pickPrimaryStatus(item);
 
   const subline = [item.div, item.conference].filter(Boolean).join(' • ');
+
+  // HF-5 — progress bar fill. Clamped to [0, 100] for safety; the count
+  // should never exceed JOURNEY_STEP_TOTAL post-0037, but a defensive clamp
+  // costs nothing and prevents bar overflow if a future migration re-bases.
+  const completedSteps = countCompletedSteps(item);
+  const progressPct = Math.max(
+    0,
+    Math.min(100, (completedSteps / JOURNEY_STEP_TOTAL) * 100),
+  );
 
   // D4 — alternating background. `index` is preferred; fall back to (rank-1)
   // so existing callers that only pass `rank` still alternate correctly.
@@ -138,6 +169,65 @@ export default function ShortlistRow({ item, rank, index, onClick }) {
             {subline}
           </div>
         )}
+      </div>
+
+      {/* HF-5 — Recruiting Journey progress bar. Sits between the school
+          identity block and the status pill, filling the empty horizontal
+          space at desktop and wrapping below the identity block at narrow
+          viewports (the row's flexWrap: 'wrap' already supports this).
+          Bar reflects completed_steps / 15. Renders even at 0% (empty
+          track is intentional — surfaces the zero state). */}
+      <div
+        data-testid={`row-progress-${item.unitid}`}
+        aria-label={`Recruiting journey progress: ${completedSteps} of ${JOURNEY_STEP_TOTAL} steps complete`}
+        style={{
+          flex: '1 1 180px',
+          minWidth: 120,
+          maxWidth: 320,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          fontFamily: 'var(--font-body)',
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            flex: 1,
+            height: 10,
+            background: 'var(--brand-cream, #F5EFE0)',
+            borderRadius: 5,
+            overflow: 'hidden',
+            position: 'relative',
+            border: '1px solid #E6D7C3',
+          }}
+        >
+          <div
+            data-testid="row-progress-fill"
+            data-progress-pct={progressPct.toFixed(2)}
+            style={{
+              width: `${progressPct.toFixed(2)}%`,
+              height: '100%',
+              background: 'var(--brand-maroon, #8B3A3A)',
+              borderRadius: 5,
+              transition: 'width 0.4s ease',
+            }}
+          />
+        </div>
+        <span
+          data-testid="row-progress-label"
+          style={{
+            flex: '0 0 auto',
+            fontSize: '0.6875rem',
+            fontWeight: 600,
+            color: MUTED,
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '0.02em',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {completedSteps}/{JOURNEY_STEP_TOTAL}
+        </span>
       </div>
 
       {/* Status pill */}
