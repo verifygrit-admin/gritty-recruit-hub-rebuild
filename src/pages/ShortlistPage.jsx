@@ -217,7 +217,10 @@ export default function ShortlistPage() {
 
   // UI state
   const [filters, setFilters] = useState({ status: '', division: '', conference: '' });
-  const [sortBy, setSortBy] = useState('name_asc');
+  // Sprint 007 hotfix HF-3 — default sort flipped from 'name_asc' to
+  // 'progress_desc'. Progress to offer takes precedence for viewers, so
+  // most-developed relationships surface first on initial mount.
+  const [sortBy, setSortBy] = useState('progress_desc');
   const [toast, setToast] = useState(null);
   const [updatingStep, setUpdatingStep] = useState({}); // { [itemId]: stepId }
   const [uploadingDoc, setUploadingDoc] = useState({}); // { [unitid]: docType }
@@ -775,7 +778,31 @@ export default function ShortlistPage() {
       return r !== 0 ? r : byName(a, b);
     };
 
+    // Sprint 007 hotfix HF-3 — progress = count of completed=true entries in
+    // recruiting_journey_steps. The Scoreboard's extractScoreboardBooleans
+    // returns only the 7 Scoreboard-tracked steps, not all 15, so we cannot
+    // reuse it here. One-line sum is cheap enough to inline; null-safe on
+    // missing JSONB.
+    const progressOf = (item) => {
+      const steps = Array.isArray(item?.recruiting_journey_steps)
+        ? item.recruiting_journey_steps
+        : [];
+      let n = 0;
+      for (const s of steps) if (s && s.completed === true) n += 1;
+      return n;
+    };
+
     switch (sortBy) {
+      case 'progress_desc':
+        arr.sort(compareWithNameTiebreak(
+          (a, b) => progressOf(b) - progressOf(a)
+        ));
+        break;
+      case 'progress_asc':
+        arr.sort(compareWithNameTiebreak(
+          (a, b) => progressOf(a) - progressOf(b)
+        ));
+        break;
       case 'name_asc':
         arr.sort(byName);
         break;

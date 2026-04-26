@@ -34,10 +34,17 @@ const DIVISION_OPTIONS = [
 ];
 
 // Sprint 005 D5 \u2014 six sort modes per the dynamic ranking column spec.
-// Tie-break across ALL six modes is a stable secondary sort by name ASC
+// Tie-break across ALL modes is a stable secondary sort by name ASC
 // (operator decision; including Date Added \u2014 do NOT tie-break by timestamp
 // precision). See ShortlistPage.jsx sortedItems memo.
+// Sprint 007 hotfix HF-3 \u2014 two new progress modes added at the TOP of the
+// list. progress is the count of completed=true entries across the 15-step
+// recruiting_journey_steps JSONB. progress_desc is the new default (see
+// ShortlistPage.jsx useState init) \u2014 progress to offer takes precedence
+// for viewers, so most-developed relationships surface first.
 const SORT_OPTIONS = [
+  { value: 'progress_desc', label: 'Most Progress' },
+  { value: 'progress_asc', label: 'Least Progress' },
   { value: 'name_asc', label: 'Name (A\u2013Z)' },
   { value: 'added_newest', label: 'Date Added (newest first)' },
   { value: 'dist_asc', label: 'Distance (closest)' },

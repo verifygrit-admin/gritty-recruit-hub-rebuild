@@ -697,7 +697,7 @@ export default function GritFitPage() {
         data-testid="grit-fit-page-title"
         style={{ fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', margin: '0 0 8px' }}
       >
-        Your {top30Count} GRIT FIT Matches
+        Your GRIT FIT Matches
       </h2>
       <p
         data-testid="grit-fit-result-count"
