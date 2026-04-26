@@ -39,6 +39,8 @@
 import { useMemo, useState } from 'react';
 import { TIER_ORDER } from '../lib/constants.js';
 import { calcAthleticFit, calcAthleticBoost } from '../lib/scoring.js';
+import { hasVerbalOffer, hasWrittenOffer } from '../lib/offerStatus.js';
+import OfferBadge from './OfferBadge.jsx';
 
 // ── Constants ────────────────────────────────────────────────────────────
 
@@ -757,6 +759,15 @@ function ScoreboardRowGroup({ row, rank, showBoundary, threshold, tdBaseStyle, B
             </button>
           ) : (
             <span style={{ display: 'block', fontWeight: 500 }}>{item.school_name}</span>
+          )}
+          {(hasVerbalOffer(item) || hasWrittenOffer(item)) && (
+            <div
+              data-testid="scoreboard-offer-badges"
+              style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}
+            >
+              {hasVerbalOffer(item) && <OfferBadge variant="verbal" size="sm" />}
+              {hasWrittenOffer(item) && <OfferBadge variant="written" size="sm" />}
+            </div>
           )}
           {item.conference && (
             <span

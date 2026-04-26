@@ -8,7 +8,9 @@ import useIsDesktop from '../hooks/useIsDesktop.js';
 import { sortSchoolsByMobileKey } from '../lib/grit-fit/tableSort.js';
 import SlideOutShell from './SlideOutShell.jsx';
 import SchoolDetailsCard from './SchoolDetailsCard.jsx';
+import OfferBadge from './OfferBadge.jsx';
 import { computeGritFitStatuses } from '../lib/gritFitStatus.js';
+import { hasVerbalOffer, hasWrittenOffer } from '../lib/offerStatus.js';
 import Tooltip from './Tooltip.jsx';
 import { TABLE_TOOLTIPS } from '../lib/copy/tooltipCopy.js';
 
@@ -78,6 +80,7 @@ const COLUMNS = [
 export default function GritFitTableView({
   results,           // filtered top30 array (scored objects)
   shortlistIds,      // Set<unitid>
+  shortlistByUnitid, // Map<unitid, short_list_items row> — HF-4, drives Verbal/Written Offer badges next to school_name and on the slide-out card
   onAddToShortlist,  // (school) => void
   // Sprint 004 G7b — optional scoring context forwarded to SchoolDetailsCard
   // status derivation. Both default to undefined; GritFitPage wires them when
@@ -86,6 +89,14 @@ export default function GritFitTableView({
   topTier,
   recruitReach,
 }) {
+  // HF-4 — derive offer state for a school from the shortlist map. Schools
+  // that aren't in the student's shortlist return false on both flags and
+  // render no badge. Map lookup is O(1).
+  const offerStateFor = (unitid) => {
+    const sli = shortlistByUnitid ? shortlistByUnitid.get(unitid) : null;
+    if (!sli) return { verbal: false, written: false };
+    return { verbal: hasVerbalOffer(sli), written: hasWrittenOffer(sli) };
+  };
   const [sortKey, setSortKey] = useState('matchRank');
   const [sortDir, setSortDir] = useState('asc');
   const [page, setPage] = useState(1);
@@ -268,6 +279,19 @@ export default function GritFitTableView({
               <h3 style={{ margin: '0 0 4px', fontSize: '1.125rem', color: '#8B3A3A' }}>
                 Rank {school.matchRank}. {school.school_name}
               </h3>
+              {(() => {
+                const offers = offerStateFor(school.unitid);
+                if (!offers.verbal && !offers.written) return null;
+                return (
+                  <div
+                    data-testid="card-offer-badges"
+                    style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '0 0 8px' }}
+                  >
+                    {offers.verbal  && <OfferBadge variant="verbal"  size="sm" />}
+                    {offers.written && <OfferBadge variant="written" size="sm" />}
+                  </div>
+                );
+              })()}
               <p style={{ margin: '0 0 12px', fontSize: '0.875rem', color: '#6B6B6B' }}>
                 {school.conference || ''} | {TIER_LABELS[school.type]?.short || school.type}
               </p>
@@ -306,6 +330,8 @@ export default function GritFitTableView({
             school={selectedSchool}
             statusKey={selectedStatusKey}
             statusKeys={selectedStatusKeys}
+            verbalOffer={selectedSchool ? offerStateFor(selectedSchool.unitid).verbal : false}
+            writtenOffer={selectedSchool ? offerStateFor(selectedSchool.unitid).written : false}
           />
         </SlideOutShell>
       </div>
@@ -386,6 +412,19 @@ export default function GritFitTableView({
                     <strong data-testid="school-name" style={{ color: '#8B3A3A' }}>
                       {school.school_name}
                     </strong>
+                    {(() => {
+                      const offers = offerStateFor(school.unitid);
+                      if (!offers.verbal && !offers.written) return null;
+                      return (
+                        <span
+                          data-testid="table-offer-badges"
+                          style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', marginLeft: 8, verticalAlign: 'middle' }}
+                        >
+                          {offers.verbal  && <OfferBadge variant="verbal"  size="sm" />}
+                          {offers.written && <OfferBadge variant="written" size="sm" />}
+                        </span>
+                      );
+                    })()}
                     <br />
                     <span data-testid="school-meta" style={{ fontSize: '0.75rem', color: '#6B6B6B' }}>
                       {school.conference || ''}

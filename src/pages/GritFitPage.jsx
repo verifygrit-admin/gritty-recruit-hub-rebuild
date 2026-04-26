@@ -353,6 +353,12 @@ export default function GritFitPage() {
   const [profile, setProfile] = useState(null);
   const [allSchools, setAllSchools] = useState([]);
   const [shortlistIds, setShortlistIds] = useState(new Set());
+  // Sprint 007 hotfix HF-4 — per-shortlist-item JSONB indexed by unitid for
+  // O(1) lookup from Map and Table renderers. Used to derive Verbal/Written
+  // Offer badges on schools that are in the student's shortlist with the
+  // relevant journey step complete. Schools not in the shortlist render no
+  // badge regardless of state.
+  const [shortlistByUnitid, setShortlistByUnitid] = useState(new Map());
   const [trueScoringResult, setTrueScoringResult] = useState(null);
 
   // UI state
@@ -396,7 +402,10 @@ export default function GritFitPage() {
       const [profileRes, schoolsRes, shortlistRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('user_id', session.user.id).single(),
         supabase.from('schools').select('*'),
-        supabase.from('short_list_items').select('unitid').eq('user_id', session.user.id),
+        // HF-4 — widen SELECT to include recruiting_journey_steps so Map +
+        // Table renderers can derive Verbal/Written Offer badges per pin /
+        // per row via O(1) unitid lookup.
+        supabase.from('short_list_items').select('unitid, recruiting_journey_steps').eq('user_id', session.user.id),
       ]);
 
       if (profileRes.error) {
@@ -418,6 +427,12 @@ export default function GritFitPage() {
       setProfile(profileData);
       setAllSchools(schoolsData);
       setShortlistIds(new Set(shortlistData.map(s => s.unitid)));
+      // HF-4 — build the per-unitid item map for offer-badge lookup.
+      const slMap = new Map();
+      for (const s of shortlistData) {
+        if (s && s.unitid != null) slMap.set(s.unitid, s);
+      }
+      setShortlistByUnitid(slMap);
 
       // Run scoring
       if (profileData.position && profileData.gpa) {
@@ -826,6 +841,7 @@ export default function GritFitPage() {
             schools={mapSchools}
             gritFitUnitIds={gritFitUnitIds}
             shortlistIds={shortlistIds}
+            shortlistByUnitid={shortlistByUnitid}
             onAddToShortlist={handleAddToShortlist}
             topTier={scoringResult?.topTier}
             recruitReach={scoringResult?.recruitReach}
@@ -836,6 +852,7 @@ export default function GritFitPage() {
             <GritFitTableView
               results={filteredResults}
               shortlistIds={shortlistIds}
+              shortlistByUnitid={shortlistByUnitid}
               onAddToShortlist={handleAddToShortlist}
             />
           </>

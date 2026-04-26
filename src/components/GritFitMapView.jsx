@@ -22,6 +22,8 @@ import { TIER_COLORS } from '../lib/constants.js';
 import { getOverlayState } from '../lib/map/overlayLogic.js';
 import { STATUS_LABELS } from '../lib/statusLabels.js';
 import { computeGritFitStatuses } from '../lib/gritFitStatus.js';
+import { hasVerbalOffer, hasWrittenOffer } from '../lib/offerStatus.js';
+import { buildOfferBadgeHtml } from './OfferBadge.jsx';
 
 /**
  * Build the inline-HTML fragment for a GRIT FIT status pill inside the Leaflet
@@ -104,6 +106,7 @@ export default function GritFitMapView({
   schools,              // array of scored school records to render (already filtered)
   gritFitUnitIds,       // Set<number> — user's top30 Grit Fit unitids
   shortlistIds,         // Set<number> — user's shortlist unitids
+  shortlistByUnitid,    // Map<number, short_list_items row> — HF-4, drives Verbal/Written Offer badges in the popup
   onAddToShortlist,     // (school) => void
   topTier,              // from scoringResult; needed to compute per-school GRIT FIT status pill (F2)
   recruitReach,         // from scoringResult; needed to compute per-school GRIT FIT status pill (F2)
@@ -180,11 +183,22 @@ export default function GritFitMapView({
       statusPillHtml = '';
     }
 
+    // HF-4 — Verbal / Written Offer badges. Lookup is keyed by unitid against
+    // the shortlist map; pins for non-shortlisted schools render no badge.
+    const sli = shortlistByUnitid ? shortlistByUnitid.get(school.unitid) : null;
+    const offerBadgesHtml = sli
+      ? [
+          hasVerbalOffer(sli)  ? buildOfferBadgeHtml('verbal')  : '',
+          hasWrittenOffer(sli) ? buildOfferBadgeHtml('written') : '',
+        ].filter(Boolean).join(' ')
+      : '';
+
     return `
       <div data-testid="school-popup-${school.unitid}" style="font-family:'Segoe UI',sans-serif;min-width:320px;max-width:360px;padding:16px;box-sizing:border-box;">
         <h3 data-testid="popup-school-name" style="margin:0 0 6px;color:#8B3A3A;font-size:1.1rem;font-weight:700;line-height:1.2;">${name}${statusChip}</h3>
         <p data-testid="popup-school-meta" style="margin:0 0 14px;color:#6B6B6B;font-size:0.875rem;font-weight:500;">${division} | ${conf}</p>
         ${statusPillHtml ? `<div data-testid="popup-status-slot" style="margin:0 0 12px;">${statusPillHtml}</div>` : ''}
+        ${offerBadgesHtml ? `<div data-testid="popup-offer-badges" style="margin:0 0 12px;display:flex;gap:6px;flex-wrap:wrap;">${offerBadgesHtml}</div>` : ''}
         <div data-testid="popup-metrics" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:14px;font-size:0.875rem;color:#2C2C2C;">
           <div>
             <p style="${lbl}">Location</p>
@@ -239,7 +253,7 @@ export default function GritFitMapView({
         </div>
       </div>
     `;
-  }, [topTier, recruitReach]);
+  }, [topTier, recruitReach, shortlistByUnitid]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -309,7 +323,7 @@ export default function GritFitMapView({
 
     cluster.addTo(map);
     markersLayerRef.current = cluster;
-  }, [schools, gritFitUnitIds, shortlistIds, buildPopupHtml, onAddToShortlist]);
+  }, [schools, gritFitUnitIds, shortlistIds, shortlistByUnitid, buildPopupHtml, onAddToShortlist]);
 
   return (
     <div>

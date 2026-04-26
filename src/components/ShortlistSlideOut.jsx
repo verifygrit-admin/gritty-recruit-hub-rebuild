@@ -44,6 +44,7 @@ import StatusPill from './StatusPill.jsx';
 import CollapsibleTitleStrip from './CollapsibleTitleStrip.jsx';
 import useIsNarrowViewport from '../hooks/useIsNarrowViewport.js';
 import { buildMailtoHref, resolveTemplateTokens } from '../lib/copy/shortlistMailtoCopy.js';
+import { hasVerbalOffer, hasWrittenOffer } from '../lib/offerStatus.js';
 
 const MAROON = '#8B3A3A';
 const MUTED = '#6B6B6B';
@@ -60,10 +61,18 @@ const PRE_READ_DOC_TYPES = Object.freeze([
   { key: 'financial_aid_info', label: 'Financial Aid Info' },
 ]);
 
+// Sprint 007 hotfix HF-4 — chip set rewired to read recruiting_journey_steps
+// JSONB instead of the phantom item.offer_status column (which never
+// existed in the schema). The committable_offer chip is renamed in label
+// only — its slot is preserved so the visual order stays stable.
+//
+// HF-4 carry-forward — Commitment state has no source of truth in current
+// schema. Chip renders as placeholder. Decide step 16 / separate column /
+// derived state in future sprint.
 const OFFER_CHIP_LABELS = Object.freeze([
-  { key: 'verbal_offer', label: 'Verbal Offer' },
-  { key: 'committable_offer', label: 'Committable Offer' },
-  { key: 'commitment', label: 'Commitment' },
+  { key: 'verbal_offer',      label: 'Verbal Offer' },
+  { key: 'committable_offer', label: 'Written Offer' },
+  { key: 'commitment',        label: 'Commitment' },
 ]);
 
 // ── Formatting helpers ────────────────────────────────────────────────────
@@ -268,7 +277,15 @@ export default function ShortlistSlideOut({
           style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}
         >
           {OFFER_CHIP_LABELS.map((chip) => {
-            const active = isOfferActive(item.offer_status, chip.key);
+            // HF-4 — verbal_offer reads step 14, committable_offer slot
+            // (relabelled "Written Offer") reads step 15. Commitment chip
+            // has no source of truth in current schema and renders as a
+            // permanently-inactive placeholder until a future sprint
+            // decides where Commitment state lives.
+            let active;
+            if (chip.key === 'verbal_offer') active = hasVerbalOffer(item);
+            else if (chip.key === 'committable_offer') active = hasWrittenOffer(item);
+            else active = isOfferActive(item.offer_status, chip.key);
             return <OfferChip key={chip.key} label={chip.label} active={active} testid={`sso-offer-${chip.key}`} />;
           })}
         </div>

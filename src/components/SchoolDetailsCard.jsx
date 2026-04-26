@@ -40,6 +40,7 @@
  *               is shown in the top-right.
  */
 import StatusPill from './StatusPill.jsx';
+import OfferBadge from './OfferBadge.jsx';
 
 function formatMoney(v) {
   if (v == null) return 'N/A';
@@ -99,7 +100,19 @@ const valueStyle = {
   color: '#2C2C2C',
 };
 
-export default function SchoolDetailsCard({ school, statusKey, statusKeys, onClose }) {
+export default function SchoolDetailsCard({
+  school,
+  statusKey,
+  statusKeys,
+  onClose,
+  // Sprint 007 hotfix HF-4 — optional offer-state booleans. Caller derives
+  // from short_list_items.recruiting_journey_steps (step_id 14 / 15) via
+  // hasVerbalOffer / hasWrittenOffer in src/lib/offerStatus.js. When the
+  // school is not in the student's shortlist, both default to false and no
+  // badge renders.
+  verbalOffer = false,
+  writtenOffer = false,
+}) {
   if (!school) return null;
 
   // Sprint 005 D3a — coalesce the new `statusKeys` array prop with the legacy
@@ -189,6 +202,25 @@ export default function SchoolDetailsCard({ school, statusKey, statusKeys, onClo
           {resolvedStatusKeys.map((key) => (
             <StatusPill key={key} status={key} />
           ))}
+        </div>
+      )}
+
+      {/* HF-4 — Verbal / Written Offer badges. Render alongside status pills
+          when the calling surface has supplied per-shortlist-item offer state.
+          Both can render simultaneously when both steps are complete. */}
+      {(verbalOffer || writtenOffer) && (
+        <div
+          data-testid="sdc-offer-badges"
+          style={{
+            marginTop: 8,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 6,
+            maxWidth: '100%',
+          }}
+        >
+          {verbalOffer  && <OfferBadge variant="verbal"  />}
+          {writtenOffer && <OfferBadge variant="written" />}
         </div>
       )}
 

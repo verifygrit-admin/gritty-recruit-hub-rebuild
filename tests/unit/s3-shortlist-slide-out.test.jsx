@@ -166,26 +166,52 @@ describe('S3 ShortlistSlideOut — Section 4 primary actions', () => {
 
 // ── g-i) Section 5 offer chips ────────────────────────────────────────────
 describe('S3 ShortlistSlideOut — Section 5 offer chips', () => {
-  it('g) all three chips render', () => {
+  it('g) all three chips render with HF-4 labels (Verbal / Written / Commitment)', () => {
+    // HF-4 — committable_offer chip slot was relabelled "Written Offer" and
+    // its data source switched from the phantom offer_status column to
+    // recruiting_journey_steps step_id 15. The chip key
+    // (sso-offer-committable_offer) is preserved so existing test scaffolding
+    // still resolves; only the label text changed.
     const { getByTestId } = renderSlideOut();
     expect(getByTestId('sso-offer-verbal_offer').textContent).toBe('Verbal Offer');
-    expect(getByTestId('sso-offer-committable_offer').textContent).toBe('Committable Offer');
+    expect(getByTestId('sso-offer-committable_offer').textContent).toBe('Written Offer');
     expect(getByTestId('sso-offer-commitment').textContent).toBe('Commitment');
   });
 
-  it('h) chips are inactive when offer_status is null', () => {
+  it('h) chips are inactive when no journey steps are complete', () => {
+    // HF-4 — chips now read recruiting_journey_steps step 14 / 15 instead of
+    // the phantom offer_status column. With BASE_ITEM's default empty steps,
+    // all three chips render inactive.
     const { getByTestId } = renderSlideOut();
     expect(getByTestId('sso-offer-verbal_offer').getAttribute('data-active')).toBe('false');
     expect(getByTestId('sso-offer-committable_offer').getAttribute('data-active')).toBe('false');
     expect(getByTestId('sso-offer-commitment').getAttribute('data-active')).toBe('false');
   });
 
-  it('i) chip becomes active when offer_status array includes the key', () => {
+  it('i) Verbal Offer chip activates when recruiting_journey_steps step 14 is complete', () => {
+    // HF-4 — verbal activation source switched from offer_status array to
+    // step_id 14 ("Received verbal offer") on the JSONB. The chip's DOM key
+    // (sso-offer-verbal_offer) is unchanged — only the underlying read changed.
     const { getByTestId } = renderSlideOut({
-      item: { ...BASE_ITEM, offer_status: ['verbal_offer'] },
+      item: {
+        ...BASE_ITEM,
+        recruiting_journey_steps: [{ step_id: 14, completed: true }],
+      },
     });
     expect(getByTestId('sso-offer-verbal_offer').getAttribute('data-active')).toBe('true');
     expect(getByTestId('sso-offer-committable_offer').getAttribute('data-active')).toBe('false');
+  });
+
+  it('i2) Written Offer chip activates when recruiting_journey_steps step 15 is complete', () => {
+    // HF-4 — parallel wiring on step 15. Locks both halves of the rewire.
+    const { getByTestId } = renderSlideOut({
+      item: {
+        ...BASE_ITEM,
+        recruiting_journey_steps: [{ step_id: 15, completed: true }],
+      },
+    });
+    expect(getByTestId('sso-offer-verbal_offer').getAttribute('data-active')).toBe('false');
+    expect(getByTestId('sso-offer-committable_offer').getAttribute('data-active')).toBe('true');
   });
 });
 
