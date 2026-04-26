@@ -361,9 +361,13 @@ export default function GritFitPage() {
     division: '', state: '', search: '', recruitingList: 'all',
   });
   // Sprint 004 G6 — Status multi-select (replaces Conferences). Local state
-  // only: NOT persisted across sessions or navigation (ruling A-6). Default =
-  // all 6 statuses selected (no status-based filtering applied).
-  const [selectedStatuses, setSelectedStatuses] = useState(() => STATUS_ORDER.slice());
+  // only: NOT persisted across sessions or navigation (ruling A-6).
+  // Sprint 007 A.4 — default state on every mount is "currently_recommended"
+  // only. Re-fires on each mount of the page (the useState initializer runs
+  // once per component instance, and GritFitPage unmounts/remounts on
+  // navigation away/back). The "Clear all filters" action remains the path
+  // back to the all-6 selection — that user-initiated reset is unchanged.
+  const [selectedStatuses, setSelectedStatuses] = useState(() => ['currently_recommended']);
   // View-only what-if slider overrides (Sprint 003 D4). Empty = show true profile.
   const [sliderOverrides, setSliderOverrides] = useState({});
   const [loading, setLoading] = useState(true);

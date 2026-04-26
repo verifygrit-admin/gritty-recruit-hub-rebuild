@@ -145,7 +145,7 @@ describe('student-read-recruiting-contacts — Sprint 004 S3 Track C', () => {
     expect(body.success).toBe(false);
   });
 
-  it('d) admin may request any student_user_id and receives the correct shape', async () => {
+  it('d) admin may request any student_user_id and receives the correct shape (Sprint 007 — names added)', async () => {
     const handler = makeHandler({
       tables: {
         hs_coach_students: [
@@ -155,8 +155,8 @@ describe('student-read-recruiting-contacts — Sprint 004 S3 Track C', () => {
           { student_user_id: OTHER_STUDENT_ID, counselor_user_id: COUNSELOR_ID },
         ],
         profiles: [
-          { user_id: COACH_ID, email: 'coach@example.com' },
-          { user_id: COUNSELOR_ID, email: 'counselor@example.com' },
+          { user_id: COACH_ID, email: 'coach@example.com', name: 'Coach Smith' },
+          { user_id: COUNSELOR_ID, email: 'counselor@example.com', name: 'Mr. Jones' },
         ],
       },
     });
@@ -171,6 +171,8 @@ describe('student-read-recruiting-contacts — Sprint 004 S3 Track C', () => {
       contacts: {
         hs_head_coach_email: 'coach@example.com',
         hs_guidance_counselor_email: 'counselor@example.com',
+        hs_head_coach_name: 'Coach Smith',
+        hs_guidance_counselor_name: 'Mr. Jones',
       },
     });
   });
@@ -217,7 +219,7 @@ describe('student-read-recruiting-contacts — Sprint 004 S3 Track C', () => {
     expect(body.contacts.hs_guidance_counselor_email).toBeNull();
   });
 
-  it('g) student_athlete with neither linked returns both emails null', async () => {
+  it('g) student_athlete with neither linked returns all four contact fields null', async () => {
     const handler = makeHandler({
       tables: {
         hs_coach_students: [],
@@ -234,11 +236,13 @@ describe('student-read-recruiting-contacts — Sprint 004 S3 Track C', () => {
       contacts: {
         hs_head_coach_email: null,
         hs_guidance_counselor_email: null,
+        hs_head_coach_name: null,
+        hs_guidance_counselor_name: null,
       },
     });
   });
 
-  it('h) success response shape is exact — no extra or missing keys', async () => {
+  it('h) success response shape is exact — no extra or missing keys (Sprint 007 — 4-field shape)', async () => {
     const handler = makeHandler({
       tables: {
         hs_coach_students: [{ student_user_id: STUDENT_ID, coach_user_id: COACH_ID }],
@@ -246,8 +250,8 @@ describe('student-read-recruiting-contacts — Sprint 004 S3 Track C', () => {
           { student_user_id: STUDENT_ID, counselor_user_id: COUNSELOR_ID },
         ],
         profiles: [
-          { user_id: COACH_ID, email: 'coach@example.com' },
-          { user_id: COUNSELOR_ID, email: 'counselor@example.com' },
+          { user_id: COACH_ID, email: 'coach@example.com', name: 'Coach Smith' },
+          { user_id: COUNSELOR_ID, email: 'counselor@example.com', name: 'Mr. Jones' },
         ],
       },
     });
@@ -258,7 +262,9 @@ describe('student-read-recruiting-contacts — Sprint 004 S3 Track C', () => {
     expect(Object.keys(body).sort()).toEqual(['contacts', 'success']);
     expect(Object.keys(body.contacts).sort()).toEqual([
       'hs_guidance_counselor_email',
+      'hs_guidance_counselor_name',
       'hs_head_coach_email',
+      'hs_head_coach_name',
     ]);
   });
 
@@ -279,6 +285,10 @@ describe('student-read-recruiting-contacts — Sprint 004 S3 Track C', () => {
     const body = await res.json();
     expect(body.contacts.hs_head_coach_email).toBe('coach-fallback@example.com');
     expect(body.contacts.hs_guidance_counselor_email).toBeNull();
+    // Names: profile row missing → name resolves to null even when email
+    // falls back via auth.admin.getUserById (which returns email only).
+    expect(body.contacts.hs_head_coach_name).toBeNull();
+    expect(body.contacts.hs_guidance_counselor_name).toBeNull();
   });
 
   it('bonus: rejects non-GET methods with 405', async () => {

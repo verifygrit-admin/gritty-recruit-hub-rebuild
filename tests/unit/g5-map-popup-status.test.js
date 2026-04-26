@@ -113,7 +113,7 @@ describe('F2 map popup status pill — derivePopupStatusKey', () => {
     };
     const key = derivePopupStatusKey(school, topTier, recruitReach);
     const html = buildStatusPillHtml(key);
-    expect(html).toContain('Currently Recommended');
+    expect(html).toContain('Grit Fit School');
   });
 
   it('unknown/broken school returns null rather than throwing', () => {

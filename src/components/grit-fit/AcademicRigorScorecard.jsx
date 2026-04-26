@@ -72,27 +72,29 @@ export default function AcademicRigorScorecard({
           data-testid="academic-rigor-scorecard-body"
           style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}
         >
-          <div data-testid="academic-rigor-cell" style={{ flex: '1 1 140px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div data-testid="academic-rigor-cell" style={{ flex: '1 1 140px', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ fontSize: '0.75rem', color: '#6B6B6B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Academic Rigor Score
             </div>
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', lineHeight: 1.1 }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(2.25rem, 7vw, 3rem)', fontWeight: 700, color: '#8B3A3A', lineHeight: 1.05 }}>
               {pct(academicRigorScore)}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#6B6B6B', lineHeight: 1.3 }}>
-              Highest composite SAT + GPA admissions standards you currently qualify for.
+            <div style={{ fontSize: '0.75rem', color: '#6B6B6B', lineHeight: 1.4 }}>
+              Your current GPA and P/SAT scores qualify you for schools that are <strong>NOT</strong>{' '}
+              test optional and are equal to or below this percent rank of Academic Rigor.
             </div>
           </div>
 
-          <div data-testid="test-optional-cell" style={{ flex: '1 1 140px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div data-testid="test-optional-cell" style={{ flex: '1 1 140px', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ fontSize: '0.75rem', color: '#6B6B6B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Test Optional Score
             </div>
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', lineHeight: 1.1 }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(2.25rem, 7vw, 3rem)', fontWeight: 700, color: '#8B3A3A', lineHeight: 1.05 }}>
               {pct(testOptionalScore)}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#6B6B6B', lineHeight: 1.3 }}>
-              Highest admissions standards you currently qualify for at test-optional schools.
+            <div style={{ fontSize: '0.75rem', color: '#6B6B6B', lineHeight: 1.4 }}>
+              Your current GPA qualifies you for admission to schools that <strong>ARE</strong> test
+              optional and are equal to or below this percent rank of Academic Rigor.
             </div>
           </div>
         </div>

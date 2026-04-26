@@ -29,13 +29,23 @@
 //     If neither yields an email, that slot returns null.
 //
 // Response shape:
-//   200 { success: true, contacts: { hs_head_coach_email, hs_guidance_counselor_email } }
+//   200 { success: true, contacts: {
+//     hs_head_coach_email,
+//     hs_guidance_counselor_email,
+//     hs_head_coach_name,            // Sprint 007 B.2 — added
+//     hs_guidance_counselor_name,    // Sprint 007 B.2 — added (for {counselorName} token)
+//   }}
 //   401 { success: false, error: string }  — missing / invalid token
 //   403 { success: false, error: string }  — role or scope mismatch
 //   405 { success: false, error: string }  — non-GET method
 //   500 { success: false, error: string }  — read failure / unexpected
 //
 // No broad RLS changes. No raw email exposure to other roles.
+// Sprint 007 R5 redirected the slide-out's Email Coach button to the COLLEGE
+// head coach (per-school via college_coaches.is_head_coach=true). That data
+// is fetched client-side in ShortlistPage as a bulk query — not in this EF.
+// hs_head_coach_email is kept on the response shape (deprecated post-R5) so
+// existing consumers do not break.
 
 export const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -176,17 +186,16 @@ export function createHandler({ createClient, supabaseUrl, serviceRoleKey }) {
       const coachUserId = coachLink.data?.coach_user_id ?? null;
       const counselorUserId = counselorLink.data?.counselor_user_id ?? null;
 
-      const hsHeadCoachEmail = await resolveEmail(serviceClient, coachUserId);
-      const hsGuidanceCounselorEmail = await resolveEmail(
-        serviceClient,
-        counselorUserId,
-      );
+      const coach = await resolveProfile(serviceClient, coachUserId);
+      const counselor = await resolveProfile(serviceClient, counselorUserId);
 
       return jsonResponse({
         success: true,
         contacts: {
-          hs_head_coach_email: hsHeadCoachEmail,
-          hs_guidance_counselor_email: hsGuidanceCounselorEmail,
+          hs_head_coach_email: coach.email,
+          hs_guidance_counselor_email: counselor.email,
+          hs_head_coach_name: coach.name,
+          hs_guidance_counselor_name: counselor.name,
         },
       });
     } catch (err) {
@@ -202,19 +211,28 @@ export function createHandler({ createClient, supabaseUrl, serviceRoleKey }) {
   };
 }
 
-async function resolveEmail(serviceClient, userId) {
-  if (!userId) return null;
+/**
+ * Sprint 007 B.2 — resolve email AND name in one profiles read.
+ * Returns { email, name } with either field nullable.
+ */
+async function resolveProfile(serviceClient, userId) {
+  if (!userId) return { email: null, name: null };
 
   const profileLookup = await serviceClient
     .from("profiles")
-    .select("email")
+    .select("email, name")
     .eq("user_id", userId)
     .limit(1)
     .maybeSingle();
 
-  if (!profileLookup.error && profileLookup.data?.email) {
-    return profileLookup.data.email;
+  let email = null;
+  let name = null;
+  if (!profileLookup.error && profileLookup.data) {
+    email = profileLookup.data.email ?? null;
+    name = profileLookup.data.name ?? null;
   }
+
+  if (email) return { email, name };
 
   // Fallback: auth.users via admin API if present on the injected client.
   try {
@@ -224,8 +242,8 @@ async function resolveEmail(serviceClient, userId) {
       typeof serviceClient.auth.admin.getUserById === "function"
     ) {
       const adminLookup = await serviceClient.auth.admin.getUserById(userId);
-      const email = adminLookup?.data?.user?.email;
-      if (email) return email;
+      const fallbackEmail = adminLookup?.data?.user?.email ?? null;
+      if (fallbackEmail) return { email: fallbackEmail, name };
     }
   } catch (err) {
     console.error(
@@ -234,5 +252,5 @@ async function resolveEmail(serviceClient, userId) {
     );
   }
 
-  return null;
+  return { email: null, name };
 }

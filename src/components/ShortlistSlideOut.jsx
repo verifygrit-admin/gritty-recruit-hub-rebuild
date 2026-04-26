@@ -26,7 +26,15 @@
  *         droi, net_cost, coa, break_even
  *   userFirstName (string)
  *   userLastName (string)
- *   contacts ({ hs_head_coach_email: string|null, hs_guidance_counselor_email: string|null })
+ *   contacts — Sprint 007 R5 + R4 extended shape:
+ *     {
+ *       hs_head_coach_email:         string|null,  // DEPRECATED post-Sprint 007 R5; Email Coach now targets college head coach via college_head_coach_email.
+ *       hs_guidance_counselor_email: string|null,
+ *       hs_guidance_counselor_name:  string|null,  // R4 — for {counselorName} token
+ *       college_head_coach_email:    string|null,  // R5 — selected per-school via college_coaches.is_head_coach=true
+ *       college_head_coach_name:     string|null,  // R4 — for {coachName} token; null when no head-coach record on file
+ *     }
+ *   studentProfile ({ name, grad_year, position, high_school }) — used for R4 token resolution
  *   files (array of file_uploads rows filtered to this item's unitid)
  */
 
@@ -35,7 +43,7 @@ import SlideOutShell from './SlideOutShell.jsx';
 import StatusPill from './StatusPill.jsx';
 import CollapsibleTitleStrip from './CollapsibleTitleStrip.jsx';
 import useIsNarrowViewport from '../hooks/useIsNarrowViewport.js';
-import { buildMailtoHref } from '../lib/copy/shortlistMailtoCopy.js';
+import { buildMailtoHref, resolveTemplateTokens } from '../lib/copy/shortlistMailtoCopy.js';
 
 const MAROON = '#8B3A3A';
 const MUTED = '#6B6B6B';
@@ -105,7 +113,14 @@ export default function ShortlistSlideOut({
   item,
   userFirstName = '',
   userLastName = '',
-  contacts = { hs_head_coach_email: null, hs_guidance_counselor_email: null },
+  contacts = {
+    hs_head_coach_email: null,
+    hs_guidance_counselor_email: null,
+    hs_guidance_counselor_name: null,
+    college_head_coach_email: null,
+    college_head_coach_name: null,
+  },
+  studentProfile = null,
   files = [],
   onToggleStep = null,
   updatingStepId = null,
@@ -462,22 +477,60 @@ export default function ShortlistSlideOut({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {PRE_READ_DOC_TYPES.map((doc) => {
               const submitted = Boolean(submittedByDocType[doc.key]);
-              const status = submitted ? 'SUBMITTED' : 'NOT SUBMITTED';
-              const tokens = {
-                studentFirstName: userFirstName || '',
-                studentLastName: userLastName || '',
+              // Sprint 007 B.2 — token resolution moves to a single helper
+              // (resolveTemplateTokens) that builds the {tokens} bag with
+              // R4 fallbacks (Coach / Hello / Junior / etc.). The helper
+              // pulls profile fields off studentProfile prop; userFirst/Last
+              // remain the canonical name source — fall back to studentProfile
+              // only if the explicit props are not provided.
+              const profileForTokens = {
+                name:
+                  (userFirstName || userLastName)
+                    ? `${userFirstName || ''} ${userLastName || ''}`.trim()
+                    : studentProfile?.name,
+                grad_year:   studentProfile?.grad_year,
+                position:    studentProfile?.position,
+                high_school: studentProfile?.high_school,
+              };
+              const tokens = resolveTemplateTokens({
+                profile: profileForTokens,
                 schoolName,
                 documentType: doc.label,
-                documentStatus: status,
-              };
+                documentSubmitted: submitted,
+                coachName: contacts?.college_head_coach_name ?? null,
+                counselorName: contacts?.hs_guidance_counselor_name ?? null,
+              });
+
+              // Sprint 007 R5 — Email Coach button targets the COLLEGE head
+              // coach for this school. Three states:
+              //   1. email present                 -> enabled mailto
+              //   2. record exists, email missing  -> disabled, specific tooltip
+              //   3. no record at all              -> disabled, specific tooltip
+              // Disambiguation: college_coaches.name is NOT NULL on the table,
+              // so a null name in contacts means no row was returned. A
+              // non-null name + null email means the row exists without an
+              // email.
+              const coachEmail = contacts?.college_head_coach_email ?? null;
+              const coachRecordExists = Boolean(contacts?.college_head_coach_name);
               const coachHref = buildMailtoHref({
                 recipient: 'coach',
-                email: contacts?.hs_head_coach_email,
+                email: coachEmail,
+                documentTypeKey: doc.key,
                 tokens,
               });
+              let coachDisabledTooltip;
+              if (!coachEmail && !coachRecordExists) {
+                coachDisabledTooltip = `No head coach on file for ${schoolName} — flag this to your HS coach or counselor.`;
+              } else if (!coachEmail && coachRecordExists) {
+                coachDisabledTooltip = `Head coach record on file for ${schoolName} has no email — flag this so we can update it.`;
+              } else {
+                coachDisabledTooltip = 'No coach email on file — add to your Student Profile';
+              }
+
               const counselorHref = buildMailtoHref({
                 recipient: 'counselor',
                 email: contacts?.hs_guidance_counselor_email,
+                documentTypeKey: doc.key,
                 tokens,
               });
 
@@ -512,7 +565,7 @@ export default function ShortlistSlideOut({
                       href={coachHref}
                       label={coachLabel}
                       ariaLabel={coachAriaLabel}
-                      tooltipWhenDisabled="No coach email on file — add to your Student Profile"
+                      tooltipWhenDisabled={coachDisabledTooltip}
                     />
                     <MailtoButton
                       testid={`sso-doc-email-counselor-${doc.key}`}

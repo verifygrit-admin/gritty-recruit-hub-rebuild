@@ -218,7 +218,15 @@ export default function SlideOutShell({
     boxShadow: isMobile
       ? '0 -4px 24px rgba(0,0,0,0.15)'
       : (isLeft ? '4px 0 24px rgba(0,0,0,0.15)' : '-4px 0 24px rgba(0,0,0,0.15)'),
+    overflowX: 'hidden',
     overflowY: 'auto',
+    // Sprint 007 B.3 — lock mobile gestures inside the slide-out panel to
+    // vertical drag only. Prevents accidental horizontal pans (which the OS
+    // can interpret as page-level back/forward swipes or which surface as
+    // the wobbly "parallax" feel reported in the slideout). Desktop keeps
+    // pan-y too — harmless on a mouse, useful on touch laptops.
+    touchAction: 'pan-y',
+    overscrollBehavior: 'contain',
     transition: reducedMotion
       ? 'none'
       : `transform ${ANIM_DURATION_MS}ms ${ANIM_EASING}`,

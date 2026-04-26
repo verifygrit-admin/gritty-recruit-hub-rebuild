@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shortlist · Recruiting Scoreboard — GrittyOS Recruit Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --burgundy-deep: #5C1620;
+    --burgundy: #7B1F2C;
+    --burgundy-mid: #8B2A37;
+    --burgundy-soft: #A14A56;
+    --burgundy-tint: rgba(123, 31, 44, 0.08);
+    --burgundy-tint-strong: rgba(123, 31, 44, 0.18);
+
+    --parchment: #F4ECD8;
+    --parchment-warm: #EDE3CB;
+    --parchment-light: #F8F2E2;
+    --paper: #FAF6EA;
+
+    --ink: #2A1F1A;
+    --ink-soft: #4A3A30;
+    --ink-mute: #7A6A60;
+    --ink-ghost: #A89888;
+
+    --rule: rgba(92, 22, 32, 0.15);
+    --rule-strong: rgba(92, 22, 32, 0.32);
+
+    /* Boolean cells — tuned to harmonize with parchment */
+    --yes-bg: #C8DDB8;
+    --yes-text: #2D4A1F;
+    --no-bg: #F0CFC9;
+    --no-text: #6E2620;
+
+    /* Status pills (from Image 2) */
+    --pill-recommended-bg: #2D7A4A;
+    --pill-recommended-text: #FFFFFF;
+    --pill-stretch-bg: #E89A3C;
+    --pill-stretch-text: #4A2D08;
+    --pill-athletic-bg: #D67B5A;
+    --pill-athletic-text: #FFFFFF;
+    --pill-below-bg: #C66848;
+    --pill-below-text: #FFFFFF;
+
+    /* Score gradient — for Quality Offer Score color coding */
+    --score-high: #2D7A4A;
+    --score-mid: #E89A3C;
+    --score-low: #B85B3F;
+
+    /* Offer profile bar */
+    --bar-track: rgba(92, 22, 32, 0.10);
+    --bar-quality: var(--burgundy-mid);
+    --bar-likelihood: var(--burgundy-soft);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--parchment);
+    color: var(--ink);
+    line-height: 1.55;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(123, 31, 44, 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 60%, rgba(232, 154, 60, 0.05) 0%, transparent 50%);
+  }
+
+  /* === MASTHEAD === */
+  .masthead {
+    background: var(--burgundy-deep);
+    color: var(--paper);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--burgundy);
+  }
+  .masthead .brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 22px;
+    letter-spacing: 0.01em;
+  }
+  .masthead .brand-ornament {
+    color: #E89A3C;
+    margin: 0 6px;
+    font-style: italic;
+  }
+  .masthead .nav {
+    display: flex;
+    gap: 24px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .masthead .nav a {
+    color: var(--paper);
+    opacity: 0.75;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+  .masthead .nav a.active { opacity: 1; border-bottom: 1px solid #E89A3C; padding-bottom: 4px; }
+  .masthead .nav a:hover { opacity: 1; }
+
+  /* === PAGE WRAPPER === */
+  .page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 32px 80px;
+    position: relative;
+  }
+
+  /* === PAGE HEADER (matches Image 2 styling) === */
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .page-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 52px;
+    color: var(--burgundy-deep);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  .page-header h1 em {
+    font-style: italic;
+    color: var(--burgundy);
+  }
+  .page-header .header-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .header-button {
+    background: var(--paper);
+    border: 1px solid var(--burgundy);
+    color: var(--burgundy);
+    padding: 10px 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .header-button:hover {
+    background: var(--burgundy);
+    color: var(--paper);
+  }
+  .page-header .recruit-context {
+    color: var(--ink-mute);
+    font-size: 14px;
+    margin-top: 4px;
+    margin-bottom: 0;
+  }
+  .page-header .recruit-context strong { color: var(--burgundy); font-weight: 600; }
+
+  .school-count {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--ink-mute);
+    margin-bottom: 24px;
+    letter-spacing: 0.04em;
+  }
+  .school-count strong { color: var(--burgundy); font-weight: 600; font-size: 14px; }
+
+  /* === COLLAPSIBLE: Recruiting Scoreboard === */
+  .scoreboard-collapsible {
+    margin-bottom: 24px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--paper);
+    border: 1px solid var(--burgundy-tint-strong);
+    box-shadow: 0 2px 8px rgba(92, 22, 32, 0.06);
+  }
+  .scoreboard-toggle {
+    background: var(--burgundy);
+    color: var(--paper);
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 22px;
+    letter-spacing: 0.01em;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .scoreboard-toggle:hover { background: var(--burgundy-mid); }
+  .scoreboard-toggle .chevron {
+    font-size: 14px;
+    transition: transform 0.3s;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+  .scoreboard-collapsible.open .chevron { transform: rotate(180deg); }
+  .scoreboard-collapsible:not(.open) .scoreboard-content { display: none; }
+
+  /* === SCOREBOARD INTRO === */
+  .scoreboard-intro {
+    padding: 18px 24px 16px;
+    border-bottom: 1px solid var(--burgundy-tint);
+    background: var(--paper);
+  }
+  .scoreboard-intro p {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    max-width: 920px;
+  }
+  .scoreboard-intro p + p { margin-top: 8px; }
+  .scoreboard-intro .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 14px;
+    font-size: 11px;
+    color: var(--ink-mute);
+    letter-spacing: 0.02em;
+  }
+  .scoreboard-intro .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .scoreboard-intro .legend-swatch {
+    display: inline-block;
+    width: 16px;
+    height: 8px;
+    border-radius: 2px;
+  }
+  .legend-swatch.quality { background: var(--bar-quality); }
+  .legend-swatch.likelihood { background: var(--bar-likelihood); }
+  .legend-swatch.yes { background: var(--yes-bg); border: 1px solid var(--yes-text); opacity: 0.7; }
+  .legend-swatch.no { background: var(--no-bg); border: 1px solid var(--no-text); opacity: 0.6; }
+
+  .scoreboard-content {
+    overflow-x: auto;
+  }
+
+  /* === TABLE === */
+  table.scoreboard {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    background: var(--paper);
+    min-width: 1200px;
+  }
+  table.scoreboard thead {
+    background: var(--burgundy-deep);
+    color: var(--paper);
+  }
+  table.scoreboard thead .group-row th {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    padding: 8px 8px;
+    text-transform: none;
+    text-align: center;
+    border-right: 1px solid rgba(244, 236, 216, 0.18);
+    border-bottom: 1px solid rgba(244, 236, 216, 0.18);
+  }
+  table.scoreboard thead .group-row th:last-child { border-right: none; }
+  table.scoreboard thead .group-row th.group-recruiting { background: var(--burgundy-deep); }
+  table.scoreboard thead .group-row th.group-events { background: #2D5C3A; }
+  table.scoreboard thead .group-row th.group-offers { background: var(--burgundy); }
+  table.scoreboard thead .group-row th.group-profile { background: var(--burgundy-deep); }
+
+  table.scoreboard thead .col-row th {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    padding: 9px 8px;
+    text-align: center;
+    letter-spacing: 0.04em;
+    border-right: 1px solid rgba(244, 236, 216, 0.10);
+    border-bottom: 2px solid var(--burgundy);
+    color: var(--paper);
+    background: var(--burgundy-deep);
+    vertical-align: bottom;
+  }
+  table.scoreboard thead .col-row th.evt { background: #2D5C3A; }
+  table.scoreboard thead .col-row th.off { background: var(--burgundy); }
+  table.scoreboard thead .col-row th.sortable { cursor: pointer; }
+  table.scoreboard thead .col-row th.sortable:hover { background: var(--burgundy-mid); }
+  table.scoreboard thead .col-row th.sortable.evt:hover { background: #3D6F4A; }
+  table.scoreboard thead .col-row th.sortable.off:hover { background: var(--burgundy-mid); }
+  table.scoreboard thead .col-row th .sort-marker {
+    margin-left: 4px;
+    opacity: 0.6;
+    font-size: 9px;
+  }
+  table.scoreboard thead .col-row th.sort-active .sort-marker { opacity: 1; color: #E89A3C; }
+
+  table.scoreboard tbody tr {
+    border-bottom: 1px solid var(--rule);
+    transition: background 0.15s;
+  }
+  table.scoreboard tbody tr:hover { background: rgba(232, 154, 60, 0.06); }
+  table.scoreboard tbody tr.boundary {
+    border-bottom: 2px solid var(--burgundy-deep);
+    position: relative;
+  }
+  table.scoreboard tbody tr.boundary td {
+    border-bottom: 2px solid var(--burgundy-deep);
+  }
+
+  /* Boundary marker row */
+  tr.boundary-marker td {
+    background: linear-gradient(90deg, var(--burgundy-tint) 0%, transparent 100%);
+    padding: 6px 14px !important;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--burgundy);
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--burgundy-tint-strong) !important;
+  }
+
+  table.scoreboard td {
+    padding: 10px 10px;
+    border-right: 1px solid var(--rule);
+    vertical-align: middle;
+  }
+  table.scoreboard td:last-child { border-right: none; }
+
+  td.col-rank {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--burgundy);
+    text-align: center;
+    width: 44px;
+  }
+  td.col-unitid {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--ink-mute);
+    text-align: center;
+    letter-spacing: 0.02em;
+    width: 64px;
+  }
+  td.col-college {
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 13px;
+    min-width: 220px;
+  }
+  td.col-college .college-name { display: block; font-weight: 500; }
+  td.col-college .college-conf {
+    display: block;
+    font-size: 10.5px;
+    color: var(--ink-mute);
+    margin-top: 1px;
+    letter-spacing: 0.04em;
+  }
+  td.col-division {
+    text-align: center;
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-weight: 500;
+    width: 70px;
+    letter-spacing: 0.02em;
+  }
+
+  /* Boolean cells */
+  td.bool {
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    font-weight: 500;
+    width: 90px;
+  }
+  td.bool .bool-cell {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 3px;
+    min-width: 38px;
+  }
+  td.bool .bool-cell.yes {
+    background: var(--yes-bg);
+    color: var(--yes-text);
+  }
+  td.bool .bool-cell.no {
+    background: var(--no-bg);
+    color: var(--no-text);
+  }
+
+  /* Quality Offer Score column */
+  td.col-quality {
+    text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    font-weight: 600;
+    width: 110px;
+  }
+  td.col-quality.tier-high { color: var(--score-high); }
+  td.col-quality.tier-mid { color: var(--score-mid); }
+  td.col-quality.tier-low { color: var(--score-low); }
+
+  /* Offer Profile compound viz */
+  td.col-profile {
+    width: 220px;
+    padding: 10px 14px !important;
+  }
+  .profile-viz {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .profile-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10.5px;
+  }
+  .profile-row .profile-label {
+    flex-shrink: 0;
+    width: 50px;
+    color: var(--ink-mute);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    font-size: 9.5px;
+    text-transform: uppercase;
+  }
+  .profile-row .profile-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--bar-track);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+  .profile-row .profile-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .profile-row .profile-fill.quality { background: var(--bar-quality); }
+  .profile-row .profile-fill.likelihood {
+    background: var(--bar-likelihood);
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 3px,
+      rgba(255,255,255,0.18) 3px,
+      rgba(255,255,255,0.18) 6px
+    );
+  }
+  .profile-row .profile-value {
+    flex-shrink: 0;
+    width: 38px;
+    text-align: right;
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .profile-row.illustrative .profile-value::after {
+    content: '*';
+    margin-left: 1px;
+    color: var(--burgundy);
+  }
+  .profile-composite-line {
+    height: 1px;
+    background: var(--rule);
+    margin: 2px 4px;
+  }
+  .profile-row.composite .profile-label {
+    color: var(--burgundy);
+    font-weight: 600;
+    font-size: 9px;
+  }
+  .profile-row.composite .profile-value {
+    color: var(--burgundy);
+    font-weight: 700;
+  }
+
+  /* === FILTER BAR === */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin: 24px 0 16px;
+    padding: 12px 0;
+    flex-wrap: wrap;
+  }
+  .filter-bar label {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-right: 6px;
+  }
+  .filter-bar select {
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+    border-radius: 4px;
+    padding: 7px 28px 7px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%237B1F2C' stroke-width='2'><path d='M3 5l3 3 3-3'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+
+  /* === SHORTLIST CARDS (existing pattern, simplified) === */
+  .shortlist-header {
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    padding: 12px 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--burgundy);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .shortlist-header .sort-arrow { font-size: 11px; }
+  .shortlist-cards {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 0 0 4px 4px;
+    overflow: hidden;
+  }
+  .shortlist-card {
+    display: flex;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--rule);
+    transition: background 0.15s;
+  }
+  .shortlist-card:last-child { border-bottom: none; }
+  .shortlist-card:hover { background: rgba(232, 154, 60, 0.04); }
+  .shortlist-card .card-rank {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--ink-mute);
+    width: 60px;
+  }
+  .shortlist-card .card-school {
+    flex: 1;
+  }
+  .shortlist-card .card-school .name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--burgundy);
+    line-height: 1.1;
+  }
+  .shortlist-card .card-school .meta {
+    font-size: 12px;
+    color: var(--ink-mute);
+    margin-top: 4px;
+  }
+  .shortlist-card .card-status {
+    flex-shrink: 0;
+  }
+  .status-pill {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .status-pill.recommended {
+    background: var(--pill-recommended-bg);
+    color: var(--pill-recommended-text);
+  }
+  .status-pill.stretch {
+    background: var(--pill-stretch-bg);
+    color: var(--pill-stretch-text);
+  }
+  .status-pill.athletic {
+    background: var(--pill-athletic-bg);
+    color: var(--pill-athletic-text);
+  }
+  .status-pill.below {
+    background: var(--pill-below-bg);
+    color: var(--pill-below-text);
+  }
+
+  /* === FOOTNOTE === */
+  .footnote {
+    font-size: 11.5px;
+    color: var(--ink-mute);
+    line-height: 1.6;
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-left: 3px solid var(--burgundy-soft);
+    background: var(--burgundy-tint);
+    border-radius: 2px;
+  }
+  .footnote strong {
+    color: var(--burgundy);
+    font-weight: 600;
+  }
+  .footnote .marker {
+    display: inline-block;
+    color: var(--burgundy);
+    font-weight: 700;
+    margin-right: 2px;
+  }
+
+  /* === SECTION DIVIDER === */
+  .section-divider {
+    margin: 40px 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .section-divider .line {
+    flex: 1;
+    height: 1px;
+    background: var(--rule-strong);
+  }
+  .section-divider .label {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--burgundy);
+    letter-spacing: 0.02em;
+  }
+
+  /* Mobile */
+  @media (max-width: 960px) {
+    .page-header h1 { font-size: 36px; }
+    .page { padding: 20px 16px 60px; }
+    .masthead { padding: 14px 16px; }
+    .masthead .nav { gap: 14px; font-size: 11px; }
+    table.scoreboard { font-size: 11.5px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">GrittyOS<span class="brand-ornament">·</span><span style="font-family: 'Inter'; font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.85;">Recruit Hub</span></div>
+  <nav class="nav">
+    <a href="#">Dashboard</a>
+    <a href="#" class="active">Shortlist</a>
+    <a href="#">Profile</a>
+    <a href="#">Recruiting Calendar</a>
+    <a href="#">Resources</a>
+  </nav>
+</header>
+
+<main class="page">
+
+  <div class="page-header">
+    <div>
+      <h1>Your <em>Shortlist</em></h1>
+      <p class="recruit-context"><strong>Ayden Watkins</strong> · BC High '27 · CB</p>
+    </div>
+    <div class="header-actions">
+      <button class="header-button">↻ Refresh Status</button>
+    </div>
+  </div>
+
+  <div class="school-count"><strong>27 schools</strong> · last updated April 26, 2026</div>
+
+  <!-- ================================ -->
+  <!-- COLLAPSIBLE: RECRUITING SCOREBOARD -->
+  <!-- ================================ -->
+  <div class="scoreboard-collapsible open" id="scoreboard">
+    <div class="scoreboard-toggle" onclick="toggleScoreboard()">
+      <span>Recruiting Scoreboard</span>
+      <span class="chevron">▾</span>
+    </div>
+
+    <div class="scoreboard-intro">
+      <p>The Scoreboard tracks <strong>relationship progress</strong> across seven Key Recruiting Journey Steps for every school in your shortlist. The Quality Offer Score reflects how completely the relationship has been developed; the Athletic Fit Score (from the Grit Fit Engine) reflects how well your athletic profile matches that school's level of competition. Together they form the <strong>Offer Profile</strong> — Quality × Athletic Fit, sorted descending. Schools above the line clear the 35% Offer Profile threshold.</p>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch yes"></span>Yes (step completed)</span>
+        <span class="legend-item"><span class="legend-swatch no"></span>No (not yet)</span>
+        <span class="legend-item"><span class="legend-swatch quality"></span>Quality Offer Score (live)</span>
+        <span class="legend-item"><span class="legend-swatch likelihood"></span>Athletic Fit Score (Grit Fit Engine)</span>
+      </div>
+    </div>
+
+    <div class="scoreboard-content">
+      <table class="scoreboard">
+        <thead>
+          <tr class="group-row">
+            <th class="group-recruiting" colspan="4">Recruiting Scoreboard</th>
+            <th class="group-events" colspan="5">Key Recruiting Journey Steps</th>
+            <th class="group-offers" colspan="2">Offers</th>
+            <th class="group-profile" colspan="2">Offer Profile</th>
+          </tr>
+          <tr class="col-row">
+            <th class="sortable" data-sort="rank">Rank<span class="sort-marker">▲</span></th>
+            <th>UNITID</th>
+            <th class="sortable" data-sort="college">College</th>
+            <th>Division</th>
+            <th class="evt">HC<br>Contact</th>
+            <th class="evt">AC<br>Contact</th>
+            <th class="evt">Jr Day<br>Invite</th>
+            <th class="evt">FB Camp<br>Invite</th>
+            <th class="evt">Tour /<br>Visit Confirmed</th>
+            <th class="off">Admissions<br>Pre-Read Req.</th>
+            <th class="off">Financial Aid<br>Pre-Read Submitted</th>
+            <th class="sortable sort-active" data-sort="quality">Quality Offer<br>Score<span class="sort-marker">▼</span></th>
+            <th>Compound<br>Profile</th>
+          </tr>
+        </thead>
+        <tbody id="scoreboard-body">
+          <!-- populated by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div style="padding: 14px 22px 22px;">
+      <div class="footnote">
+        The Quality Offer Score is computed live from seven Key Recruiting Journey Steps (the offer-relevant subset of the 15-step Recruiting Journey schema): count of Yes ÷ 7 × 100%. The Athletic Fit Score is pulled from the GrittyOS Grit Fit Scoring Engine, mapped to each school's level of competition (Power 4: 13.9%, G6: 30.2%, FCS: 47.8%, D2: 67.6%, D3: 84.5% for this student). The journey-step booleans are <strong>read-only</strong> in the Scoreboard; they update only when the student marks a step complete on the school card itself in the Shortlist. <strong>Offer Profile = Quality Offer Score × Athletic Fit Score</strong> — both metrics required, neither substitutes for the other.
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================ -->
+  <!-- FILTER BAR (existing pattern) -->
+  <!-- ================================ -->
+  <div class="filter-bar">
+    <div><label>Filter:</label><select><option>All Status</option><option>Currently Recommended</option><option>Academic Stretch</option><option>Athletic Stretch</option></select></div>
+    <div><select><option>All Divisions</option><option>D1-FBS</option><option>D1-FCS</option><option>D2</option><option>D3</option></select></div>
+    <div><select><option>All Conferences</option><option>NESCAC</option><option>Liberty</option><option>Centennial</option><option>Patriot</option><option>CAA</option></select></div>
+    <div style="margin-left: auto;"><label>Sort by:</label><select><option>Name (A–Z)</option><option>Rank</option><option>Quality Offer Score</option></select></div>
+  </div>
+
+  <!-- ================================ -->
+  <!-- EXISTING SHORTLIST CARDS -->
+  <!-- ================================ -->
+  <div class="section-divider">
+    <span class="label">Shortlist · card view</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="shortlist-header">RANK <span class="sort-arrow">↑</span></div>
+  <div class="shortlist-cards" id="shortlist-cards">
+    <!-- populated by JS, top 5 schools -->
+  </div>
+
+</main>
+
+<script>
+// ============================================================
+// === DATA: 27 schools from Image 1, plus illustrative Offer Likelihood ===
+// ============================================================
+// Boolean order: [HC_Contact, AC_Contact, Jr_Day_Invite, FB_Camp_Invite, Tour_Visit_Confirmed, Admissions_PreRead_Req, FinAid_PreRead_Submitted]
+// Athletic Fit Score: pulled from the GrittyOS Grit Fit Scoring Engine for Ayden Watkins's profile.
+// Each school's Athletic Fit = student's score for that school's level of competition:
+//   Power 4: 13.9% | G6: 30.2% | FCS: 47.8% | D2: 67.6% | D3: 84.5%
+// UConn (FBS Independent) maps to G6 per DEC-CFBRB-XXX.
+
+const schools = [
+  { rank:  1, unitid: 216597, college: "Villanova University", conf: "Patriot", div: "1-FCS", bools: [false,true,true,false,false,false,false], athleticFit: 47.8 },
+  { rank:  2, unitid: 161253, college: "University of Maine", conf: "CAA", div: "1-FCS", bools: [false,true,true,true,true,true,false], athleticFit: 47.8 },
+  { rank:  3, unitid: 217484, college: "University of Rhode Island", conf: "CAA", div: "1-FCS", bools: [false,true,true,true,true,false,false], athleticFit: 47.8 },
+  { rank:  4, unitid: 183044, college: "University of New Hampshire", conf: "CAA", div: "1-FCS", bools: [false,true,true,true,true,false,false], athleticFit: 47.8 },
+  { rank:  5, unitid: 231624, college: "William & Mary", conf: "Patriot", div: "1-FCS", bools: [false,true,true,false,true,false,false], athleticFit: 47.8 },
+  { rank:  6, unitid: 232265, college: "Hampton University", conf: "CAA", div: "1-FCS", bools: [false,true,true,true,true,false,false], athleticFit: 47.8 },
+  { rank:  7, unitid: 131520, college: "Howard University", conf: "MEAC", div: "1-FCS", bools: [false,true,true,false,true,false,false], athleticFit: 47.8 },
+  { rank:  8, unitid: 133650, college: "Florida A&M University", conf: "SWAC", div: "1-FCS", bools: [false,false,true,false,false,false,false], athleticFit: 47.8 },
+  { rank:  9, unitid: 166124, college: "College of the Holy Cross", conf: "Patriot", div: "1-FCS", bools: [false,true,true,true,true,false,false], athleticFit: 47.8 },
+  { rank: 10, unitid: 131496, college: "Georgetown University", conf: "Patriot", div: "1-FCS", bools: [false,true,true,false,true,false,false], athleticFit: 47.8 },
+  { rank: 11, unitid: 160977, college: "Bates College", conf: "NESCAC", div: "3-Div III", bools: [false,true,true,true,true,false,false], athleticFit: 84.5 },
+  { rank: 12, unitid: 164739, college: "Bentley University", conf: "NE10", div: "2-Div II", bools: [false,false,true,true,false,false,false], athleticFit: 67.6 },
+  { rank: 13, unitid: 131283, college: "Catholic University of America", conf: "Landmark", div: "3-Div III", bools: [false,true,true,false,false,false,false], athleticFit: 84.5 },
+  { rank: 14, unitid: 212577, college: "Franklin and Marshall College", conf: "Centennial", div: "3-Div III", bools: [true,true,true,true,true,false,false], athleticFit: 84.5 },
+  { rank: 15, unitid: 130697, college: "Wesleyan University", conf: "NESCAC", div: "3-Div III", bools: [true,true,true,true,true,true,false], athleticFit: 84.5 },
+  { rank: 16, unitid: 196866, college: "Union College", conf: "Liberty", div: "3-Div III", bools: [true,true,true,true,true,false,false], athleticFit: 84.5 },
+  { rank: 17, unitid: 194824, college: "Rensselaer Polytechnic Institute", conf: "Liberty", div: "3-Div III", bools: [true,true,true,true,true,false,false], athleticFit: 84.5 },
+  { rank: 18, unitid: 212009, college: "Dickinson College", conf: "Centennial", div: "3-Div III", bools: [false,true,false,false,false,false,false], athleticFit: 84.5 },
+  { rank: 19, unitid: 168148, college: "Tufts University", conf: "NESCAC", div: "3-Div III", bools: [true,false,true,true,true,false,false], athleticFit: 84.5 },
+  { rank: 20, unitid: 191630, college: "Hobart William Smith Colleges", conf: "Liberty", div: "3-Div III", bools: [true,true,false,false,false,false,false], athleticFit: 84.5 },
+  { rank: 21, unitid: 195030, college: "University of Rochester", conf: "Liberty", div: "3-Div III", bools: [false,true,true,false,true,false,false], athleticFit: 84.5 },
+  { rank: 22, unitid: 161004, college: "Bowdoin College", conf: "NESCAC", div: "3-Div III", bools: [false,true,true,true,true,false,false], athleticFit: 84.5 },
+  { rank: 23, unitid: 130590, college: "Trinity College", conf: "NESCAC", div: "3-Div III", bools: [true,true,true,true,true,false,false], athleticFit: 84.5 },
+  { rank: 24, unitid: 129020, college: "University of Connecticut", conf: "Indy", div: "1-FBS", bools: [false,false,true,false,false,false,false], athleticFit: 30.2 },
+  { rank: 25, unitid: 161086, college: "Colby College", conf: "NESCAC", div: "3-Div III", bools: [false,true,true,true,true,false,false], athleticFit: 84.5 },
+  { rank: 26, unitid: 230959, college: "Middlebury College", conf: "NESCAC", div: "3-Div III", bools: [false,true,true,false,false,false,false], athleticFit: 84.5 },
+  { rank: 27, unitid: 129941, college: "University of New Haven", conf: "Northeast", div: "1-FCS", bools: [false,true,true,false,true,false,false], athleticFit: 47.8 }
+];
+
+// ============================================================
+// === RENDER ===
+// ============================================================
+
+function qualityScore(bools) {
+  return Math.round((bools.filter(Boolean).length / 7) * 10000) / 100;
+}
+
+function offerProfile(quality, athleticFit) {
+  // Offer Profile = Quality Offer Score × Athletic Fit Score (multiplicative model).
+  // A student needs both relationship work AND athletic fit at the school's level — strength in one
+  // cannot substitute for absence in the other. Returned as 0–100 percentage.
+  return Math.round((quality * athleticFit) / 100 * 100) / 100;
+}
+
+function tier(quality) {
+  if (quality >= 70) return 'high';
+  if (quality >= 40) return 'mid';
+  return 'low';
+}
+
+function boolCell(v) {
+  return `<td class="bool"><span class="bool-cell ${v ? 'yes' : 'no'}">${v ? 'Yes' : 'No'}</span></td>`;
+}
+
+function profileViz(quality, athleticFit) {
+  const profile = offerProfile(quality, athleticFit);
+  return `
+    <div class="profile-viz">
+      <div class="profile-row">
+        <span class="profile-label">Quality</span>
+        <div class="profile-bar"><div class="profile-fill quality" style="width: ${quality}%"></div></div>
+        <span class="profile-value">${quality.toFixed(0)}%</span>
+      </div>
+      <div class="profile-row">
+        <span class="profile-label">Ath Fit</span>
+        <div class="profile-bar"><div class="profile-fill likelihood" style="width: ${athleticFit}%"></div></div>
+        <span class="profile-value">${athleticFit}%</span>
+      </div>
+      <div class="profile-composite-line"></div>
+      <div class="profile-row composite">
+        <span class="profile-label">Profile</span>
+        <div class="profile-bar"><div class="profile-fill quality" style="width: ${profile}%; opacity: 0.85;"></div></div>
+        <span class="profile-value">${profile.toFixed(0)}%</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderScoreboard() {
+  // Compute profiles, sort descending by Offer Profile (Quality × Athletic Fit)
+  const enriched = schools.map(s => {
+    const q = qualityScore(s.bools);
+    const p = offerProfile(q, s.athleticFit);
+    return { ...s, quality: q, profile: p };
+  });
+  enriched.sort((a, b) => b.profile - a.profile);
+
+  // Boundary: 35% Offer Profile threshold (tunable; see SPEC_FOR_CODE.md)
+  const PROFILE_THRESHOLD = 35;
+  const boundaryIdx = enriched.findIndex(s => s.profile < PROFILE_THRESHOLD);
+
+  const tbody = document.getElementById('scoreboard-body');
+  let html = '';
+  enriched.forEach((s, idx) => {
+    if (idx === boundaryIdx) {
+      html += `
+        <tr class="boundary-marker">
+          <td colspan="13">— Active prospects (Offer Profile ≥ ${PROFILE_THRESHOLD}%) above. Below: lower-priority outreach.</td>
+        </tr>
+      `;
+    }
+    const t = tier(s.quality);
+    html += `
+      <tr>
+        <td class="col-rank">${idx + 1}</td>
+        <td class="col-unitid">${s.unitid}</td>
+        <td class="col-college">
+          <span class="college-name">${s.college}</span>
+          <span class="college-conf">${s.conf}</span>
+        </td>
+        <td class="col-division">${s.div}</td>
+        ${s.bools.map(boolCell).join('')}
+        <td class="col-quality tier-${t}">${s.quality.toFixed(2)}%</td>
+        <td class="col-profile">${profileViz(s.quality, s.athleticFit)}</td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+}
+
+function renderShortlistCards() {
+  // Show top 5 schools by profile, matching the existing card pattern
+  const enriched = schools.map(s => {
+    const q = qualityScore(s.bools);
+    return { ...s, quality: q, profile: offerProfile(q, s.athleticFit) };
+  });
+  enriched.sort((a, b) => b.profile - a.profile);
+  const top5 = enriched.slice(0, 5);
+
+  // Map status pill from athletic fit (mirroring Image 2 pattern + Grit Fit Score tiers)
+  const statusFor = (s) => {
+    if (s.div === '2-Div II' && s.athleticFit >= 60 && s.profile >= 35) return ['recommended', 'Currently Recommended'];
+    if (s.div.startsWith('3') && s.athleticFit >= 80) return ['stretch', 'Academic Stretch'];
+    if (s.div === '1-FCS' && s.athleticFit >= 40) return ['athletic', 'Athletic Stretch'];
+    if (s.div === '1-FBS') return ['below', 'Below Athletic Fit'];
+    return ['stretch', 'Academic Stretch'];
+  };
+
+  const html = top5.map((s, idx) => {
+    const [pillClass, pillText] = statusFor(s);
+    const divLabel = s.div === '3-Div III' ? 'D3' : s.div === '2-Div II' ? 'D2' : s.div === '1-FCS' ? 'FCS' : 'FBS';
+    return `
+      <div class="shortlist-card">
+        <div class="card-rank">${idx + 1}</div>
+        <div class="card-school">
+          <div class="name">${s.college}</div>
+          <div class="meta">${divLabel} · ${s.conf}</div>
+        </div>
+        <div class="card-status">
+          <span class="status-pill ${pillClass}">${pillText}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('shortlist-cards').innerHTML = html;
+}
+
+function toggleScoreboard() {
+  document.getElementById('scoreboard').classList.toggle('open');
+}
+
+renderScoreboard();
+renderShortlistCards();
+</script>
+
+</body>
+</html>

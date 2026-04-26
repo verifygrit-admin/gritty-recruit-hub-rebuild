@@ -107,8 +107,10 @@ export default function AthleticFitScorecard({
             })}
           </div>
 
-          <div style={{ marginTop: 10, fontSize: '0.75rem', color: '#6B6B6B' }}>
-            Compared to matched schools.
+          <div style={{ marginTop: 10, fontSize: '0.75rem', color: '#6B6B6B', lineHeight: 1.4 }}>
+            Your percent rank compared to the distribution of Height, Weight, and Speed of all
+            players in each level of college football. A score of 50% means your athletic metrics
+            equate to the average athletic metrics for that level of play.
           </div>
         </div>
       )}

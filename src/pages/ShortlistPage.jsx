@@ -18,6 +18,7 @@ import { computeGritFitStatuses } from '../lib/gritFitStatus.js';
 import ShortlistFilters from '../components/ShortlistFilters.jsx';
 import ShortlistRow from '../components/ShortlistRow.jsx';
 import PreReadLibrary from '../components/PreReadLibrary.jsx';
+import RecruitingScoreboard from '../components/RecruitingScoreboard.jsx';
 import ShortlistSlideOut from '../components/ShortlistSlideOut.jsx';
 import ErrorBoundary from '../components/ErrorBoundary.jsx';
 
@@ -226,13 +227,22 @@ export default function ShortlistPage() {
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // S3 slide-out state (Sprint 004 Wave 4)
+  // S3 slide-out state (Sprint 004 Wave 4 + Sprint 007 R5/R4 extensions)
   const [activeShortlistItem, setActiveShortlistItem] = useState(null);
   const [contacts, setContacts] = useState({
     hs_head_coach_email: null,
     hs_guidance_counselor_email: null,
+    hs_guidance_counselor_name: null,    // Sprint 007 R4 — for {counselorName}
   });
   const [studentName, setStudentName] = useState({ first: '', last: '' });
+  // Sprint 007 R4 — extended profile fields needed for token resolution
+  // ({studentClassYear} / {studentPosition} / {studentHighSchool}).
+  const [studentProfile, setStudentProfile] = useState(null);
+  // Sprint 007 R5 — per-school college head coach lookup. Map keyed by
+  // unitid → { college_head_coach_email, college_head_coach_name }.
+  // Populated by a bulk query against college_coaches WHERE is_head_coach=true
+  // for the unitids currently in the shortlist.
+  const [headCoachByUnitid, setHeadCoachByUnitid] = useState({});
 
   // ── Data loading ──
   useEffect(() => {
@@ -240,28 +250,39 @@ export default function ShortlistPage() {
     loadData();
   }, [session]);
 
-  // S3: pre-fetch recruiting contacts + student name once per session.
+  // S3: pre-fetch recruiting contacts + student profile once per session.
   // One EF call per page load, cached for every slide-out open.
+  // Sprint 007 R4 — also reads grad_year / position / high_school for token
+  // resolution. The EF response now includes the counselor and HS coach name.
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
     (async () => {
       try {
-        // Profile name (split on first space — profiles.name is a single text column)
+        // Profile fields — name (split on first space), plus the fields the
+        // R4 templates need for token resolution.
         const { data: profileRow } = await supabase
           .from('profiles')
-          .select('name')
+          .select('name, grad_year, position, high_school')
           .eq('user_id', session.user.id)
           .maybeSingle();
-        if (!cancelled && profileRow?.name) {
-          const parts = profileRow.name.trim().split(/\s+/);
-          setStudentName({
-            first: parts[0] || '',
-            last: parts.slice(1).join(' ') || '',
+        if (!cancelled && profileRow) {
+          if (profileRow.name) {
+            const parts = profileRow.name.trim().split(/\s+/);
+            setStudentName({
+              first: parts[0] || '',
+              last: parts.slice(1).join(' ') || '',
+            });
+          }
+          setStudentProfile({
+            name:        profileRow.name,
+            grad_year:   profileRow.grad_year,
+            position:    profileRow.position,
+            high_school: profileRow.high_school,
           });
         }
 
-        // Recruiting contacts via EF
+        // Recruiting contacts via EF (now returns coach + counselor names)
         const accessToken = session.access_token;
         if (!accessToken) return;
         const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/student-read-recruiting-contacts`;
@@ -285,6 +306,56 @@ export default function ShortlistPage() {
       cancelled = true;
     };
   }, [session]);
+
+  // Sprint 007 R5 — bulk fetch college head coaches for the unitids in the
+  // shortlist. Single round-trip; rebuilds whenever the shortlist set
+  // changes. RLS on college_coaches allows public SELECT (migration 0029).
+  useEffect(() => {
+    if (!items || items.length === 0) {
+      setHeadCoachByUnitid({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const unitids = Array.from(new Set(items.map((i) => i.unitid).filter(Boolean)));
+      if (unitids.length === 0) return;
+      const { data, error } = await supabase
+        .from('college_coaches')
+        .select('unitid, name, email')
+        .in('unitid', unitids)
+        .eq('is_head_coach', true);
+      if (cancelled) return;
+      if (error) {
+        console.error('college_coaches head-coach bulk fetch failed:', error);
+        return;
+      }
+      const map = {};
+      for (const row of data || []) {
+        map[row.unitid] = {
+          college_head_coach_email: row.email ?? null,
+          college_head_coach_name:  row.name  ?? null,
+        };
+      }
+      setHeadCoachByUnitid(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [items]);
+
+  // Sprint 007 — merge per-school college head coach into the contacts shape
+  // for the active slide-out. When no head coach record exists for the school,
+  // both college_head_coach_email and college_head_coach_name resolve to
+  // null, which the slide-out interprets as the "no record" R5 disabled state.
+  const slideOutContacts = useMemo(() => {
+    const perSchool = activeShortlistItem
+      ? (headCoachByUnitid[activeShortlistItem.unitid] || {
+          college_head_coach_email: null,
+          college_head_coach_name:  null,
+        })
+      : { college_head_coach_email: null, college_head_coach_name: null };
+    return { ...contacts, ...perSchool };
+  }, [contacts, headCoachByUnitid, activeShortlistItem]);
 
   const loadData = async () => {
     setLoading(true);
@@ -854,6 +925,16 @@ export default function ShortlistPage() {
         </button>
       </div>
 
+      {/* Sprint 007 B.1 — Recruiting Scoreboard mounts above the Pre-Read
+          Docs Library. Read-only lens onto the existing shortlist rows;
+          Quality + Athletic Fit + Offer Profile per school. Edits flow
+          through the existing school-card UI elsewhere on the Shortlist;
+          this component never writes. */}
+      <RecruitingScoreboard
+        items={items}
+        studentProfile={studentProfile}
+      />
+
       {/* Pre-Read Docs Library */}
       <PreReadLibrary
         userId={session.user.id}
@@ -966,7 +1047,8 @@ export default function ShortlistPage() {
           item={activeShortlistItem}
           userFirstName={studentName.first}
           userLastName={studentName.last}
-          contacts={contacts}
+          contacts={slideOutContacts}
+          studentProfile={studentProfile}
           files={activeShortlistItem ? (filesByUnitid[activeShortlistItem.unitid] || []) : []}
           onToggleStep={handleToggleStep}
           updatingStepId={activeShortlistItem ? (updatingStep[activeShortlistItem.id] ?? null) : null}

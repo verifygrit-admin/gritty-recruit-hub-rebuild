@@ -297,8 +297,8 @@ def build_journey_steps(po_row):
       Step 9  = Received prospect camp invite -> col W (index 22)
       Step 10 = Coach contacted student via text -> no workbook column (default false)
       Step 11 = Head coach contacted student -> col Y (index 24)
-      Step 12 = School requested transcript [Pre-Read Invite] -> col X (index 23) [Decision 2]
-      Step 13 = School requested financial info [FA Info Submit] -> col Z (index 25) [Decision 2]
+      Step 12 = Admissions Pre-Read Requested [Pre-Read Invite] -> col X (index 23) [Decision 2]
+      Step 13 = Financial Aid Pre-Read Submitted [FA Info Submit] -> col Z (index 25) [Decision 2]
       Step 14 = Received verbal offer -> no workbook column (default false)
       Step 15 = Received written offer -> no workbook column (default false)
 
@@ -321,12 +321,12 @@ def build_journey_steps(po_row):
         {"step_id": 5,  "label": "Contacted coach via email",                  "completed": safe_bool(po_row, 12), "completed_at": None},
         {"step_id": 6,  "label": "Contacted coach via social media",           "completed": safe_bool(po_row, 14), "completed_at": None},
         {"step_id": 7,  "label": "Received junior day invite",                 "completed": safe_bool(po_row, 20), "completed_at": None},
-        {"step_id": 8,  "label": "Received visit invite",                      "completed": safe_bool(po_row, 21), "completed_at": None},
+        {"step_id": 8,  "label": "Tour / Visit Confirmed",                     "completed": safe_bool(po_row, 21), "completed_at": None},
         {"step_id": 9,  "label": "Received prospect camp invite",              "completed": safe_bool(po_row, 22), "completed_at": None},
         {"step_id": 10, "label": "Coach contacted student via text",           "completed": False,              "completed_at": None},
         {"step_id": 11, "label": "Head coach contacted student",               "completed": safe_bool(po_row, 24), "completed_at": None},
-        {"step_id": 12, "label": "School requested transcript",                "completed": safe_bool(po_row, 23), "completed_at": None},
-        {"step_id": 13, "label": "School requested financial info",            "completed": safe_bool(po_row, 25), "completed_at": None},
+        {"step_id": 12, "label": "Admissions Pre-Read Requested",              "completed": safe_bool(po_row, 23), "completed_at": None},
+        {"step_id": 13, "label": "Financial Aid Pre-Read Submitted",           "completed": safe_bool(po_row, 25), "completed_at": None},
         {"step_id": 14, "label": "Received verbal offer",                      "completed": False,              "completed_at": None},
         {"step_id": 15, "label": "Received written offer",                     "completed": False,              "completed_at": None},
     ]

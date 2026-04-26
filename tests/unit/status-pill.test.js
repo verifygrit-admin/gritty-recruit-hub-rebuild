@@ -35,7 +35,7 @@ function render(props) {
 // ── a-f: one assertion per valid key ──────────────────────────────────────
 
 const VALID_KEYS = [
-  ['currently_recommended',    'Currently Recommended',    '#4CAF50'],
+  ['currently_recommended',    'Grit Fit School',           '#4CAF50'],
   ['below_academic_fit',       'Below Academic Fit',        '#FF9800'],
   ['out_of_academic_reach',    'Academic Stretch',          '#FF9800'],
   ['out_of_athletic_reach',    'Athletic Stretch',          '#FF9800'],

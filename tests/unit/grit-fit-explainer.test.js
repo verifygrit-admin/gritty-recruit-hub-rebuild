@@ -34,12 +34,13 @@ describe('GRIT_FIT_EXPLAINER', () => {
 });
 
 describe('Sprint 004 Wave 2 — metric explainers', () => {
-  it('G2 — Athletic Fit explainer matches verbatim', () => {
+  it('G2 — Athletic Fit explainer matches verbatim (Sprint 007 R1: single "means")', () => {
     expect(ATHLETIC_FIT_EXPLAINER).toBe(
-      'Your percent rank compared to the distribution of Height, Weight, and Speed of all players in each level of college football. A score of 50% means means your athletic metrics equate to the average athletic metrics for that level of play.'
+      'Your percent rank compared to the distribution of Height, Weight, and Speed of all players in each level of college football. A score of 50% means your athletic metrics equate to the average athletic metrics for that level of play.'
     );
-    // Regression guard against auto-correction of operator-intended "means means".
-    expect(ATHLETIC_FIT_EXPLAINER).toMatch(/means means/);
+    // Sprint 007 R1 — guard inverts the Sprint 004 A-9 preservation of "means means".
+    // Operator confirmed in the Sprint 007 open that the duplicate was a typo.
+    expect(ATHLETIC_FIT_EXPLAINER).not.toMatch(/means means/);
   });
 
   it('G3a — Academic Rigor explainer matches verbatim', () => {

@@ -41,12 +41,12 @@ STEP MAPPING  (Pre-Offer Tracking 0-indexed column -> step_id : label)
   step 5  "Contacted coach via email"             — col 12 (Follow Up Email Sent)
   step 6  "Contacted coach via social media"      — col 17 (X DM Sent)
   step 7  "Received junior day invite"            — col 20 (Jr Day Info)
-  step 8  "Received visit invite"                 — col 21 (Campus Visit Invite)
+  step 8  "Tour / Visit Confirmed"                — col 21 (Campus Visit Invite)
   step 9  "Received prospect camp invite"         — col 22 (Camp Invite)
   step 10 "Coach contacted student via text"      — NO MATCH -> FALSE
   step 11 "Head coach contacted student"          — col 24 (HC Contact)
-  step 12 "School requested transcript"           — NO MATCH -> FALSE
-  step 13 "School requested financial info"       — col 25 (FA Info Submit)
+  step 12 "Admissions Pre-Read Requested"         — NO MATCH -> FALSE
+  step 13 "Financial Aid Pre-Read Submitted"      — col 25 (FA Info Submit)
   step 14 "Received verbal offer"                 — col 26 (Offer Made)
   step 15 "Received written offer"               — NO MATCH -> FALSE
 
@@ -210,12 +210,12 @@ STEP_DEFINITIONS = [
     {"step_id": 5,  "label": "Contacted coach via email"},
     {"step_id": 6,  "label": "Contacted coach via social media"},
     {"step_id": 7,  "label": "Received junior day invite"},
-    {"step_id": 8,  "label": "Received visit invite"},
+    {"step_id": 8,  "label": "Tour / Visit Confirmed"},
     {"step_id": 9,  "label": "Received prospect camp invite"},
     {"step_id": 10, "label": "Coach contacted student via text"},
     {"step_id": 11, "label": "Head coach contacted student"},
-    {"step_id": 12, "label": "School requested transcript"},
-    {"step_id": 13, "label": "School requested financial info"},
+    {"step_id": 12, "label": "Admissions Pre-Read Requested"},
+    {"step_id": 13, "label": "Financial Aid Pre-Read Submitted"},
     {"step_id": 14, "label": "Received verbal offer"},
     {"step_id": 15, "label": "Received written offer"},
 ]

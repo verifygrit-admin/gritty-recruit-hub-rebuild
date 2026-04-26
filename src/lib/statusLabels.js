@@ -28,7 +28,16 @@
 
 export const STATUS_LABELS = Object.freeze({
   currently_recommended: Object.freeze({
-    label: 'Currently Recommended',
+    // Sprint 007 C.1 — display-label rename. The enum key
+    // `currently_recommended` in short_list_items.grit_fit_status is the
+    // source of truth and is unchanged; only the user-facing string is
+    // updated. This propagates to the My Grit Fit map filter chip + popup
+    // pill, the Shortlist filter dropdown, and any StatusPill that resolves
+    // through this SSOT. Coach-side files (CoachStudentCard,
+    // CoachRecruitingIntelPage, CoachSchoolDetailPanel) hold local copies
+    // and are intentionally out of scope per the C.1 spec ("students in
+    // their view"); they retain their existing labels.
+    label: 'Grit Fit School',
     bg: '#4CAF50',
     textColor: '#FFFFFF',
   }),

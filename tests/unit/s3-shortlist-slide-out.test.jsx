@@ -54,12 +54,12 @@ const BASE_ITEM = {
     { step_id: 5,  label: 'Contacted coach via email',          completed: false },
     { step_id: 6,  label: 'Contacted coach via social media',   completed: false },
     { step_id: 7,  label: 'Received junior day invite',         completed: false },
-    { step_id: 8,  label: 'Received visit invite',              completed: false },
+    { step_id: 8,  label: 'Tour / Visit Confirmed',             completed: false },
     { step_id: 9,  label: 'Received prospect camp invite',      completed: false },
     { step_id: 10, label: 'Coach contacted via text',           completed: false },
     { step_id: 11, label: 'Head coach contacted student',       completed: false },
-    { step_id: 12, label: 'School requested transcript',        completed: false },
-    { step_id: 13, label: 'School requested financial info',    completed: false },
+    { step_id: 12, label: 'Admissions Pre-Read Requested',      completed: false },
+    { step_id: 13, label: 'Financial Aid Pre-Read Submitted',   completed: false },
     { step_id: 14, label: 'Received verbal offer',              completed: false },
     { step_id: 15, label: 'Received written offer',             completed: false },
   ],
@@ -70,9 +70,22 @@ const BASE_ITEM = {
   offer_status: null,
 };
 
+// Sprint 007 R5 — Email Coach button now targets the college head coach,
+// not the HS head coach. Sprint 007 R4 — counselor + coach names added for
+// {coachName} / {counselorName} token resolution.
 const CONTACTS_BOTH = {
-  hs_head_coach_email: 'coach@school.org',
-  hs_guidance_counselor_email: 'counselor@school.org',
+  hs_head_coach_email:        'hscoach@hs.org',          // deprecated post-R5; left here so the deprecated field is still represented in the test fixture
+  hs_guidance_counselor_email:'counselor@school.org',
+  hs_guidance_counselor_name: 'Mr. Jones',
+  college_head_coach_email:   'headcoach@maroonstate.edu',
+  college_head_coach_name:    'Coach Reynolds',
+};
+
+const STUDENT_PROFILE = {
+  name: 'Alex Rivera',
+  grad_year: 2027,
+  position: 'WR',
+  high_school: 'Bridgewater-Raynham',
 };
 
 function renderSlideOut(overrides = {}) {
@@ -83,6 +96,7 @@ function renderSlideOut(overrides = {}) {
     userFirstName: 'Alex',
     userLastName: 'Rivera',
     contacts: CONTACTS_BOTH,
+    studentProfile: STUDENT_PROFILE,
     files: [],
     ...overrides,
   };
@@ -296,6 +310,7 @@ describe('S3 ShortlistSlideOut — Section 9 Pre-Read documents', () => {
         userFirstName="Alex"
         userLastName="Rivera"
         contacts={CONTACTS_BOTH}
+        studentProfile={STUDENT_PROFILE}
         files={[]}
       />,
     );
@@ -308,10 +323,11 @@ describe('S3 ShortlistSlideOut — Section 9 Pre-Read documents', () => {
       .toBe('Email Guidance Counselor');
   });
 
-  it('y) mailto href contains the email + encoded subject + body', () => {
+  it('y) mailto href contains the college head coach email + encoded subject + body (Sprint 007 R5 redirect)', () => {
     const { getByTestId } = renderSlideOut();
     const href = getByTestId('sso-doc-email-coach-transcript').getAttribute('href');
-    expect(href).toMatch(/^mailto:coach@school\.org\?/);
+    // R5: button targets college_head_coach_email, NOT hs_head_coach_email
+    expect(href).toMatch(/^mailto:headcoach@maroonstate\.edu\?/);
     expect(href).toContain('subject=');
     expect(href).toContain('body=');
     // school name encoded
@@ -320,26 +336,59 @@ describe('S3 ShortlistSlideOut — Section 9 Pre-Read documents', () => {
     expect(href).toContain(encodeURIComponent('Transcript'));
     // student name encoded in body
     expect(href).toContain(encodeURIComponent('Alex Rivera'));
+    // R4: coach name resolved into greeting
+    expect(href).toContain(encodeURIComponent('Coach Reynolds'));
+    // R4: subject uses colon separator (not em-dash)
+    expect(href).toContain(encodeURIComponent('Maroon State University pre-read: Transcript'));
   });
 
-  it('z) missing coach email — button disabled + tooltip', () => {
+  it('z) Sprint 007 R5 — no head coach record — button disabled + "No head coach on file" tooltip', () => {
     const { getByTestId } = renderSlideOut({
-      contacts: { hs_head_coach_email: null, hs_guidance_counselor_email: 'c@x.org' },
+      contacts: {
+        ...CONTACTS_BOTH,
+        college_head_coach_email: null,
+        college_head_coach_name:  null, // null name === no record found
+      },
     });
     const btn = getByTestId('sso-doc-email-coach-transcript');
     expect(btn.tagName).toBe('BUTTON');
     expect(btn.disabled).toBe(true);
-    expect(btn.getAttribute('title')).toBe('No coach email on file — add to your Student Profile');
+    expect(btn.getAttribute('title')).toContain('No head coach on file');
+    expect(btn.getAttribute('title')).toContain('Maroon State University');
+  });
+
+  it('z2) Sprint 007 R5 — head coach record but no email — button disabled + record-exists tooltip', () => {
+    const { getByTestId } = renderSlideOut({
+      contacts: {
+        ...CONTACTS_BOTH,
+        college_head_coach_email: null,
+        college_head_coach_name:  'Coach Reynolds', // record exists, email missing
+      },
+    });
+    const btn = getByTestId('sso-doc-email-coach-transcript');
+    expect(btn.tagName).toBe('BUTTON');
+    expect(btn.disabled).toBe(true);
+    expect(btn.getAttribute('title')).toContain('Head coach record on file');
+    expect(btn.getAttribute('title')).toContain('has no email');
   });
 
   it('aa) missing counselor email — button disabled + tooltip', () => {
     const { getByTestId } = renderSlideOut({
-      contacts: { hs_head_coach_email: 'c@x.org', hs_guidance_counselor_email: null },
+      contacts: { ...CONTACTS_BOTH, hs_guidance_counselor_email: null },
     });
     const btn = getByTestId('sso-doc-email-counselor-transcript');
     expect(btn.tagName).toBe('BUTTON');
     expect(btn.disabled).toBe(true);
     expect(btn.getAttribute('title')).toBe('No counselor email on file — add to your Student Profile');
+  });
+
+  it('ab) Sprint 007 R4 — counselor template uses {counselorName} fallback "Hello" when name missing', () => {
+    const { getByTestId } = renderSlideOut({
+      contacts: { ...CONTACTS_BOTH, hs_guidance_counselor_name: null },
+    });
+    const href = getByTestId('sso-doc-email-counselor-transcript').getAttribute('href');
+    // No name → greeting falls back to "Hello,"
+    expect(href).toContain(encodeURIComponent('Hello,'));
   });
 });
 

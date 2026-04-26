@@ -8,8 +8,13 @@
  * Sprint 004 Wave 2 extends this module with per-metric explainer strings
  * (Athletic Fit, Academic Rigor, Test Optional) and a two-paragraph Division
  * Mix replacement (G4b). Operator-ruled constraints preserved verbatim:
- *   - G2 "means means" duplicate preserved (ruling A-9).
  *   - G4b blank-line paragraph break represented as \n\n.
+ *
+ * Sprint 007 R1 — operator confirmed the "means means" duplicate from the
+ * Sprint 004 outline was a typo, not intentional. Ruling A-9's preservation
+ * of the duplicate is reversed for the Athletic Fit explainer; single
+ * "means" is now canonical. The regression guard in
+ * tests/unit/grit-fit-explainer.test.js was inverted to match.
  */
 
 export const GRIT_FIT_EXPLAINER = {
@@ -21,9 +26,10 @@ export const GRIT_FIT_EXPLAINER = {
   ],
 };
 
-// G2 — Athletic Fit explainer. "means means" duplicate preserved verbatim per operator intent (ruling A-9).
+// G2 — Athletic Fit explainer. Sprint 007 R1: single "means" is canonical
+// (reverses Sprint 004 ruling A-9 which preserved the outline duplicate).
 export const ATHLETIC_FIT_EXPLAINER =
-  'Your percent rank compared to the distribution of Height, Weight, and Speed of all players in each level of college football. A score of 50% means means your athletic metrics equate to the average athletic metrics for that level of play.';
+  'Your percent rank compared to the distribution of Height, Weight, and Speed of all players in each level of college football. A score of 50% means your athletic metrics equate to the average athletic metrics for that level of play.';
 
 // G3a — Academic Rigor Score explainer.
 export const ACADEMIC_RIGOR_EXPLAINER =
