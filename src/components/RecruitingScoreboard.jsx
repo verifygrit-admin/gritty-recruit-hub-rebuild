@@ -272,7 +272,12 @@ export default function RecruitingScoreboard({
   const wrapperStyle = {
     marginBottom: 24,
     borderRadius: 4,
-    overflow: 'hidden',
+    // HF-6 follow-up — `clip` replaces `hidden` so the wrapper does not
+    // establish a scroll container that would trap sticky descendants.
+    // Same visual effect (clips the rounded-corner radius for the inner
+    // burgundy toggle bar); preserves the sticky scroll-context chain up
+    // to the viewport.
+    overflow: 'clip',
     background: C.paper,
     border: '1px solid rgba(92, 22, 32, 0.18)',
     boxShadow: '0 2px 8px rgba(92, 22, 32, 0.06)',
@@ -321,13 +326,29 @@ export default function RecruitingScoreboard({
     letterSpacing: '0.02em',
   };
 
-  // The prototype's mobile pattern: outer scroll-x container; inner table
-  // sets a min-width so columns don't squeeze. Page-level horizontal
-  // overflow is prevented by the page wrapper.
-  const tableScrollStyle = {
-    overflowX: 'auto',
-    WebkitOverflowScrolling: 'touch',
-  };
+  // HF-6 follow-up — empirically `overflow-x: auto + overflow-y: clip`
+  // does NOT pass sticky descendants through to the page scroll context
+  // in current Chromium. The element with overflow-x: auto remains a
+  // scroll container that traps sticky `<th>` elements, even when
+  // overflow-y is explicitly clip. Verified via Playwright probe:
+  // sticky `<th>` inside such a wrapper renders at negative viewport y
+  // when the wrapper has scrolled past viewport top.
+  //
+  // Resolution: the inline wrapper-style is replaced with a className
+  // (`scoreboard-table-scroll`) whose overflow-x is media-query gated.
+  // At wide viewports (>= 1240px, where the 1200px-min-width table
+  // fits without horizontal overflow), overflow-x is visible — no
+  // scroll container, sticky chain resolves to viewport, sticky
+  // activates correctly.
+  // At narrow viewports (< 1240px), overflow-x: auto activates so
+  // mobile horizontal scroll continues to work — at the cost of
+  // sticky deactivation on mobile. Sticky on mobile alongside
+  // horizontal scroll requires a two-table structure with JS
+  // scroll-left synchronization, which is materially out of scope
+  // for this hotfix. Documented as a known limitation.
+  // Class definition lives in src/index.css under the HF-6 follow-up
+  // section. This style object is retained empty for any future
+  // inline additions but currently contributes nothing.
 
   const tableStyle = {
     width: '100%',
@@ -561,7 +582,7 @@ export default function RecruitingScoreboard({
             </div>
           ) : null}
 
-          <div style={tableScrollStyle}>
+          <div className="scoreboard-table-scroll">
             <table data-testid="scoreboard-table" style={tableStyle}>
               <thead style={{ background: C.burgundyDeep, color: '#F4ECD8' }}>
                 <tr>

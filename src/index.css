@@ -20,7 +20,7 @@ h1, h2, h3, h4, h5, h6 {
 /* ── SPRINT 005 D8 — Mobile horizontal-parallax lock ───────
    Lock the outermost app shell to prevent the page body from
    translating horizontally on touch devices ("wobbly" feel).
-   Scope is intentionally minimal: overflow-x:hidden + max-width
+   Scope is intentionally minimal: overflow-x:clip + max-width
    on html/body/#root only. We deliberately do NOT set
    touch-action:pan-y at the shell level because touch-action
    intersects across ancestors and would block intentional
@@ -29,9 +29,22 @@ h1, h2, h3, h4, h5, h6 {
    NextStepsDashboard, DeadlinePercentileTracker, CoachDashboard
    weekly schedule, AdminPage tables). Those containers use
    overflowX:'auto' and remain functional with this rule.
+
+   Sprint 007 hotfix HF-6 follow-up — `overflow-x: clip` replaces
+   the original `overflow-x: hidden`. The D8 goal (clip horizontal
+   overflow on the shell) is preserved, but `clip` does NOT
+   establish a scroll container — it is exempt from the CSS
+   Overflow spec rule that forces the other axis to `auto` when
+   one axis is non-visible. This keeps the sticky-position scroll
+   chain intact: sticky descendants (Recruiting Scoreboard column
+   headers, etc.) resolve their scroll container to the viewport,
+   not to #root, so vertical sticky activates correctly during
+   page scroll. Browser support floor: Safari 16+ / Chrome 90+ /
+   Firefox 81+. Older browsers degrade — sticky simply doesn't
+   activate; layout itself remains correct.
 */
 html, body, #root {
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100vw;
 }
 
@@ -163,6 +176,27 @@ input, select, button, textarea {
   [data-testid="shortlist-page"] [data-testid="recruiting-scoreboard"] {
     margin-left: 0;
     margin-right: 0;
+  }
+}
+
+/* ── SPRINT 007 HF-6 FOLLOW-UP — Recruiting Scoreboard table-scroll wrapper.
+   Media-query gated overflow-x to preserve the sticky scroll-context chain
+   at wide viewports where the 1200px-min-width table fits naturally.
+   At narrow viewports (< 1240px), overflow-x: auto activates so the table
+   can horizontally scroll — at the cost of sticky deactivation on mobile.
+   Per CSS Overflow spec + empirical Chromium behavior, an element with
+   overflow-x: auto is a scroll container that traps sticky `<th>`
+   descendants regardless of overflow-y value (clip / hidden / visible).
+   Mobile sticky alongside horizontal scroll requires a two-table
+   structure with JS scroll-left sync — out of scope for this hotfix.
+*/
+.scoreboard-table-scroll {
+  /* No overflow at desktop — sticky thead chain resolves to viewport. */
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 1240px) {
+  .scoreboard-table-scroll {
+    overflow-x: auto;
   }
 }
 
