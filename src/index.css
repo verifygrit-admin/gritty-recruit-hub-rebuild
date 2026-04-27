@@ -139,6 +139,33 @@ input, select, button, textarea {
   }
 }
 
+/* ── SPRINT 007 HF-6 — Mobile margin for Shortlist + Recruiting Scoreboard
+   At narrow viewports the Shortlist page wrapper and the Recruiting
+   Scoreboard touched the screen edges with no padding. Add 16px horizontal
+   padding at <=640px (the breakpoint already used elsewhere in this file
+   for the Recruiting Intelligence layout). The Scoreboard's inner
+   horizontal-scroll container is unaffected — the new outer padding wraps
+   the wrapper, so the scroll affordance still functions normally inside.
+*/
+@media (max-width: 640px) {
+  [data-testid="shortlist-page"] {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    box-sizing: border-box;
+  }
+  [data-testid="recruiting-scoreboard"] {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+  /* When the Scoreboard sits inside the padded Shortlist page, double
+     padding would leave the table feeling cramped. Drop the component's
+     own margin in that nested case. */
+  [data-testid="shortlist-page"] [data-testid="recruiting-scoreboard"] {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
 /* ── ADMIN TABLE HORIZONTAL SCROLL (OBJ-3, Quill spec) ──── */
 .admin-scroll-wrap {
   overflow-x: auto;

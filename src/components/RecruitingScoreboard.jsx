@@ -337,6 +337,17 @@ export default function RecruitingScoreboard({
     minWidth: 1200,
   };
 
+  // Sprint 007 hotfix HF-6 — sticky thead. The group-header row sticks at
+  // top: 0 of the Scoreboard's containing block; the column-header row
+  // sticks just below it. Per-<th> sticky is the cross-browser-reliable
+  // pattern (sticky on <thead>/<tr> is inconsistent across Safari versions).
+  // The vertical sticky scope is bounded by the table itself, so headers
+  // remain visible only while the Scoreboard is still in view — once the
+  // student scrolls past the table entirely, sticky deactivates and the
+  // headers scroll out with the rest of the component.
+  const GROUP_ROW_STICKY_TOP = 0;
+  const COL_ROW_STICKY_TOP = 36; // approx group-row height at body-font 0.875rem + 8+8 padding
+
   const groupRowThStyle = {
     fontFamily: 'var(--font-body)',
     fontWeight: 600,
@@ -347,6 +358,9 @@ export default function RecruitingScoreboard({
     color: '#F4ECD8',
     borderRight: '1px solid rgba(244, 236, 216, 0.18)',
     borderBottom: '1px solid rgba(244, 236, 216, 0.18)',
+    position: 'sticky',
+    top: GROUP_ROW_STICKY_TOP,
+    zIndex: 6,
   };
 
   const colRowThStyle = {
@@ -361,6 +375,9 @@ export default function RecruitingScoreboard({
     color: '#F4ECD8',
     verticalAlign: 'bottom',
     whiteSpace: 'pre-line',
+    position: 'sticky',
+    top: COL_ROW_STICKY_TOP,
+    zIndex: 5,
   };
 
   const tdBaseStyle = {
