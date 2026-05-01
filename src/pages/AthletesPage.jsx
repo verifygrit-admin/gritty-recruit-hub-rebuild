@@ -148,7 +148,7 @@ export default function AthletesPage() {
             </p>
           </div>
           <div
-            data-testid="recruits-count"
+            data-testid="athletes-count"
             style={{
               fontFamily: 'var(--gf-display)',
               fontStyle: 'italic',
@@ -178,7 +178,7 @@ export default function AthletesPage() {
 
         {error && (
           <div
-            data-testid="recruits-error"
+            data-testid="athletes-error"
             role="alert"
             style={{
               fontFamily: 'var(--gf-body)',
@@ -220,7 +220,7 @@ export default function AthletesPage() {
 
         {loading && (
           <div
-            data-testid="recruits-loading"
+            data-testid="athletes-loading"
             aria-busy="true"
             style={{
               display: 'grid',
@@ -245,7 +245,7 @@ export default function AthletesPage() {
 
         {!loading && !error && filtered.length === 0 && profiles.length > 0 && (
           <div
-            data-testid="recruits-empty-filtered"
+            data-testid="athletes-empty-filtered"
             style={{
               fontFamily: 'var(--gf-body)',
               color: 'var(--gf-light-text-muted)',
@@ -259,7 +259,7 @@ export default function AthletesPage() {
 
         {!loading && !error && profiles.length === 0 && (
           <div
-            data-testid="recruits-empty-roster"
+            data-testid="athletes-empty-roster"
             style={{
               fontFamily: 'var(--gf-body)',
               color: 'var(--gf-light-text-muted)',
@@ -273,7 +273,7 @@ export default function AthletesPage() {
 
         {!loading && !error && filtered.length > 0 && (
           <div
-            data-testid="recruits-grid"
+            data-testid="athletes-grid"
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
