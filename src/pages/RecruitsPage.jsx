@@ -16,6 +16,7 @@ import RecruitsHero from '../components/recruits/RecruitsHero.jsx';
 import SchoolToggle from '../components/recruits/SchoolToggle.jsx';
 import RecruitsFilterBar from '../components/recruits/RecruitsFilterBar.jsx';
 import RecruitCard from '../components/recruits/RecruitCard.jsx';
+import RecruitsFooter from '../components/recruits/RecruitsFooter.jsx';
 import { RECRUIT_SCHOOLS } from '../data/recruits-schools.js';
 import useRecruitsRoster from '../hooks/useRecruitsRoster.js';
 
@@ -281,6 +282,8 @@ export default function RecruitsPage() {
           </div>
         )}
       </main>
+
+      <RecruitsFooter />
     </div>
   );
 }
