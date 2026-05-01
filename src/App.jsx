@@ -13,6 +13,8 @@ import CoachDashboardPage from './pages/CoachDashboardPage.jsx';
 import AdminLoginPage from './pages/AdminLoginPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import StyleguidePage from './pages/StyleguidePage.jsx';
+import RecruitsPage from './pages/RecruitsPage.jsx';
+import CoachLoginPlaceholderPage from './pages/CoachLoginPlaceholderPage.jsx';
 
 export default function App() {
   return (
@@ -31,6 +33,10 @@ export default function App() {
               auth gate. Direct URL access only. Renders the token-only
               reference component on a dark surface. */}
           <Route path="/styleguide" element={<StyleguidePage />} />
+
+          {/* Sprint 011 — public recruits roster. No auth, no Layout. */}
+          <Route path="/recruits" element={<RecruitsPage />} />
+          <Route path="/coach-login-placeholder" element={<CoachLoginPlaceholderPage />} />
 
           {/* App screens — Layout wrapper */}
           <Route path="/" element={<Layout><LandingPage /></Layout>} />
