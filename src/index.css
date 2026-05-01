@@ -9,6 +9,69 @@
   --brand-gold-dark: #A8871D;
 }
 
+/* ── SPRINT 010 — GrittyFB Design Token System ────────────────────────────
+   Authoritative source: docs/specs/.coach-scheduler-sprints/index.html :root
+   All tokens prefixed `gf-` to prevent collision with existing --brand-* /
+   --font-* tokens (BC High maroon palette). These tokens are NOT yet applied
+   to existing surfaces (Coach Dashboard, Student View, admin) — that work
+   is carry-forward. Sprint 010 produces foundation only; first consumer is
+   the styleguide reference component (Phase 2) and Sprint 011 onward.
+   Font network load (Fraunces + Inter) is deferred to Phase 2 — only
+   font-family tokens are declared here. See sprint-010-session-spec.md.
+*/
+:root {
+  /* Surface tokens — dark forest palette */
+  --gf-bg-deep: #0a1f14;          /* deepest forest, near black */
+  --gf-bg: #0f2a1a;                /* primary dark surface */
+  --gf-bg-elev: #143a25;           /* elevated card surface */
+  --gf-bg-elev-2: #1a4a30;         /* hover/active elevated */
+  --gf-border: #1f5638;            /* subtle border on dark */
+  --gf-border-strong: #2a6e48;     /* visible border on dark */
+
+  /* Accent tokens — lime / chartreuse */
+  --gf-accent: #b6ff5c;             /* primary lime */
+  --gf-accent-hover: #c9ff7a;       /* lighter on hover */
+  --gf-accent-deep: #8fd83f;        /* pressed state */
+  --gf-accent-soft: rgba(182, 255, 92, 0.12); /* tinted bg */
+
+  /* Text tokens — on dark */
+  --gf-text: #f4faf6;               /* primary text on dark */
+  --gf-text-muted: #a8c4b3;         /* secondary text */
+  --gf-text-dim: #6b8a78;           /* tertiary / labels (large-text use) */
+  --gf-text-on-accent: #0a1f14;     /* text on lime buttons */
+
+  /* Light surface palette — breathing-room sections */
+  --gf-light-bg: #fafaf7;           /* warm off-white */
+  --gf-light-bg-elev: #ffffff;      /* pure white card */
+  --gf-light-border: #e8ebe5;       /* divider on light */
+  --gf-light-text: #0f2a1a;         /* primary text on light */
+  --gf-light-text-muted: #5a6b62;   /* secondary text on light */
+
+  /* Typography — font-family only this sprint; <link> loads in Phase 2 */
+  --gf-display: 'Fraunces', Georgia, serif;
+  --gf-body: 'Inter', -apple-system, sans-serif;
+
+  /* Spacing scale */
+  --gf-space-xs: 0.5rem;
+  --gf-space-sm: 0.75rem;
+  --gf-space-md: 1rem;
+  --gf-space-lg: 1.5rem;
+  --gf-space-xl: 2.5rem;
+  --gf-space-2xl: 4rem;
+  --gf-space-3xl: 6rem;
+
+  /* Radii */
+  --gf-radius-sm: 6px;
+  --gf-radius: 12px;
+  --gf-radius-lg: 20px;
+  --gf-radius-pill: 999px;
+
+  /* Shadows */
+  --gf-shadow-card: 0 1px 2px rgba(15, 42, 26, 0.04), 0 4px 12px rgba(15, 42, 26, 0.06);
+  --gf-shadow-elev: 0 8px 24px rgba(15, 42, 26, 0.12);
+  --gf-shadow-glow: 0 0 0 4px rgba(182, 255, 92, 0.18), 0 8px 24px rgba(143, 216, 63, 0.25);
+}
+
 *, *::before, *::after {
   font-family: var(--font-body);
 }
