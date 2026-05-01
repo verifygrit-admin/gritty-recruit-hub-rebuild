@@ -12,6 +12,7 @@ import ShortlistPage from './pages/ShortlistPage.jsx';
 import CoachDashboardPage from './pages/CoachDashboardPage.jsx';
 import AdminLoginPage from './pages/AdminLoginPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
+import StyleguidePage from './pages/StyleguidePage.jsx';
 
 export default function App() {
   return (
@@ -25,6 +26,11 @@ export default function App() {
           {/* Admin screens — no Layout wrapper, AdminRoute guard on /admin */}
           <Route path="/admin-login" element={<AdminLoginPage />} />
           <Route path="/admin/*" element={<AdminRoute><AdminPage /></AdminRoute>} />
+
+          {/* Sprint 010 — internal GrittyFB styleguide. Unlisted, no nav, no
+              auth gate. Direct URL access only. Renders the token-only
+              reference component on a dark surface. */}
+          <Route path="/styleguide" element={<StyleguidePage />} />
 
           {/* App screens — Layout wrapper */}
           <Route path="/" element={<Layout><LandingPage /></Layout>} />
