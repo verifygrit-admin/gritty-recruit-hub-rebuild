@@ -21,6 +21,8 @@ import SchoolToggle from '../components/recruits/SchoolToggle.jsx';
 import RecruitsFilterBar from '../components/recruits/RecruitsFilterBar.jsx';
 import RecruitCard from '../components/recruits/RecruitCard.jsx';
 import RecruitsFooter from '../components/recruits/RecruitsFooter.jsx';
+import CoachSchedulerCTA from '../components/scheduler/CoachSchedulerCTA.jsx';
+import CoachSchedulerSection from '../components/scheduler/CoachSchedulerSection.jsx';
 import { RECRUIT_SCHOOLS } from '../data/recruits-schools.js';
 import useRecruitsRoster from '../hooks/useRecruitsRoster.js';
 
@@ -103,6 +105,12 @@ export default function AthletesPage() {
     >
       <RecruitsTopNav />
       <RecruitsHero />
+
+      {/* Sprint 012 Phase 2 — sticky CTA strip. MUST be a direct child of
+          the page-root <div>, not nested inside <main>; position: sticky
+          anchors against this scroll container. CTA owns its own scroll
+          behavior — clicking smooth-scrolls to #coach-scheduler-section. */}
+      <CoachSchedulerCTA />
 
       <main
         style={{
@@ -286,6 +294,12 @@ export default function AthletesPage() {
           </div>
         )}
       </main>
+
+      {/* Sprint 012 Phase 2 — inline scheduler section. Rendered as a sibling
+          of <main> so the dark band extends edge-to-edge horizontally rather
+          than being constrained by <main>'s 1280px max-width and light-bg
+          gutters. CTA strip scroll-targets this section's id. */}
+      <CoachSchedulerSection />
 
       <RecruitsFooter />
     </div>
