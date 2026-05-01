@@ -31,7 +31,21 @@ export default function SchoolToggle({ activeSlug, onChange }) {
         fontFamily: 'var(--gf-body)',
       }}
     >
-      {RECRUIT_SCHOOLS.map((school) => {
+      {/* D7 — touch-target floor at <=768px viewport (WCAG 2.5.5).
+          Desktop styling stays pixel-tight to the prototype.
+          Style + buttons rendered as a single flat array so the test
+          helper traverses children correctly (no nested-array hop). */}
+      {[
+        <style key="rst-style">{`
+          @media (max-width: 768px) {
+            .recruits-school-pill {
+              min-height: 44px;
+              padding-left: var(--gf-space-md) !important;
+              padding-right: var(--gf-space-md) !important;
+            }
+          }
+        `}</style>,
+        ...RECRUIT_SCHOOLS.map((school) => {
         const isActive = school.slug === activeSlug;
         const isDisabled = !school.active;
 
@@ -68,6 +82,7 @@ export default function SchoolToggle({ activeSlug, onChange }) {
           <button
             key={school.slug}
             type="button"
+            className="recruits-school-pill"
             disabled={isDisabled}
             aria-pressed={isActive ? 'true' : 'false'}
             onClick={isDisabled ? undefined : () => onChange(school.slug)}
@@ -90,7 +105,8 @@ export default function SchoolToggle({ activeSlug, onChange }) {
             )}
           </button>
         );
-      })}
+      }),
+      ]}
     </div>
   );
 }

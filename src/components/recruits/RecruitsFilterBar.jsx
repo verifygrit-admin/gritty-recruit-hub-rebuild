@@ -60,10 +60,20 @@ export default function RecruitsFilterBar({
         fontFamily: 'var(--gf-body)',
       }}
     >
+      {/* D7 — touch-target floor at <=768px viewport (WCAG 2.5.5).
+          Desktop sizing matches prototype. */}
+      <style>{`
+        @media (max-width: 768px) {
+          .recruits-filter-input {
+            min-height: 44px;
+          }
+        }
+      `}</style>
       <span style={labelStyle}>Search</span>
       <input
         data-testid="rfb-search"
         type="search"
+        className="recruits-filter-input"
         value={filters.search}
         onChange={handle('search')}
         placeholder="Filter by name…"
@@ -75,6 +85,7 @@ export default function RecruitsFilterBar({
         data-testid="rfb-position"
         value={filters.position}
         onChange={handle('position')}
+        className="recruits-filter-input"
         style={inputStyle}
       >
         {[{ value: '', label: 'All positions' }, ...positions.map((p) => ({ value: p, label: p }))].map((o) => (
@@ -89,6 +100,7 @@ export default function RecruitsFilterBar({
         data-testid="rfb-class-year"
         value={filters.classYear}
         onChange={handle('classYear')}
+        className="recruits-filter-input"
         style={inputStyle}
       >
         {[{ value: '', label: 'All years' }, ...classYears.map((y) => ({ value: String(y), label: `Class ${y}` }))].map((o) => (
@@ -103,6 +115,7 @@ export default function RecruitsFilterBar({
         data-testid="rfb-sort"
         value={filters.sort}
         onChange={handle('sort')}
+        className="recruits-filter-input"
         style={inputStyle}
       >
         {SORT_OPTIONS.map((o) => (

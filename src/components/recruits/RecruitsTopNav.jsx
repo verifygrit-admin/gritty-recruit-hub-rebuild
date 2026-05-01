@@ -47,6 +47,13 @@ export default function RecruitsTopNav() {
         @media (max-width: 768px) {
           .recruits-nav-secondary { display: none !important; }
           .recruits-nav-root { padding: var(--gf-space-sm) var(--gf-space-md) !important; }
+          /* D7 — touch-target floor (WCAG 2.5.5). */
+          .recruits-nav-link-active,
+          .recruits-nav-link-coach {
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+          }
         }
       `}</style>
 
@@ -157,6 +164,7 @@ export default function RecruitsTopNav() {
         <a
           href="/coach-login-placeholder"
           data-testid="recruits-nav-coach-login"
+          className="recruits-nav-link-coach"
           style={{
             fontFamily: 'var(--gf-body)',
             color: 'var(--gf-text-muted)',
