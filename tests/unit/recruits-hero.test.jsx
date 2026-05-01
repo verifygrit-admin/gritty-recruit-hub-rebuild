@@ -1,7 +1,7 @@
 /**
  * recruits-hero.test.jsx — Sprint 011 D3
  *
- * Covers <RecruitsHero> — the dark-forest hero section on /recruits.
+ * Covers <RecruitsHero> — the dark-forest hero section on /athletes.
  * Headline (Fraunces), subhead (Inter), partner-schools indicator
  * data-driven from src/data/recruits-schools.js. No CTA.
  *

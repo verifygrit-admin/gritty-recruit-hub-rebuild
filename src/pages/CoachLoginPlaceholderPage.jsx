@@ -1,7 +1,7 @@
 /**
  * CoachLoginPlaceholderPage — Sprint 011 D2 placeholder
  *
- * Honest placeholder for the "Coach Login" affordance in the /recruits
+ * Honest placeholder for the "Coach Login" affordance in the /athletes
  * top nav. The real coach-login flow lands in Sprint 016. This page exists
  * so the nav link has a truthful href instead of href="#" (which causes
  * scroll-jump and confuses screen readers). Delete on Sprint 016 promotion.
@@ -64,7 +64,7 @@ export default function CoachLoginPlaceholderPage() {
         Sign-in for college coaches and recruiting staff opens in a future
         release. For now,{' '}
         <a
-          href="/recruits"
+          href="/athletes"
           style={{
             fontFamily: 'var(--gf-body)',
             color: 'var(--gf-accent)',

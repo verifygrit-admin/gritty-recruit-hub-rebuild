@@ -13,7 +13,7 @@ import CoachDashboardPage from './pages/CoachDashboardPage.jsx';
 import AdminLoginPage from './pages/AdminLoginPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import StyleguidePage from './pages/StyleguidePage.jsx';
-import RecruitsPage from './pages/RecruitsPage.jsx';
+import AthletesPage from './pages/AthletesPage.jsx';
 import CoachLoginPlaceholderPage from './pages/CoachLoginPlaceholderPage.jsx';
 
 export default function App() {
@@ -34,8 +34,11 @@ export default function App() {
               reference component on a dark surface. */}
           <Route path="/styleguide" element={<StyleguidePage />} />
 
-          {/* Sprint 011 — public recruits roster. No auth, no Layout. */}
-          <Route path="/recruits" element={<RecruitsPage />} />
+          {/* Sprint 011 — public athletes roster. No auth, no Layout.
+              Path pivoted from /recruits to /athletes; the /recruits/<slug>/
+              namespace is reserved for the legacy password-gated proxy at
+              api/recruits-auth.ts. See sprint-011-retro for context. */}
+          <Route path="/athletes" element={<AthletesPage />} />
           <Route path="/coach-login-placeholder" element={<CoachLoginPlaceholderPage />} />
 
           {/* App screens — Layout wrapper */}

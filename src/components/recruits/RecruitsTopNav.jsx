@@ -1,7 +1,7 @@
 /**
  * RecruitsTopNav — Sprint 011 D2
  *
- * Top navigation for the public /recruits page. Five nav links: brand to
+ * Top navigation for the public /athletes page. Five nav links: brand to
  * grittyfb.com, four external section links (Why / Partnership / Outcomes
  * / Contact), one "Recruits" intra-app marker, and a Coach Login slot
  * routing to /coach-login-placeholder (Sprint 016 lands the real flow).
@@ -16,7 +16,7 @@
 
 const NAV_LINKS = [
   { label: 'Why GrittyFB', href: 'https://www.grittyfb.com/#why', external: true },
-  { label: 'Recruits', href: '/recruits', external: false, active: true },
+  { label: 'Recruits', href: '/athletes', external: false, active: true },
   { label: 'Partnership', href: 'https://www.grittyfb.com/#partnership', external: true },
   { label: 'Outcomes', href: 'https://www.grittyfb.com/#outcomes', external: true },
   { label: 'Contact', href: 'https://www.grittyfb.com/#contact', external: true },

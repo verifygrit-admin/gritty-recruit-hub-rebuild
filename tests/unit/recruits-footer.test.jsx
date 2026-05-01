@@ -1,7 +1,7 @@
 /**
  * recruits-footer.test.jsx — Sprint 011 D8
  *
- * Covers <RecruitsFooter> — minimal footer at the bottom of /recruits.
+ * Covers <RecruitsFooter> — minimal footer at the bottom of /athletes.
  * Spec lines 181-188: GrittyFB attribution + one external link to
  * https://www.grittyfb.com, opened in the same tab, gf-text-muted copy.
  *

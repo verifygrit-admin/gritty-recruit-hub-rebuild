@@ -1,7 +1,7 @@
 /**
  * RecruitsHero — Sprint 011 D3
  *
- * Dark-forest hero on /recruits. Fraunces serif headline with italic
+ * Dark-forest hero on /athletes. Fraunces serif headline with italic
  * emphasis on "One roster.", Inter subhead (locked Q5 copy), and a
  * partner-schools indicator that reads its content from
  * src/data/recruits-schools.js (single source for D3 + D4).

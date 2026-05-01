@@ -1,7 +1,7 @@
 /**
  * recruit-card.test.jsx — Sprint 011 D6
  *
- * Covers <RecruitCard> — the production card on /recruits. Distinct from
+ * Covers <RecruitCard> — the production card on /athletes. Distinct from
  * the frozen styleguide exemplar (PlayerCardReference). Receives a
  * pre-resolved profile shape (avatar URL already constructed by the data
  * hook); does no Supabase work itself, so tests run as pure functions.

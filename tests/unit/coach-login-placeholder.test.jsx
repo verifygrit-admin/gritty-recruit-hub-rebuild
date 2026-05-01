@@ -1,7 +1,7 @@
 /**
  * coach-login-placeholder.test.jsx — Sprint 011 D2 placeholder
  *
- * Covers <CoachLoginPlaceholderPage> — the honest stub the /recruits nav
+ * Covers <CoachLoginPlaceholderPage> — the honest stub the /athletes nav
  * "Coach Login" link routes to. Replaced in Sprint 016.
  *
  * Assertions:

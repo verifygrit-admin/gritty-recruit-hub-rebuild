@@ -1,8 +1,8 @@
 /**
  * recruits-top-nav.test.jsx — Sprint 011 D2
  *
- * Covers <RecruitsTopNav> (the GrittyFB top navigation bar on /recruits)
- * and the /recruits route registration in App.jsx.
+ * Covers <RecruitsTopNav> (the GrittyFB top navigation bar on /athletes)
+ * and the /athletes route registration in App.jsx.
  *
  * Assertions:
  *   a) RecruitsTopNav renders without throwing on default props
@@ -11,7 +11,7 @@
  *   c) External nav links point to grittyfb.com sections (full external URLs)
  *   d) "Recruits" link is marked aria-current="page"
  *   e) "Coach Login" routes to the /coach-login-placeholder stub
- *   f) /recruits and /coach-login-placeholder routes are wired in App.jsx
+ *   f) /athletes and /coach-login-placeholder routes are wired in App.jsx
  *   g) RecruitsTopNav source contains zero hardcoded brand hex literals
  *      (token-purity guard, Sprint 010 carry-forward constraint)
  *
@@ -125,13 +125,13 @@ describe('RecruitsTopNav — coach login placeholder', () => {
 
 // ── f) routes registered in App.jsx ──────────────────────────────────────
 
-describe('App routing — /recruits + /coach-login-placeholder', () => {
+describe('App routing — /athletes + /coach-login-placeholder', () => {
   const appPath = resolve(__dirname, '../../src/App.jsx');
   const src = readFileSync(appPath, 'utf8');
 
-  it('App.jsx registers the /recruits path', () => {
-    expect(src).toMatch(/path="\/recruits"/);
-    expect(src).toMatch(/RecruitsPage/);
+  it('App.jsx registers the /athletes path', () => {
+    expect(src).toMatch(/path="\/athletes"/);
+    expect(src).toMatch(/AthletesPage/);
   });
 
   it('App.jsx registers the /coach-login-placeholder path', () => {

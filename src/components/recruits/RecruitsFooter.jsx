@@ -1,7 +1,7 @@
 /**
  * RecruitsFooter — Sprint 011 D8
  *
- * Minimal footer at the bottom of /recruits. Single line of attribution
+ * Minimal footer at the bottom of /athletes. Single line of attribution
  * with one same-tab external link back to https://www.grittyfb.com.
  *
  * Spec lines 181-188:

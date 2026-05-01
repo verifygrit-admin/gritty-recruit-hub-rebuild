@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gritty Recruits — GrittyFB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* GrittyFB palette — extracted from hero + logo */
+  --gf-bg-deep: #0a1f14;          /* deepest forest, near black */
+  --gf-bg: #0f2a1a;                /* primary dark surface */
+  --gf-bg-elev: #143a25;           /* elevated card surface */
+  --gf-bg-elev-2: #1a4a30;         /* hover/active elevated */
+  --gf-border: #1f5638;            /* subtle border on dark */
+  --gf-border-strong: #2a6e48;     /* visible border on dark */
+
+  --gf-accent: #b6ff5c;             /* primary lime/chartreuse */
+  --gf-accent-hover: #c9ff7a;       /* lighter on hover */
+  --gf-accent-deep: #8fd83f;        /* pressed state */
+  --gf-accent-soft: rgba(182, 255, 92, 0.12); /* tinted bg */
+
+  --gf-text: #f4faf6;               /* primary text on dark */
+  --gf-text-muted: #a8c4b3;         /* secondary text */
+  --gf-text-dim: #6b8a78;           /* tertiary / labels */
+  --gf-text-on-accent: #0a1f14;     /* text on lime buttons */
+
+  /* Light surface tokens for breathing room sections */
+  --gf-light-bg: #fafaf7;           /* warm off-white */
+  --gf-light-bg-elev: #ffffff;
+  --gf-light-border: #e8ebe5;
+  --gf-light-text: #0f2a1a;
+  --gf-light-text-muted: #5a6b62;
+
+  /* Typography */
+  --gf-display: 'Fraunces', Georgia, serif;
+  --gf-body: 'Inter', -apple-system, sans-serif;
+
+  /* Spacing scale */
+  --gf-space-xs: 0.5rem;
+  --gf-space-sm: 0.75rem;
+  --gf-space-md: 1rem;
+  --gf-space-lg: 1.5rem;
+  --gf-space-xl: 2.5rem;
+  --gf-space-2xl: 4rem;
+  --gf-space-3xl: 6rem;
+
+  --gf-radius-sm: 6px;
+  --gf-radius: 12px;
+  --gf-radius-lg: 20px;
+  --gf-radius-pill: 999px;
+
+  --gf-shadow-card: 0 1px 2px rgba(15, 42, 26, 0.04), 0 4px 12px rgba(15, 42, 26, 0.06);
+  --gf-shadow-elev: 0 8px 24px rgba(15, 42, 26, 0.12);
+  --gf-shadow-glow: 0 0 0 4px rgba(182, 255, 92, 0.18), 0 8px 24px rgba(143, 216, 63, 0.25);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--gf-body);
+  background: var(--gf-light-bg);
+  color: var(--gf-light-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== TOP NAV ===== */
+.nav {
+  background: var(--gf-bg-deep);
+  color: var(--gf-text);
+  padding: var(--gf-space-md) var(--gf-space-xl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--gf-border);
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--gf-space-sm);
+  font-family: var(--gf-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  letter-spacing: -0.015em;
+  text-decoration: none;
+  color: var(--gf-text);
+}
+
+.nav-brand img {
+  height: 38px;
+  width: 38px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+}
+
+.nav-brand .brand-gritty {
+  color: var(--gf-text);
+  font-weight: 600;
+}
+
+.nav-brand .brand-fb {
+  color: var(--gf-accent);
+  font-style: italic;
+  font-weight: 600;
+  margin-left: 1px;
+}
+
+.nav-links {
+  display: flex;
+  gap: var(--gf-space-xl);
+  font-size: 0.9rem;
+  color: var(--gf-text-muted);
+}
+
+.nav-links a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s;
+  position: relative;
+}
+
+.nav-links a:hover { color: var(--gf-accent); }
+
+.nav-links a[aria-current="page"] {
+  color: var(--gf-accent);
+}
+
+.nav-links a[aria-current="page"]::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
+  background: var(--gf-accent);
+  border-radius: 2px;
+}
+
+.nav-actions {
+  display: flex;
+  gap: var(--gf-space-sm);
+  align-items: center;
+}
+
+.nav-link-coach {
+  color: var(--gf-text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.9rem;
+}
+
+/* ===== HERO ===== */
+.hero {
+  background: var(--gf-bg-deep);
+  color: var(--gf-text);
+  padding: var(--gf-space-3xl) var(--gf-space-xl) var(--gf-space-2xl);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 50%;
+  height: 140%;
+  background: radial-gradient(ellipse at center, rgba(182, 255, 92, 0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.hero-eyebrow {
+  display: inline-block;
+  color: var(--gf-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: var(--gf-space-lg);
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--gf-border-strong);
+  border-radius: var(--gf-radius-pill);
+  background: var(--gf-accent-soft);
+}
+
+.hero h1 {
+  font-family: var(--gf-display);
+  font-weight: 500;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--gf-space-lg);
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--gf-accent);
+  font-weight: 400;
+}
+
+.hero-sub {
+  color: var(--gf-text-muted);
+  font-size: 1.1rem;
+  max-width: 580px;
+  margin: 0 auto var(--gf-space-xl);
+}
+
+.hero-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gf-space-md);
+  font-size: 0.85rem;
+  color: var(--gf-text-dim);
+  border-top: 1px solid var(--gf-border);
+  padding-top: var(--gf-space-md);
+  margin-top: var(--gf-space-md);
+}
+
+.hero-meta-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gf-accent);
+  box-shadow: 0 0 12px var(--gf-accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ===== STICKY CTA STRIP ===== */
+.cta-strip {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--gf-bg-deep);
+  border-bottom: 1px solid var(--gf-border);
+  padding: var(--gf-space-sm) var(--gf-space-xl);
+  display: flex;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.cta-button {
+  background: var(--gf-accent);
+  color: var(--gf-text-on-accent);
+  border: none;
+  padding: 0.85rem 1.75rem;
+  border-radius: var(--gf-radius-pill);
+  font-family: var(--gf-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gf-space-sm);
+  transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.15s;
+  box-shadow: var(--gf-shadow-glow);
+}
+
+.cta-button:hover {
+  background: var(--gf-accent-hover);
+  transform: translateY(-1px);
+}
+
+.cta-button:active {
+  transform: translateY(0);
+  background: var(--gf-accent-deep);
+}
+
+.cta-button svg { width: 18px; height: 18px; }
+
+/* ===== ROSTER SECTION ===== */
+.roster {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--gf-space-3xl) var(--gf-space-xl);
+}
+
+.roster-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--gf-space-lg);
+  margin-bottom: var(--gf-space-xl);
+  padding-bottom: var(--gf-space-lg);
+  border-bottom: 1px solid var(--gf-light-border);
+}
+
+.roster-title h2 {
+  font-family: var(--gf-display);
+  font-weight: 500;
+  font-size: 2.5rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.4rem;
+  color: var(--gf-light-text);
+}
+
+.roster-title p {
+  color: var(--gf-light-text-muted);
+  font-size: 1rem;
+}
+
+.roster-count {
+  font-family: var(--gf-display);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--gf-light-text-muted);
+}
+.roster-count strong {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--gf-light-text);
+}
+
+/* School Toggle */
+.school-toggle {
+  display: inline-flex;
+  background: var(--gf-light-bg-elev);
+  border: 1px solid var(--gf-light-border);
+  border-radius: var(--gf-radius-pill);
+  padding: 4px;
+  gap: 2px;
+  margin-bottom: var(--gf-space-xl);
+}
+
+.school-toggle button {
+  background: transparent;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  font-family: var(--gf-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--gf-light-text-muted);
+  border-radius: var(--gf-radius-pill);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.school-toggle button.active {
+  background: var(--gf-bg-deep);
+  color: var(--gf-accent);
+}
+
+.school-toggle button:not(.active):hover {
+  color: var(--gf-light-text);
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gf-space-sm);
+  margin-bottom: var(--gf-space-xl);
+  align-items: center;
+}
+
+.filter-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gf-light-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-right: var(--gf-space-sm);
+}
+
+.filter-input,
+.filter-select {
+  background: var(--gf-light-bg-elev);
+  border: 1px solid var(--gf-light-border);
+  border-radius: var(--gf-radius-sm);
+  padding: 0.55rem 0.9rem;
+  font-family: var(--gf-body);
+  font-size: 0.9rem;
+  color: var(--gf-light-text);
+  transition: border-color 0.15s;
+}
+
+.filter-input { min-width: 240px; }
+.filter-input:focus,
+.filter-select:focus {
+  outline: none;
+  border-color: var(--gf-accent-deep);
+  box-shadow: 0 0 0 3px var(--gf-accent-soft);
+}
+
+/* Card Grid */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--gf-space-lg);
+}
+
+.player-card {
+  background: var(--gf-light-bg-elev);
+  border: 1px solid var(--gf-light-border);
+  border-radius: var(--gf-radius);
+  padding: var(--gf-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gf-space-md);
+  position: relative;
+  transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+  box-shadow: var(--gf-shadow-card);
+}
+
+.player-card:hover {
+  border-color: var(--gf-accent-deep);
+  transform: translateY(-2px);
+  box-shadow: var(--gf-shadow-elev);
+}
+
+.player-card-top {
+  display: flex;
+  align-items: center;
+  gap: var(--gf-space-md);
+}
+
+.player-photo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gf-bg-elev) 0%, var(--gf-bg-deep) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gf-accent);
+  font-family: var(--gf-display);
+  font-size: 1.4rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  border: 2px solid var(--gf-light-border);
+}
+
+.player-name {
+  font-family: var(--gf-display);
+  font-weight: 600;
+  font-size: 1.15rem;
+  color: var(--gf-light-text);
+  margin-bottom: 2px;
+}
+
+.player-position {
+  font-size: 0.85rem;
+  color: var(--gf-light-text-muted);
+  font-weight: 500;
+}
+
+.player-school {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gf-accent-deep);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.player-school::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gf-accent-deep);
+  display: inline-block;
+}
+
+.player-tag {
+  position: absolute;
+  top: var(--gf-space-md);
+  right: var(--gf-space-md);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--gf-radius-pill);
+  background: var(--gf-accent-soft);
+  color: var(--gf-bg-deep);
+  border: 1px solid var(--gf-accent-deep);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.player-offers {
+  font-size: 0.85rem;
+  color: var(--gf-light-text);
+  background: var(--gf-light-bg);
+  border-radius: var(--gf-radius-sm);
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid var(--gf-accent-deep);
+}
+.player-offers .offers-label {
+  font-weight: 600;
+  color: var(--gf-light-text-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.player-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--gf-space-sm) var(--gf-space-md);
+  font-size: 0.85rem;
+  padding-top: var(--gf-space-sm);
+  border-top: 1px dashed var(--gf-light-border);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gf-light-text-muted);
+  margin-bottom: 2px;
+}
+
+.stat-value { font-weight: 500; color: var(--gf-light-text); }
+
+.player-links {
+  display: flex;
+  gap: var(--gf-space-md);
+  font-size: 0.85rem;
+  margin-top: auto;
+  padding-top: var(--gf-space-sm);
+  border-top: 1px solid var(--gf-light-border);
+}
+.player-links a {
+  color: var(--gf-light-text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+.player-links a svg {
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.player-links a:hover { color: var(--gf-accent-deep); }
+
+/* ===== MODAL (visual mockup state) ===== */
+.modal-section {
+  background: var(--gf-bg-deep);
+  padding: var(--gf-space-3xl) var(--gf-space-xl);
+  margin-top: var(--gf-space-2xl);
+}
+
+.modal-section-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.modal-section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gf-accent);
+  margin-bottom: var(--gf-space-md);
+  text-align: center;
+}
+
+.modal-section-title {
+  font-family: var(--gf-display);
+  font-size: 2rem;
+  font-weight: 500;
+  text-align: center;
+  color: var(--gf-text);
+  margin-bottom: var(--gf-space-sm);
+  letter-spacing: -0.01em;
+}
+
+.modal-section-sub {
+  text-align: center;
+  color: var(--gf-text-muted);
+  font-size: 0.95rem;
+  margin-bottom: var(--gf-space-xl);
+}
+
+.modal-mockup {
+  background: var(--gf-light-bg-elev);
+  border-radius: var(--gf-radius-lg);
+  padding: var(--gf-space-xl);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.modal-step-indicator {
+  display: flex;
+  gap: 6px;
+  margin-bottom: var(--gf-space-md);
+}
+.step-dot {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--gf-light-border);
+}
+.step-dot.active { background: var(--gf-accent-deep); }
+.step-dot.complete { background: var(--gf-bg-elev); }
+
+.modal-h {
+  font-family: var(--gf-display);
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: var(--gf-light-text);
+  margin-bottom: 4px;
+}
+.modal-sub {
+  font-size: 0.85rem;
+  color: var(--gf-light-text-muted);
+  margin-bottom: var(--gf-space-lg);
+}
+
+.modal-section-h {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gf-light-text-muted);
+  margin-bottom: var(--gf-space-sm);
+  margin-top: var(--gf-space-md);
+}
+
+.date-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gf-space-sm);
+}
+
+.date-card {
+  background: var(--gf-light-bg);
+  border: 1px solid var(--gf-light-border);
+  border-radius: var(--gf-radius-sm);
+  padding: var(--gf-space-sm);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.date-card:hover { border-color: var(--gf-accent-deep); }
+.date-card.selected {
+  border-color: var(--gf-accent-deep);
+  background: var(--gf-accent-soft);
+}
+
+.date-dow {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--gf-light-text-muted);
+}
+.date-day {
+  font-family: var(--gf-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--gf-light-text);
+  line-height: 1;
+  margin: 4px 0;
+}
+.date-month {
+  font-size: 0.7rem;
+  color: var(--gf-light-text-muted);
+}
+
+.time-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.time-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.7rem 0.85rem;
+  background: var(--gf-light-bg);
+  border: 1px solid var(--gf-light-border);
+  border-radius: var(--gf-radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.9rem;
+}
+.time-row:hover { border-color: var(--gf-accent-deep); }
+.time-row.selected {
+  border-color: var(--gf-accent-deep);
+  background: var(--gf-accent-soft);
+}
+.time-row .time-name { color: var(--gf-light-text); font-weight: 500; }
+.time-row .time-range { color: var(--gf-light-text-muted); font-size: 0.85rem; }
+
+.continue-btn {
+  width: 100%;
+  background: var(--gf-bg-deep);
+  color: var(--gf-accent);
+  border: none;
+  padding: 0.9rem;
+  border-radius: var(--gf-radius-sm);
+  font-family: var(--gf-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-top: var(--gf-space-lg);
+  transition: background 0.15s;
+}
+.continue-btn:hover { background: #000; }
+
+.modal-row-flex {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gf-space-md);
+  align-items: center;
+}
+
+.modal-trio {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--gf-space-lg);
+  margin-top: var(--gf-space-xl);
+}
+
+@media (max-width: 900px) {
+  .modal-trio { grid-template-columns: 1fr; gap: var(--gf-space-md); }
+  .modal-mockup { padding: var(--gf-space-lg); }
+}
+
+.modal-mini { transform: scale(0.92); transform-origin: top center; }
+
+.modal-trio .modal-mockup { max-width: 100%; }
+
+/* Step 3: player picker */
+.player-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.picker-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gf-space-sm);
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--gf-light-border);
+  border-radius: var(--gf-radius-sm);
+  background: var(--gf-light-bg);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.85rem;
+}
+.picker-row.selected {
+  border-color: var(--gf-accent-deep);
+  background: var(--gf-accent-soft);
+}
+.picker-mini-photo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gf-bg-deep);
+  color: var(--gf-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--gf-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.picker-name { color: var(--gf-light-text); font-weight: 500; flex: 1; }
+.picker-meta { color: var(--gf-light-text-muted); font-size: 0.75rem; }
+.picker-check {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--gf-light-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.picker-row.selected .picker-check {
+  background: var(--gf-accent-deep);
+  border-color: var(--gf-accent-deep);
+  color: var(--gf-bg-deep);
+}
+
+/* ===== FOOTER ===== */
+.foot {
+  background: var(--gf-bg-deep);
+  color: var(--gf-text-muted);
+  padding: var(--gf-space-2xl) var(--gf-space-xl);
+  text-align: center;
+  font-size: 0.85rem;
+  border-top: 1px solid var(--gf-border);
+}
+.foot a { color: var(--gf-accent); text-decoration: none; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .nav { padding: var(--gf-space-sm) var(--gf-space-md); }
+  .nav-links { display: none; }
+  .hero { padding: var(--gf-space-2xl) var(--gf-space-md); }
+  .roster { padding: var(--gf-space-xl) var(--gf-space-md); }
+  .roster-header { flex-direction: column; align-items: start; }
+  .modal-section { padding: var(--gf-space-2xl) var(--gf-space-md); }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav class="nav">
+  <a href="https://www.grittyfb.com" class="nav-brand">
+    <img src="logo.png" alt="GrittyFB Logo">
+    <span><span class="brand-gritty">Gritty</span><span class="brand-fb">FB</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="https://www.grittyfb.com/#why">Why GrittyFB</a>
+    <a href="#" aria-current="page">Recruits</a>
+    <a href="https://www.grittyfb.com/#partnership">Partnership</a>
+    <a href="https://www.grittyfb.com/#outcomes">Outcomes</a>
+    <a href="https://www.grittyfb.com/#contact">Contact</a>
+  </div>
+  <div class="nav-actions">
+    <a href="#" class="nav-link-coach">Coach Login</a>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <h1>Elite high school talent. <em>One roster.</em> One visit away.</h1>
+  <p class="hero-sub">Browse student-athletes from GrittyFB partner schools, then schedule a campus drop-in to meet the recruits you're targeting.</p>
+  <div class="hero-meta">
+    <span class="hero-meta-dot"></span>
+    Currently active partner schools: 1 · Belmont Hill joining May 2026
+  </div>
+</section>
+
+<!-- ============ STICKY CTA ============ -->
+<div class="cta-strip">
+  <button class="cta-button" onclick="document.getElementById('scheduler-preview').scrollIntoView({behavior: 'smooth'})">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+    Coach? Schedule a Drop-In
+  </button>
+</div>
+
+<!-- ============ ROSTER ============ -->
+<section class="roster">
+  <div class="roster-header">
+    <div class="roster-title">
+      <h2>Gritty Recruits</h2>
+      <p>Student-athletes available for in-person evaluation during the contact period.</p>
+    </div>
+    <div class="roster-count"><strong>26</strong> athletes · <strong>1</strong> school active</div>
+  </div>
+
+  <!-- School Toggle -->
+  <div class="school-toggle">
+    <button class="active">BC High</button>
+    <button>Belmont Hill <span style="opacity: 0.5; font-size: 0.75rem;">(coming May)</span></button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <span class="filter-label">Filter</span>
+    <input type="text" class="filter-input" placeholder="Search by name…">
+    <select class="filter-select">
+      <option>All Positions</option>
+      <option>QB</option><option>RB</option><option>WR</option><option>OL</option><option>DL</option><option>LB</option><option>DB</option>
+    </select>
+    <select class="filter-select">
+      <option>All Class Years</option>
+      <option>2027</option><option>2028</option><option>2029</option>
+    </select>
+    <select class="filter-select">
+      <option>Sort: Class Year</option>
+      <option>Sort: Name</option>
+      <option>Sort: GPA</option>
+    </select>
+  </div>
+
+  <!-- Card Grid -->
+  <div class="card-grid">
+
+    <div class="player-card">
+      <span class="player-tag">Class 2027</span>
+      <div class="player-card-top">
+        <div class="player-photo">AW</div>
+        <div>
+          <div class="player-name">Ayden Watkins</div>
+          <div class="player-position">CB · 5'11" · 175 lbs</div>
+          <div class="player-school">BC High</div>
+        </div>
+      </div>
+      <div class="player-offers">
+        <span class="offers-label">Active Interest</span>
+        41 schools · Recruiting Progress 32%
+      </div>
+      <div class="player-stats">
+        <div class="stat-item"><span class="stat-label">GPA</span><span class="stat-value">3.40</span></div>
+        <div class="stat-item"><span class="stat-label">Hometown</span><span class="stat-value">Boston, MA</span></div>
+        <div class="stat-item"><span class="stat-label">40 Time</span><span class="stat-value">4.52s</span></div>
+        <div class="stat-item"><span class="stat-label">Also Plays</span><span class="stat-value">Track</span></div>
+      </div>
+      <div class="player-links">
+        <a href="#">Hudl Film →</a>
+        <a href="#" aria-label="X / Twitter profile"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 2px;"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> X / Twitter</a>
+      </div>
+    </div>
+
+    <div class="player-card">
+      <span class="player-tag">Class 2027</span>
+      <div class="player-card-top">
+        <div class="player-photo">BK</div>
+        <div>
+          <div class="player-name">Blaise Krivak</div>
+          <div class="player-position">DE · 6'3" · 230 lbs</div>
+          <div class="player-school">BC High</div>
+        </div>
+      </div>
+      <div class="player-offers">
+        <span class="offers-label">Active Interest</span>
+        12 schools · Recruiting Progress 18%
+      </div>
+      <div class="player-stats">
+        <div class="stat-item"><span class="stat-label">GPA</span><span class="stat-value">3.30</span></div>
+        <div class="stat-item"><span class="stat-label">Hometown</span><span class="stat-value">Quincy, MA</span></div>
+        <div class="stat-item"><span class="stat-label">Bench</span><span class="stat-value">285 lbs</span></div>
+        <div class="stat-item"><span class="stat-label">Also Plays</span><span class="stat-value">—</span></div>
+      </div>
+      <div class="player-links">
+        <a href="#">Hudl Film →</a>
+        <a href="#" aria-label="X / Twitter profile"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 2px;"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> X / Twitter</a>
+      </div>
+    </div>
+
+    <div class="player-card">
+      <span class="player-tag">Class 2028</span>
+      <div class="player-card-top">
+        <div class="player-photo">CB</div>
+        <div>
+          <div class="player-name">Charlie Bolger</div>
+          <div class="player-position">WR · 6'1" · 185 lbs</div>
+          <div class="player-school">BC High</div>
+        </div>
+      </div>
+      <div class="player-offers">
+        <span class="offers-label">Active Interest</span>
+        8 schools · Recruiting Progress 12%
+      </div>
+      <div class="player-stats">
+        <div class="stat-item"><span class="stat-label">GPA</span><span class="stat-value">3.55</span></div>
+        <div class="stat-item"><span class="stat-label">Hometown</span><span class="stat-value">Hingham, MA</span></div>
+        <div class="stat-item"><span class="stat-label">40 Time</span><span class="stat-value">4.61s</span></div>
+        <div class="stat-item"><span class="stat-label">Also Plays</span><span class="stat-value">Lacrosse</span></div>
+      </div>
+      <div class="player-links">
+        <a href="#">Hudl Film →</a>
+        <a href="#" aria-label="X / Twitter profile"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 2px;"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> X / Twitter</a>
+      </div>
+    </div>
+
+    <div class="player-card">
+      <span class="player-tag">Class 2027</span>
+      <div class="player-card-top">
+        <div class="player-photo">CD</div>
+        <div>
+          <div class="player-name">Christos Dalmanieras</div>
+          <div class="player-position">TE · 6'4" · 235 lbs</div>
+          <div class="player-school">BC High</div>
+        </div>
+      </div>
+      <div class="player-offers">
+        <span class="offers-label">Active Interest</span>
+        15 schools · Recruiting Progress 26%
+      </div>
+      <div class="player-stats">
+        <div class="stat-item"><span class="stat-label">GPA</span><span class="stat-value">3.70</span></div>
+        <div class="stat-item"><span class="stat-label">Hometown</span><span class="stat-value">Milton, MA</span></div>
+        <div class="stat-item"><span class="stat-label">Bench</span><span class="stat-value">265 lbs</span></div>
+        <div class="stat-item"><span class="stat-label">Also Plays</span><span class="stat-value">Basketball</span></div>
+      </div>
+      <div class="player-links">
+        <a href="#">Hudl Film →</a>
+        <a href="#" aria-label="X / Twitter profile"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 2px;"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> X / Twitter</a>
+      </div>
+    </div>
+
+    <div class="player-card">
+      <span class="player-tag">Class 2028</span>
+      <div class="player-card-top">
+        <div class="player-photo">DM</div>
+        <div>
+          <div class="player-name">Danny McGarry</div>
+          <div class="player-position">QB · 6'2" · 195 lbs</div>
+          <div class="player-school">BC High</div>
+        </div>
+      </div>
+      <div class="player-offers">
+        <span class="offers-label">Active Interest</span>
+        22 schools · Recruiting Progress 35%
+      </div>
+      <div class="player-stats">
+        <div class="stat-item"><span class="stat-label">GPA</span><span class="stat-value">3.85</span></div>
+        <div class="stat-item"><span class="stat-label">Hometown</span><span class="stat-value">Dorchester, MA</span></div>
+        <div class="stat-item"><span class="stat-label">40 Time</span><span class="stat-value">4.78s</span></div>
+        <div class="stat-item"><span class="stat-label">Also Plays</span><span class="stat-value">Baseball</span></div>
+      </div>
+      <div class="player-links">
+        <a href="#">Hudl Film →</a>
+        <a href="#" aria-label="X / Twitter profile"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 2px;"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> X / Twitter</a>
+      </div>
+    </div>
+
+    <div class="player-card">
+      <span class="player-tag">Class 2027</span>
+      <div class="player-card-top">
+        <div class="player-photo">CT</div>
+        <div>
+          <div class="player-name">CJ Taylor</div>
+          <div class="player-position">LB · 6'0" · 215 lbs</div>
+          <div class="player-school">BC High</div>
+        </div>
+      </div>
+      <div class="player-offers">
+        <span class="offers-label">Active Interest</span>
+        9 schools · Recruiting Progress 14%
+      </div>
+      <div class="player-stats">
+        <div class="stat-item"><span class="stat-label">GPA</span><span class="stat-value">3.30</span></div>
+        <div class="stat-item"><span class="stat-label">Hometown</span><span class="stat-value">Brockton, MA</span></div>
+        <div class="stat-item"><span class="stat-label">40 Time</span><span class="stat-value">4.69s</span></div>
+        <div class="stat-item"><span class="stat-label">Also Plays</span><span class="stat-value">Wrestling</span></div>
+      </div>
+      <div class="player-links">
+        <a href="#">Hudl Film →</a>
+        <a href="#" aria-label="X / Twitter profile"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 2px;"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> X / Twitter</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ MODAL FLOW PREVIEW ============ -->
+<section id="scheduler-preview" class="modal-section">
+  <div class="modal-section-inner">
+    <div class="modal-section-label">Scheduler · 4 Steps</div>
+    <h3 class="modal-section-title">How a coach books a drop-in</h3>
+    <p class="modal-section-sub">Date → Time window → Player selection → Contact info. ICS calendar invite delivered to the college coach, the high school's head coach, and the selected players.</p>
+
+    <div class="modal-trio">
+
+      <!-- STEP 1 -->
+      <div class="modal-mockup modal-mini">
+        <div class="modal-step-indicator">
+          <span class="step-dot active"></span>
+          <span class="step-dot"></span>
+          <span class="step-dot"></span>
+          <span class="step-dot"></span>
+        </div>
+        <div class="modal-h">Pick a date</div>
+        <div class="modal-sub">Showing valid contact period dates only.</div>
+        <div class="modal-section-h">Available dates</div>
+        <div class="date-grid">
+          <div class="date-card"><div class="date-dow">THU</div><div class="date-day">30</div><div class="date-month">Apr</div></div>
+          <div class="date-card selected"><div class="date-dow">FRI</div><div class="date-day">1</div><div class="date-month">May</div></div>
+          <div class="date-card"><div class="date-dow">SAT</div><div class="date-day">2</div><div class="date-month">May</div></div>
+          <div class="date-card"><div class="date-dow">SUN</div><div class="date-day">3</div><div class="date-month">May</div></div>
+          <div class="date-card"><div class="date-dow">MON</div><div class="date-day">4</div><div class="date-month">May</div></div>
+          <div class="date-card"><div class="date-dow">TUE</div><div class="date-day">5</div><div class="date-month">May</div></div>
+        </div>
+        <button class="continue-btn">Continue</button>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="modal-mockup modal-mini">
+        <div class="modal-step-indicator">
+          <span class="step-dot complete"></span>
+          <span class="step-dot active"></span>
+          <span class="step-dot"></span>
+          <span class="step-dot"></span>
+        </div>
+        <div class="modal-h">Pick a time window</div>
+        <div class="modal-sub">Friday, May 1</div>
+        <div class="modal-section-h">Time windows</div>
+        <div class="time-list">
+          <div class="time-row"><span class="time-name">Morning</span><span class="time-range">8 AM – 12 PM</span></div>
+          <div class="time-row selected"><span class="time-name">Midday</span><span class="time-range">12 PM – 2 PM</span></div>
+          <div class="time-row"><span class="time-name">Afternoon</span><span class="time-range">2 PM – 5 PM</span></div>
+          <div class="time-row"><span class="time-name">Evening</span><span class="time-range">5 PM – 8 PM</span></div>
+          <div class="time-row"><span class="time-name">Flexible</span><span class="time-range">Any time</span></div>
+        </div>
+        <button class="continue-btn">Continue</button>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="modal-mockup modal-mini">
+        <div class="modal-step-indicator">
+          <span class="step-dot complete"></span>
+          <span class="step-dot complete"></span>
+          <span class="step-dot active"></span>
+          <span class="step-dot"></span>
+        </div>
+        <div class="modal-h">Select players</div>
+        <div class="modal-sub">2 selected</div>
+        <div class="modal-section-h">BC High roster</div>
+        <div class="player-picker-list">
+          <div class="picker-row selected">
+            <div class="picker-mini-photo">AW</div>
+            <div class="picker-name">Ayden Watkins<div class="picker-meta">CB · 2027</div></div>
+            <div class="picker-check">✓</div>
+          </div>
+          <div class="picker-row">
+            <div class="picker-mini-photo">BK</div>
+            <div class="picker-name">Blaise Krivak<div class="picker-meta">DE · 2027</div></div>
+            <div class="picker-check"></div>
+          </div>
+          <div class="picker-row selected">
+            <div class="picker-mini-photo">CD</div>
+            <div class="picker-name">Christos Dalmanieras<div class="picker-meta">TE · 2027</div></div>
+            <div class="picker-check">✓</div>
+          </div>
+          <div class="picker-row">
+            <div class="picker-mini-photo">CT</div>
+            <div class="picker-name">CJ Taylor<div class="picker-meta">LB · 2027</div></div>
+            <div class="picker-check"></div>
+          </div>
+          <div class="picker-row">
+            <div class="picker-mini-photo">DM</div>
+            <div class="picker-name">Danny McGarry<div class="picker-meta">QB · 2028</div></div>
+            <div class="picker-check"></div>
+          </div>
+        </div>
+        <button class="continue-btn">Continue</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOT ============ -->
+<footer class="foot">
+  Prototype · GrittyFB recruiting intelligence · <a href="#">grittyfb.com</a>
+</footer>
+
+</body>
+</html>

@@ -1,7 +1,7 @@
 /**
  * RecruitCard — Sprint 011 D6
  *
- * Public-facing player card on /recruits. Distinct from the frozen
+ * Public-facing player card on /athletes. Distinct from the frozen
  * styleguide exemplar (PlayerCardReference) — this is the production card.
  * Receives a pre-resolved profile object containing only whitelisted PII
  * fields (the data hook constructs the shape; this component does not call
