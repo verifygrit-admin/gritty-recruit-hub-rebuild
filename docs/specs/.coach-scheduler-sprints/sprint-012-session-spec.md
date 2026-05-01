@@ -111,6 +111,8 @@ Seed: BC High row populated in the `0039_*` migration. Belmont Hill onboards in 
 
 **Note on `verification_state`:** column shape per DF-7 (resolved 2026-05-01). Replaces the prior `verified` boolean. Anon INSERT `WITH CHECK` requires `verification_state = 'unverified'` per DF-2 cascade. State transitions are owned by downstream sprints: `email_verified` by Sprint 013 (email send), `form_returned` by a future follow-up sprint, `auth_bound` by Sprint 6 (College Coach Auth). See EXECUTION_PLAN Open Decisions DF-7 for full state semantics.
 
+**Consumer-side pattern requirement (surfaced during 0039 apply, 2026-05-01):** anon writes against coach_submissions and visit_requests must use `Prefer: return=minimal` (omit `.select()` chains on insert and upsert calls). PostgREST defaults to `Prefer: return=representation`, which triggers a SELECT-side RLS check on the just-inserted row; anon has no SELECT policy on either table, so RETURNING-style chains fail with 42501 even when the INSERT itself succeeds. The DF-5 spec'd upsert pattern — `supabase.from('coach_submissions').upsert(payload, { onConflict: 'email' })` — works as long as `.select()` is not chained. The visit_requests insert follows the same constraint.
+
 **Behavior on duplicate email:** If a coach submits a second request with the same email, `coach_submissions` row is updated (most recent name/program); a new `visit_requests` row is still created.
 
 ### D7 — Mobile Modal Behavior
