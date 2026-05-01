@@ -152,7 +152,7 @@ export default function AthletesPage() {
               }}
             >
               Student-athletes available for in-person evaluation during the
-              contact period.
+              NCAA's Contact or Evaluation Period.
             </p>
           </div>
           <div

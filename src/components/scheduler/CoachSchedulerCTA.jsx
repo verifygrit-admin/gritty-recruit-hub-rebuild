@@ -79,13 +79,26 @@ const STYLE = `
   }
 `;
 
+// Matches the scroll-margin-top: 72px rule on .scheduler-section in
+// CoachSchedulerSection.jsx. Single source of truth for the CTA-to-section
+// landing offset.
+const SCROLL_OFFSET_PX = 72;
+
 export default function CoachSchedulerCTA() {
+  // Imperative scroll. Replaces scrollIntoView({behavior: 'smooth'}) which
+  // miscomputes the destination when a sticky element (this CTA strip)
+  // sits above the target — sticky transforms to its pinned position
+  // mid-scroll and the smooth animation can land the target underneath
+  // the sticky bar (or cancel altogether on some browsers). Computing
+  // the absolute scroll target from getBoundingClientRect + window.scrollY
+  // and applying the 72px offset is deterministic across browsers and
+  // matches the CSS scroll-margin-top buffer.
   const handleClick = () => {
-    if (typeof document === 'undefined') return;
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
     const target = document.getElementById(SCROLL_TARGET_ID);
-    if (target && typeof target.scrollIntoView === 'function') {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    if (!target) return;
+    const top = target.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET_PX;
+    window.scrollTo({ top, behavior: 'smooth' });
   };
 
   return (

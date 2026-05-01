@@ -23,8 +23,12 @@
 
 import { normalizeTwitter } from '../../lib/recruits/utils.js';
 
+// expected_starter intentionally omitted from the live /athletes surface
+// (Sprint 012 Phase 2 hotfix). The field stays in the data-hook whitelist
+// and destructure boundary — fetched but not surfaced — so a future sprint
+// can re-enable without data-layer work. PlayerCardReference (frozen
+// styleguide exemplar) still surfaces the chip for design reference.
 const ACCOLADE_SLOTS = [
-  { key: 'expected_starter', label: 'Expected Starter' },
   { key: 'captain', label: 'Captain' },
   { key: 'all_conference', label: 'All-Conference' },
   { key: 'all_state', label: 'All-State' },
