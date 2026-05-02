@@ -163,7 +163,7 @@ Form contains an invisible field (CSS-hidden, label with `tabindex="-1"`). If su
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| New tables ship without proper RLS policies; public scheduler becomes data exfiltration vector | High | Anon role: INSERT only with column-bounded `WITH CHECK` (`coach_submissions`: `verification_state='unverified'`, `source='scheduler'`; `visit_requests`: `status='pending'`). No SELECT policy for anon. FK-only binding between tables (DF-2 resolved 2026-05-01, see EXECUTION_PLAN) (verification_state shape per DF-7 resolved 2026-05-01). |
+| New tables ship without proper RLS policies; public scheduler becomes data exfiltration vector | High | Anon role: INSERT only with column-bounded `WITH CHECK` (`coach_submissions`: `submitter_verified=false`, `source='scheduler'`; `visit_requests`: `status='pending'`). No SELECT policy for anon. FK-only binding between tables (DF-2 resolved 2026-05-01, see EXECUTION_PLAN) (verification_state shape per DF-7 resolved 2026-05-01). |
 | Honeypot insufficient against sophisticated spam | Medium | Acceptable for MVP. Carry-forward Cloudflare Turnstile if abuse appears. |
 | Date picker shows dates the school can't actually host visits | Medium | Resolve via the date-filtering open question before sprint opens |
 | Modal can't be closed if submission fails | Medium | Submit failure path: show error, leave form data intact, allow retry or cancel |
