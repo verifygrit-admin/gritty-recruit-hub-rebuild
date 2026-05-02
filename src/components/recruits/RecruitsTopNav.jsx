@@ -15,11 +15,11 @@
  */
 
 const NAV_LINKS = [
-  { label: 'Why GrittyFB', href: 'https://www.grittyfb.com/#why', external: true },
+  { label: 'Why GrittyFB', href: 'https://www.grittyfb.com/#opportunity', external: true },
   { label: 'Recruits', href: '/athletes', external: false, active: true },
-  { label: 'Partnership', href: 'https://www.grittyfb.com/#partnership', external: true },
-  { label: 'Outcomes', href: 'https://www.grittyfb.com/#outcomes', external: true },
-  { label: 'Contact', href: 'https://www.grittyfb.com/#contact', external: true },
+  { label: 'Partnership', href: 'https://www.grittyfb.com/#partner', external: true },
+  { label: 'Outcomes', href: 'https://www.grittyfb.com/#proof', external: true },
+  { label: 'Contact', href: 'https://www.grittyfb.com/#cta', external: true },
 ];
 
 export default function RecruitsTopNav() {
