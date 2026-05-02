@@ -991,11 +991,16 @@ export default function CoachSchedulerSection() {
     if (submitting) return;
 
     // Honeypot tripped — silent no-op, deceive the bot with success UI.
+    // dispatchAvailable=false renders the Sprint 012 fallback copy, identical
+    // to a real submit where dispatch was unreachable. The bot sees no signal.
     if (contactForm.honeypot !== '') {
       setConfirmation({
         name: contactForm.name,
         email: contactForm.email,
         schoolLabel: (activeSchool && activeSchool.label) || '',
+        dispatchAvailable: false,
+        delivered_count: 0,
+        failed_count: 0,
       });
       setSubmitState('success');
       return;
@@ -1051,13 +1056,57 @@ export default function CoachSchedulerSection() {
         if (playersErr) throw playersErr;
       }
 
+      // Sprint 013 D9 + OQ6 wiring — invoke the dispatch function once the
+      // intake rows are in place. Dispatch failure does NOT roll back the
+      // success state; intake rows are saved and the user sees the Sprint
+      // 012 fallback copy. Three failure shapes all funnel to dispatchAvailable=false:
+      //   1. fetch rejection (network / timeout)
+      //   2. response.ok === false (HTTP 4xx/5xx including D1's 500-on-all-failed)
+      //   3. malformed JSON body (response.json() throws)
+      // Per spec D9 + A1: delivered_count===0 also renders the fallback copy
+      // regardless of dispatchAvailable, so HTTP 500 + zero deliveries is
+      // covered by the same branch the render uses.
+      let dispatchResult = {
+        dispatchAvailable: false,
+        delivered_count: 0,
+        failed_count: 0,
+      };
+      try {
+        const dispatchRes = await fetch('/api/coach-scheduler-dispatch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visit_request_id: visitRequestId }),
+        });
+        if (dispatchRes.ok) {
+          const data = await dispatchRes.json();
+          if (
+            typeof data?.delivered_count === 'number' &&
+            typeof data?.failed_count === 'number'
+          ) {
+            dispatchResult = {
+              dispatchAvailable: true,
+              delivered_count: data.delivered_count,
+              failed_count: data.failed_count,
+            };
+          }
+        }
+      } catch (dispatchErr) {
+        // Telemetry only — user sees Sprint 012 fallback copy. Intake is saved.
+        // eslint-disable-next-line no-console
+        console.warn('coach-scheduler-dispatch unavailable', dispatchErr);
+      }
+
       setConfirmation({
         name: contactForm.name.trim(),
         email: contactForm.email.trim(),
         schoolLabel: (activeSchool && activeSchool.label) || '',
+        ...dispatchResult,
       });
       setSubmitState('success');
     } catch (err) {
+      // Reserved for intake-insert failure only — at this point the user's
+      // submission was NOT saved. Dispatch failures land above in the
+      // dispatch try/catch and do not reach here.
       setSubmitError((err && err.message) || 'Submission failed. Please try again.');
       setSubmitState('error');
     }
@@ -1096,12 +1145,46 @@ export default function CoachSchedulerSection() {
             <div className="scheduler-success-h">
               Thanks, {confirmation.name || 'coach'}!
             </div>
-            <p className="scheduler-success-body">
-              Your drop-in request has been received. The{' '}
-              <strong>{confirmation.schoolLabel}</strong> coaching staff will
-              follow up at <strong>{confirmation.email}</strong> to confirm the
-              date and time.
-            </p>
+            {(() => {
+              // Sprint 013 D9 confirmation copy branches.
+              //   Full success    — dispatchAvailable && delivered>0 && failed===0
+              //   Partial success — dispatchAvailable && delivered>0 && failed>0
+              //   Fallback        — dispatchAvailable=false OR delivered===0 (per A1)
+              // Errors array from D1 is intentionally not surfaced to the user
+              // (per D9 — failure detail lives in visit_request_deliveries).
+              const delivered = confirmation.delivered_count;
+              const failed = confirmation.failed_count;
+              const total = delivered + failed;
+              const isFull = confirmation.dispatchAvailable && delivered > 0 && failed === 0;
+              const isPartial = confirmation.dispatchAvailable && delivered > 0 && failed > 0;
+
+              if (isFull) {
+                return (
+                  <p className="scheduler-success-body">
+                    Your drop-in request has been sent to{' '}
+                    <strong>{delivered}</strong> recipients. Check your email
+                    for the calendar invite.
+                  </p>
+                );
+              }
+              if (isPartial) {
+                return (
+                  <p className="scheduler-success-body">
+                    Your drop-in request has been received and sent to{' '}
+                    <strong>{delivered} of {total}</strong> recipients. We'll
+                    follow up with the remaining recipients shortly.
+                  </p>
+                );
+              }
+              return (
+                <p className="scheduler-success-body">
+                  Your drop-in request has been received. The{' '}
+                  <strong>{confirmation.schoolLabel}</strong> coaching staff
+                  will follow up at <strong>{confirmation.email}</strong> to
+                  confirm the date and time.
+                </p>
+              );
+            })()}
           </div>
         ) : (
           <>
