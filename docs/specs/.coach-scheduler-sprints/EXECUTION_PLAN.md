@@ -39,8 +39,8 @@
 | G | Calendar invite mechanism | Server-generated `.ics`, distributed via email to all attendees |
 | H | ICS attendee visibility | Single invite, all attendees visible |
 | I | Architectural placement | Page lives in `recruit-hub-rebuild` (web app repo). Nav links bridge to `grittyfb.com` via external URLs. |
-| J | College coach identity model | Multi-state coach identity per DF-7. Verification advances through `unverified` → `email_verified` → `form_returned` → `auth_bound`. The "full profile" state of the prior two-tier model corresponds to `auth_bound`; Sprint 6 still owns the `auth_bound` transition. |
-| K | Scheduler-created profiles vs. scraped contacts | Separate Supabase tables, deduplicated only at outreach time. `coach_submissions` is a semi-staging table whose rows accumulate from multiple intake paths (scraped baseline from `college_coach_contacts`, self-asserted intake from `/athletes` scheduler modal, future follow-up form returns, future auth-binding events) and progress through verification states independently of any single intake event. Rows without paired `visit_requests` are captured contacts awaiting downstream pipeline events, not orphans. |
+| J | College coach identity model | Multi-state coach identity now lives at the canonical layer (`college_coaches`) per the intake-log reframe of 2026-05-01 (supersedes the prior DF-7 framing that placed states on `coach_submissions`). `coach_submissions` per-row verification is a simple boolean (`submitter_verified`, default false). The four states (`unverified` / `email_verified` / `form_returned` / `auth_bound`) remain a valid design at the canonical layer, to be built when the enrichment pipeline lands. The `auth_bound` state still belongs to Sprint 6 work on `college_coaches`. |
+| K | Scheduler-created profiles vs. scraped contacts | Separate Supabase tables, deduplicated only at outreach time. `coach_submissions` is a semi-staging table whose rows accumulate from multiple intake paths (scraped baseline from `college_coach_contacts`, self-asserted intake from `/athletes` scheduler modal, future follow-up form returns, future auth-binding events) and progress through verification states independently of any single intake event. Rows without paired `visit_requests` are captured contacts awaiting downstream pipeline events, not orphans.<br><br>The semi-staging framing of 2026-05-01 (v5.3) is sharpened by the intake-log reframe of 2026-05-01: `coach_submissions` is an append-only intake record, not a per-coach staging row. The enrichment pipeline (later sprint) reads intake rows and writes to canonical tables (`college_coaches`, `ncaa_schools`, `partner_high_schools`, `profiles`). Decision K's "semi-staging" direction was correct; the intake-log behavior is the precise pattern. |
 | L | **Admin panel repair sequencing** | Sprint 5 — after public page ships, before coach auth. Data accuracy maintained during interim via Supabase Studio direct edits for critical changes. |
 
 ---
@@ -402,30 +402,56 @@ Source: locked decision 2026-05-01; mirrored from audit Section G DF-1. Sprint 0
 
 Source: locked decision 2026-05-01; mirrored from audit Section G DF-2 and into Sprint 012 spec Risk Register row 1.
 
-### DF-3 — `coach_submissions.email` UNIQUE constraint declaration (RESOLVED 2026-05-01)
+### DF-3 — `coach_submissions.email` UNIQUE constraint declaration (RESOLVED 2026-05-01, REFRAMED 2026-05-01)
 
 **RESOLVED — email column declared UNIQUE in 0039 migration. ON CONFLICT pattern operates at column level, not application layer.** Sprint 012 migration `0039_*` declares `email text NOT NULL UNIQUE` (or table-level `UNIQUE(email)`) so the spec's "duplicate email update" behavior — `INSERT ... ON CONFLICT (email) DO UPDATE` — operates against a real unique index. Probe 5 surfaced the failure mode live (Postgres error `42P10` fires without the column-level constraint). Source: locked decision 2026-05-01; mirrored from audit Section G DF-3.
+
+**REFRAMED 2026-05-01 by the intake-log architecture pivot.** `coach_submissions` is an append-only intake record; multiple submissions from the same email are valid distinct rows. UNIQUE constraint dropped via `0041` migration. The email column remains; it is no longer unique. The original DF-3 problem (ensuring ON CONFLICT operates against a real index) becomes moot because there is no ON CONFLICT — every submit is a plain `.insert()` of a new row per the DF-5 reframe. Canonical coach identity (one row per coach with current contact info) lives at the `college_coaches` layer, populated by a later enrichment pipeline that reads `coach_submissions` most-recent-by-email. See "Coach Identity Architecture" section below for the full two-layer model.
 
 ### DF-4 — Date filtering logic (RESOLVED 2026-05-01)
 
 **RESOLVED — any future date including weekends. Default 60 days, expandable to 180 days. Per-school config deferred.** Default view shows today + 60 days; "Show more dates" expansion extends to today + 180 days. Per-school open-visit-day configurability is deferred as a carry-forward candidate, not Sprint 012 scope. **Rationale:** option 1 (weekdays only) was rejected because college coaches travel weekends and a weekend drop-in is a realistic use case; option 3 (per-school config) was deferred because no admin panel exists to configure it and Sprint 012 is the wrong sprint to introduce one. Source: locked decision 2026-05-01; mirrored from audit Section G DF-4.
 
-### DF-5 — Submit path: direct anon INSERT vs Edge Function (RESOLVED 2026-05-01)
+### DF-5 — Submit path: direct anon INSERT vs Edge Function (RESOLVED 2026-05-01, amended DF-5.1 2026-05-01, REFRAMED 2026-05-01)
 
 **RESOLVED — Option A direct supabase-js client from the modal.** Implementation shape: two sequential calls fired from the modal after client-side honeypot validation passes:
 
-1. `supabase.from('coach_submissions').upsert(payload, { onConflict: 'email' })`
+1. `supabase.from('coach_submissions').upsert(payload, { onConflict: 'email', ignoreDuplicates: true })` *(amended DF-5.1 2026-05-01 — see below)*
 2. `supabase.from('visit_requests').insert(payload)`
 
 RLS does the security work per DF-2's column-bounded `WITH CHECK`. No `api/` addition, no `vercel.json` change, no Edge Function in Sprint 012.
 
 **Rationale:** DF-2's column-bounding already pays for the security work — anon cannot escalate `verified`, `status`, or `source`. The Sprint 012 spec marks `api/` and `vercel.json` as untouched (per the legacy proxy governance constraint), so adding a Vercel function expands sprint scope. `coach_submissions` is a semi-staging table per **Decision K** (above); a `coach_submissions` row without a paired `visit_requests` row is captured intake awaiting downstream pipeline events, not an orphan. Sprint 013 introduces email send, which requires server-side execution; that sprint is the natural home for the function migration.
 
-**Sprint 013 reopener (upgrade path):** Sprint 013 owns the migration of the submit path to a server-side function (Vercel function or Supabase Edge Function — provider decision is part of Sprint 013's scope) concurrent with email send + ICS generation work. Mirrored as a new Hard Constraint in the Sprint 013 spec.
+**Sprint 013 reopener (upgrade path):** Sprint 013 owns the migration of the submit path to a server-side function (Vercel function or Supabase Edge Function — provider decision is part of Sprint 013's scope) concurrent with email send + ICS generation work. Mirrored as a new Hard Constraint in the Sprint 013 spec. The reopener also restores last-write-wins on name/program updates (see DF-5.1 amendment compromise below).
 
 **Rejected alternatives:** Option B (Vercel function in Sprint 012, premature scope expansion); Option C (Supabase Edge Function in Sprint 012, adds an unused tooling surface — no other Edge Functions exist in this repo's `supabase/functions/`).
 
 Source: locked decision 2026-05-01; mirrored from audit Section G DF-5.
+
+**REFRAMED 2026-05-01.** Submit path is now: `supabase.from('coach_submissions').insert(payload)` — plain insert, no upsert, no on-conflict. Each submit creates a new intake row per the intake-log architecture pivot. The DF-5.1 amendment (`ignoreDuplicates: true`) is superseded and no longer applies. The Sprint 013 reopener for server-side route migration remains valid for the email-send work but is no longer required to fix upsert semantics. The `visit_requests` insert (call 2 of the original two-call pattern) is unchanged — it was already a plain `.insert()`. Net effect on the modal submit code: the `.upsert(..., { onConflict: 'email', ignoreDuplicates: true })` call becomes `.insert(...)` and the option bag drops entirely. See "Coach Identity Architecture" section below for the full two-layer model.
+
+#### DF-5.1 amendment 2026-05-01 — `.upsert()` requires `ignoreDuplicates: true` under anon (SUPERSEDED 2026-05-01)
+
+**Surfaced during the 0040 migration apply (Sprint 012 Phase 3).** Probe setup using the original DF-5 pattern — `supabase.from('coach_submissions').upsert(payload, { onConflict: 'email' })` — returned `42501` RLS denial despite `WITH CHECK` being satisfied. Root cause: supabase-js v2's `.upsert()` defaults `Prefer: return=representation` internally regardless of `.select()` chaining; PostgREST then issues a SELECT-side RLS check on the inserted row, which anon cannot pass (no anon SELECT policy on `coach_submissions`). The entire statement rolls back atomically.
+
+**Locked amendment:**
+
+```js
+supabase
+  .from('coach_submissions')
+  .upsert(payload, { onConflict: 'email', ignoreDuplicates: true });
+```
+
+`ignoreDuplicates: true` sets `Prefer: resolution=ignore-duplicates,return=minimal` — bypasses the SELECT-side RLS check and skips the conflict row instead of running an UPDATE.
+
+**Compromise.** With `ignoreDuplicates: true`, a coach's second submission with the same email no longer updates the existing `coach_submissions` row's `name` or `program` — the conflict is silently ignored. The `visit_requests` row still inserts (FK to the existing `coach_submissions` row), so the visit request is captured; only the per-coach contact-info refresh is lost. This contradicts the original "last-write-wins on name/program" framing in DF-3 and Sprint 012 spec D6's "Behavior on duplicate email" note. Accepted as a known limitation of the anon-direct path.
+
+**Closes via Sprint 013 reopener.** When the submit path migrates to a server-side function (per the existing DF-5 Sprint 013 reopener) the function executes under service role, which bypasses RLS. The real upsert pattern with merge-duplicates resolution is restored at that point. Last-write-wins on name/program returns when the server-side route ships.
+
+Source: locked amendment 2026-05-01; mirrored from audit Section G DF-5.1 and into Sprint 012 spec D6's Consumer-side pattern requirement bullet.
+
+**SUPERSEDED 2026-05-01 by the intake-log reframe.** The upsert-under-anon problem dissolves when `coach_submissions` is treated as an append-only intake record — there is no upsert, just plain insert. DF-5.1 is preserved in the record as historical context for why the reframe was adopted, not as an active resolution. The supabase-js v2 `.upsert()` defaults finding (PostgREST `Prefer: return=representation` triggers SELECT-side RLS denial under anon) remains a true technical observation; it just no longer applies because the submit pattern is no longer an upsert. The DF-5.1 compromise (no name/program updates on repeat submissions) is also moot — repeat submissions now create new intake rows with the new name/program values, and the enrichment pipeline at the canonical layer (later sprint) determines which row provides the "current" contact info for each coach.
 
 ### DF-6 — Partner-high-school enumeration source (RESOLVED 2026-05-01 by DF-1 collapse)
 
@@ -433,7 +459,7 @@ Source: locked decision 2026-05-01; mirrored from audit Section G DF-5.
 
 Source: locked decision 2026-05-01; mirrored from audit Section G DF-6.
 
-### DF-7 — `coach_submissions` verification-state column shape (RESOLVED 2026-05-01)
+### DF-7 — `coach_submissions` verification-state column shape (RESOLVED 2026-05-01, REFRAMED 2026-05-01)
 
 Surfaced from the DF-5 resolution context (added to v5.3 Open Decisions as NEW). Sprint 012 spec D6 originally declared `coach_submissions.verified` as boolean (default false). **Decision J** named a two-tier coach identity model (soft profile vs. full profile). **Decision K** (extended in v5.3) frames `coach_submissions` as a semi-staging table with multiple intake paths and progressive verification. A boolean cannot represent the states the pipeline produces.
 
@@ -459,6 +485,30 @@ verification_state text NOT NULL DEFAULT 'unverified'
 **Decision J supersession:** Decision J's two-tier framing is superseded by the multi-state model. The "full profile" state of the prior two-tier model corresponds to `auth_bound`; Sprint 6 still owns the `auth_bound` transition. Decision J's Value column has been updated above (Decisions on Record). Decision K is reinforced by DF-7 without modification.
 
 Source: locked decision 2026-05-01; mirrored from audit Section G DF-7. Sprint 012 spec D6 column definition updated for the cascade.
+
+**REFRAMED 2026-05-01 by the intake-log architecture pivot.** `verification_state` column dropped; `submitter_verified` boolean (default false) replaces it via `0041` migration. Per-row verification flag, not a state machine. Real coach verification state lives at the canonical layer (`college_coaches`), not on the intake log. Sprint 6 (College Coach Auth) inherits the multi-state design problem on `college_coaches`; `coach_submissions` ships with the simpler boolean. `submitter_verified` is true only if the submitter's identity was verified at submission time (e.g., by a future server-side route that checks the email against `college_coaches`). For Sprint 012, all anon submissions land with `submitter_verified = false`. The DF-2 anon INSERT `WITH CHECK` clause cascade updates: `submitter_verified = false` (replacing the prior `verification_state = 'unverified'`). The four-state pipeline (`unverified` / `email_verified` / `form_returned` / `auth_bound`) remains a valid design but lives at the canonical layer (`college_coaches.verification_state`), to be designed when the enrichment pipeline is built. Decision J updated again (Decisions on Record above) to reference the canonical-layer location.
+
+### Scope shift — visit_request_players (Sprint 013 D2 → Sprint 012 Phase 3) RESOLVED 2026-05-01
+
+Sprint 012 Phase 2 shipped a fully functional player picker in the inline coach scheduler section. To let those selections persist immediately and to consolidate the coach-scheduler schema work into Sprint 012's migration sequence, the `visit_request_players` join table was pulled forward from Sprint 013 D2 to Sprint 012 Phase 3. Migration `0040` introduces the table with a FK on `profiles(user_id)` — the canonical identity column used throughout the Sprint 011 recruit roster surface. Sprint 013's D2 reduces to a historical note; D3–D10 unaffected. Net effect: Sprint 012 ships four new tables (`partner_high_schools`, `coach_submissions`, `visit_requests`, `visit_request_players`); Sprint 013 ships ICS generation, email send, and the per-recipient delivery tracking on top of the existing schema.
+
+---
+
+## Coach Identity Architecture (intake log + canonical)
+
+Established 2026-05-01 by the intake-log reframe. Captures the two-layer architectural model that `coach_submissions` and `visit_requests` fit inside.
+
+The coach data model has two layers.
+
+**Intake-log layer (Sprint 012):** `coach_submissions` and `visit_requests` are append-only records of intake events. Each row records what was asserted at the moment it was submitted. The intake-log layer never carries "current" coach state — a coach who submits twice creates two intake rows, both preserved verbatim. RLS gates anon writes (INSERT only, no SELECT/UPDATE/DELETE per DF-2). The intake log is the source of truth for "what did the coach assert and when," not for "who is this coach right now."
+
+**Canonical layer (deferred to later sprint):** `college_coaches` holds the canonical coach identity, including current contact info and verification state (the four-state pipeline that DF-7 originally placed on `coach_submissions`). `ncaa_schools` holds institutions (the existing 662-row table — see BL-S012-XX-naming-hygiene for the rename refactor). `partner_high_schools` holds partner schools (introduced in Sprint 012 per DF-1). `profiles` holds students.
+
+**Enrichment pipeline (deferred):** an asynchronous pipeline (later sprint) reads intake rows and updates canonical tables. Most-recent-by-email becomes the current contact info on `college_coaches`. Verification work happens at the canonical layer. Relationship building (coach ↔ school ↔ student) happens at the canonical layer.
+
+**Sprint 012 ships only the intake-log layer.** The enrichment pipeline and canonical-layer connections are scoped for later. Sprint 013's email-send work executes against the intake log (it sends a confirmation email per visit_request, no canonical lookup needed). Sprint 6 (College Coach Auth) is the natural sprint to design the `college_coaches.verification_state` four-state model and the enrichment pipeline that promotes intake rows toward auth-bound coaches.
+
+This model resolves the tension that surfaced through DF-3, DF-5, DF-5.1, and DF-7: the original framing tried to make `coach_submissions` carry both intake event semantics and per-coach state semantics. Splitting the two — intake log stays append-only, canonical layer carries state — eliminates the upsert-under-anon problem (no upsert needed), the verification-state schema problem (boolean intake flag plus future canonical state machine), and the email-uniqueness problem (intake doesn't enforce uniqueness; canonical does at the layer that owns it).
 
 ---
 
@@ -522,6 +572,9 @@ Items deferred from Sprint 012 resolutions that should be picked up in a future 
 
 | Version | Date | Summary |
 |---|---|---|
+| v5.8 | 2026-05-01 | Intake-log reframe — `coach_submissions` and `visit_requests` treated as append-only intake records, not staging rows. DF-3 (email UNIQUE), DF-5 (upsert pattern), DF-5.1 (ignoreDuplicates amendment), and DF-7 (verification_state) reframed. Decision J updated to reference canonical-layer verification. Decision K sharpened with intake-log vocabulary. New "Coach Identity Architecture" section added. 0041 migration scope: drop email UNIQUE, drop verification_state column, add submitter_verified boolean. |
+| v5.7 | 2026-05-01 | DF-5.1 amendment — supabase-js v2 `.upsert()` requires `ignoreDuplicates: true` to operate under anon (PostgREST `Prefer: return=representation` default triggers SELECT-side RLS denial otherwise; surfaced during 0040 probe setup). Coach name/program no longer update on repeat submissions; Sprint 013 server-side route fixes. Sprint 012 spec D6 Consumer-side pattern bullet updated to capture both `.insert().select()` and `.upsert()` defaults findings. |
+| v5.6 | 2026-05-01 | Scope shift — `visit_request_players` pulled forward from Sprint 013 D2 to Sprint 012 Phase 3 via `0040` migration. FK on `profiles(user_id)` per existing Sprint 011 roster identity convention. Sprint 012 spec D6 expanded to four tables; Sprint 013 spec D2 reduced to historical note. |
 | v5.5 | 2026-05-01 | DF-1 resolved (Option 2 — `partner_high_schools` table introduced; `visit_requests.school_id` FK to it) and DF-6 collapsed (resolved by DF-1 — partner-school enumeration via INSERT, not migration). All seven DF items now resolved. Sprint 012 spec D6 updated with new `partner_high_schools` table definition and `visit_requests.school_id` FK target. Sprint 013 spec D4 simplified from "add column to schools" to "confirm `partner_high_schools.meeting_location` populated." Option 3 (naming-hygiene rename refactor) filed as BL-S012-XX backlog item. |
 | v5.4 | 2026-05-01 | DF-7 resolved — `coach_submissions.verified` (boolean) replaced with `verification_state` (text + CHECK, four states: `unverified`, `email_verified`, `form_returned`, `auth_bound`). Decision J updated to multi-state model; `auth_bound` state remains Sprint 6 ownership. DF-2 `WITH CHECK` clause updated for cascade (`verified = false` → `verification_state = 'unverified'`). Sprint 012 spec D6 column definition updated. |
 | v5.3 | 2026-05-01 | DF-5 resolved — Option A direct supabase-js client for Sprint 012. Sprint 013 reopens for submit-path migration concurrent with email send work. Decision K extended with semi-staging-table vocabulary. DF-7 surfaced for `coach_submissions` verification-state column shape; routes through Decisions J and K. |

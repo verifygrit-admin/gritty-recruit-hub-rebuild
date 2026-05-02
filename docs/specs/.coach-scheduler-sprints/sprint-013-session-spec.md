@@ -61,10 +61,7 @@ New step between Sprint 012's Step 2 (time window) and Step 3 (contact form). Pl
 
 ### D2 — `visit_request_players` Join Table
 
-- `visit_request_id` (uuid, FK to visit_requests)
-- `player_id` (uuid, FK to players)
-- `created_at` (timestamptz)
-- Composite primary key on (visit_request_id, player_id)
+**Moved to Sprint 012 Phase 3 (2026-05-01).** The `visit_request_players` join table was originally scheduled for Sprint 013 but was pulled forward to Sprint 012 because the Phase 2 modal ships with a fully functional player picker. The `0040_visit_request_players.sql` migration in Sprint 012 introduces this table with a FK on `profiles(user_id)`. Sprint 013's scope reduces accordingly — D2 closes here. Subsequent deliverables D3–D10 are unaffected.
 
 ### D3 — `users.head_coach` Schema Confirmation
 
