@@ -24,7 +24,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { createEvent, type EventAttributes } from 'ics';
 
-export const config = { runtime: 'nodejs22.x' };
+export const config = { runtime: 'nodejs' };
 
 // OQ8 lock: full-window mapping. Times are in school's local timezone
 // (America/New_York for BC High). Emitted as floating local time per
