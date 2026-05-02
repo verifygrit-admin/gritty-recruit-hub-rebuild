@@ -101,6 +101,32 @@ Composite-PK join table linking visit requests to selected student-athletes.
 
 **Migration history:** `0040_visit_request_players.sql`.
 
+#### `visit_request_deliveries`
+
+Per-recipient calendar invite delivery record. One row per send attempt — written exclusively by the Sprint 013 dispatch function (`api/coach-scheduler-dispatch.ts`, Node runtime, service role). Sprint 014 Coach Dashboard reads this table filtered by `visit_request_id`.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| id | uuid | PK, DEFAULT `gen_random_uuid()` | |
+| visit_request_id | uuid | NOT NULL, FK → `visit_requests(id)` ON DELETE CASCADE | Conscious FK design per F-22 carry-forward — when a visit_request is deleted, its delivery records cascade away |
+| recipient_email | text | NOT NULL | |
+| recipient_role | text | NOT NULL, CHECK in (`college_coach`, `head_coach`, `player`) | |
+| recipient_name | text | nullable | Captured at send time for audit; sourced from coach_submissions / hs_coach raw_user_meta_data.display_name / profiles.name |
+| send_status | text | NOT NULL, CHECK in (`sent`, `failed`, `bounced`, `pending`) | |
+| provider_message_id | text | nullable | Resend message id when available |
+| error_code | text | nullable | Resend error code on failure |
+| error_message | text | nullable | Resend error message on failure |
+| attempted_at | timestamptz | NOT NULL DEFAULT now() | |
+| delivered_at | timestamptz | nullable | Set when provider confirms delivery (or NULL on failure/pending) |
+
+**Index:** `visit_request_deliveries_visit_request_id_idx` on `visit_request_id` (FK convention; supports Sprint 014 dashboard filter).
+
+**RLS posture:** Enabled. **No anon policies.** Service role only — writes happen via the Sprint 013 dispatch function. Sprint 014 will introduce authenticated SELECT for head coaches reading their school's deliveries.
+
+**FK in:** none.
+**FK out:** `visit_request_id` → `visit_requests(id)`.
+**Migration history:** `0042_visit_request_deliveries.sql`.
+
 ---
 
 ### 2b. Canonical layer — high school + roster identity
@@ -223,15 +249,16 @@ UUID-keyed home for partner-school identity at the data layer. Distinct from `hs
 | name | text | NOT NULL | |
 | meeting_location | text | nullable | Used by Sprint 013 ICS LOCATION |
 | address | text | nullable | Sprint 013 fallback for LOCATION |
+| timezone | text | NOT NULL DEFAULT `'America/New_York'` | Added 0042 — required by Sprint 013 D5 DTSTART/DTEND derivation per OQ8 lock |
 | created_at | timestamptz | NOT NULL DEFAULT now() | |
 
-**Live state:** 1 row — BC High (`slug='bc-high'`, `id=f315d77e-33d6-4450-8aa7-2ad8ac20b711`, `meeting_location` and `address` populated, created 2026-05-01).
+**Live state:** 1 row — BC High (`slug='bc-high'`, `id=f315d77e-33d6-4450-8aa7-2ad8ac20b711`, `meeting_location` and `address` populated, `timezone='America/New_York'` via DEFAULT, created 2026-05-01).
 
 **RLS posture:** Enabled. Anon SELECT all rows (`USING (true)`). No INSERT/UPDATE/DELETE policy — service role only.
 
 **FK in:** `visit_requests.school_id`.
 **FK out:** none.
-**Migration history:** `0039_coach_scheduler_tables.sql`.
+**Migration history:** `0039_coach_scheduler_tables.sql`, `0042_visit_request_deliveries.sql` (added `timezone` column).
 
 **Naming hygiene note:** `partner_high_schools` and `hs_programs` overlap conceptually. `hs_programs` is the older Sprint 002 roster table (1 row, BC High), used by `hs_coach_schools` and `hs_counselor_schools`. `partner_high_schools` is the Sprint 012 partner-school table (also 1 row, also BC High), used by `visit_requests.school_id`. Two BC High rows in two tables, joined only by name string. See `EXECUTION_PLAN.md` Backlog item `BL-S012-XX-naming-hygiene` for the rename refactor that consolidates this.
 
@@ -826,6 +853,13 @@ erDiagram
     uuid visit_request_id PK
     uuid player_id PK
   }
+  visit_request_deliveries {
+    uuid id PK
+    uuid visit_request_id FK
+    text recipient_email
+    text recipient_role
+    text send_status
+  }
 
   %% ============================================================
   %% 2e. Staging / audit / file
@@ -896,6 +930,7 @@ erDiagram
   partner_high_schools ||--o{ visit_requests : "hosts"
   coach_submissions ||--o{ visit_requests : "submitted"
   visit_requests ||--o{ visit_request_players : "includes players"
+  visit_requests ||--o{ visit_request_deliveries : "tracked via"
 
   document_library ||--o{ document_shares : "shared as"
 ```
@@ -950,8 +985,9 @@ erDiagram
 - `0039_coach_scheduler_tables.sql` — `partner_high_schools` (BC High seed), `coach_submissions`, `visit_requests` with anon-INSERT-only RLS.
 - `0040_visit_request_players.sql` — composite-PK join table; FK to `profiles(user_id)`.
 - `0041_coach_submissions_intake_log_reframe.sql` — drops email UNIQUE, drops `verification_state` column, adds `submitter_verified` boolean, recreates anon INSERT policy.
+- `0042_visit_request_deliveries.sql` — `visit_request_deliveries` per-recipient delivery tracking (service-role only RLS); ride-along `partner_high_schools.timezone` ADD COLUMN (OQ8 prep, default `America/New_York`).
 
-**Next available migration number: `0042`.** Reserved for Sprint 013 D7 (`visit_request_deliveries`).
+**Next available migration number: `0043`.**
 
 ---
 
@@ -983,6 +1019,10 @@ These do not have resolution in shipped migrations and remain valid concerns goi
 
 `supabase_migrations` only tracks 13 of the 42 migration files. The schema state matches the files (verified by spot-check), but the applied-tracking record is incomplete. Probably created when the project was bootstrapped from an earlier project, with the bootstrap migration only beginning to track from `0028`+. New flag F-19 in Section 6.
 
+### 5.7 `partner_high_schools.timezone` global default
+
+Added in `0042` with default `'America/New_York'`. BC High inherits the default. When a partner school in another timezone onboards (e.g., Belmont Hill is also `America/New_York` so unaffected; future expansion to non-Eastern schools is the trigger), the row's `timezone` must be set explicitly at INSERT or via UPDATE before any `visit_requests` are scheduled against it. No CHECK constraint enforces a tz database name; application-layer responsibility per current schema discipline.
+
 ---
 
 ## 6. Flag Register (integrated from old erd-flags.md)
@@ -1010,4 +1050,4 @@ These do not have resolution in shipped migrations and remain valid concerns goi
 | **F-19** | **TRACKING** | **supabase_migrations table coverage** | **Low** | **NEW Open (surfaced 2026-05-02)** | **Only 13 of 42 migrations tracked in `supabase_migrations` (`0000`, `0028`–`0033`, `0036`–`0041`). Schema state matches files. Tracking gap is record-only.** |
 | **F-20** | **UNDOCUMENTED-ARTIFACT** | **`_pre_0037_short_list_items_snapshot`** | **—** | **CLOSED (operator note 2026-05-02)** | **Closed by operator note 2026-05-02. Intentional defensive backup from prior short-list-items → profiles migration project. Retained deliberately. Cleanup is a future operator decision, not a flag.** |
 | **F-21** | **NAMING-HYGIENE** | **`partner_high_schools` ↔ `hs_programs` overlap** | **Medium** | **NEW Open (filed in EXECUTION_PLAN BL-S012-XX-naming-hygiene)** | **Two BC High rows in two tables joined only by name string. Refactor to consolidate. Deferred per backlog item. Risk escalates when second partner school onboards (Belmont Hill scheduled May 2026 per EXECUTION_PLAN Decision D). Refactor sprint candidate before that onboarding completes.** |
-| **F-22** | **FK-DELETE-RULE** | **visit_requests FKs** | **Low** | **NEW Open (surfaced 2026-05-02)** | **`coach_submission_id` and `school_id` FKs default to ON DELETE NO ACTION (no explicit ON DELETE clause in 0039). Functionally fine for intake-log pattern. Tighten to RESTRICT or CASCADE if downstream sprints need cleanup behavior.** |
+| **F-22** | **FK-DELETE-RULE** | **visit_requests FKs** | **Low** | **NEW Open (surfaced 2026-05-02)** | **`coach_submission_id` and `school_id` FKs default to ON DELETE NO ACTION (no explicit ON DELETE clause in 0039). Functionally fine for intake-log pattern. Tighten to RESTRICT or CASCADE if downstream sprints need cleanup behavior. Note 2026-05-02: Sprint 013 D7 (`0042`) introduced new FK `visit_request_deliveries.visit_request_id → visit_requests(id) ON DELETE CASCADE` consciously, demonstrating future FK design pattern. F-22's existing scope (the two `visit_requests` FKs) unchanged.** |
