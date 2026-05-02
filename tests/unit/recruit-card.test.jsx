@@ -291,7 +291,10 @@ describe('RecruitCard — accolade chips', () => {
     expect(chips).toHaveLength(0);
   });
 
-  it('renders four chips when all four booleans are true', () => {
+  it('renders three chips when all four booleans are true (expected_starter omitted)', () => {
+    // Sprint 012 Phase 2 hotfix — expected_starter is fetched in the
+    // data hook but no longer surfaced as a chip on the live /athletes
+    // surface. Even when the boolean is true, no chip renders for it.
     const el = RecruitCard({
       profile: {
         ...BASE_PROFILE,
@@ -302,19 +305,23 @@ describe('RecruitCard — accolade chips', () => {
       },
     });
     const chips = collect(el, (n) => n.props && n.props['data-testid'] === 'rc-chip');
-    expect(chips).toHaveLength(4);
+    expect(chips).toHaveLength(3);
     const labels = chips.map(flattenText).join(' ');
-    expect(labels).toContain('Expected Starter');
+    expect(labels).not.toContain('Expected Starter');
     expect(labels).toContain('Captain');
     expect(labels).toContain('All-Conference');
     expect(labels).toContain('All-State');
   });
 
-  it('renders only the true ones (defaults to expected_starter only)', () => {
+  it('renders zero chips when only expected_starter is true (suppression regression guard)', () => {
+    // BASE_PROFILE sets expected_starter: true and the other three
+    // accolades fall through to default (false/null). Pre-hotfix this
+    // surfaced one chip; post-hotfix it surfaces none. Locks the
+    // suppression behavior so a future re-add to ACCOLADE_SLOTS is
+    // a deliberate test update, not a silent regression.
     const el = RecruitCard({ profile: BASE_PROFILE });
     const chips = collect(el, (n) => n.props && n.props['data-testid'] === 'rc-chip');
-    expect(chips).toHaveLength(1);
-    expect(flattenText(chips[0])).toContain('Expected Starter');
+    expect(chips).toHaveLength(0);
   });
 });
 

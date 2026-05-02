@@ -76,7 +76,11 @@ Submit button. On submit, both Supabase writes fire (D6).
 
 After successful submit, modal contents replace with confirmation: "We've received your request, you'll hear from us shortly. [School Name] will be in touch with calendar details." Modal can be dismissed.
 
-### D6 — Supabase Schema: New Tables (`partner_high_schools`, `visit_requests`, `coach_submissions`)
+### D6 — Supabase Schema: Four New Tables in Sprint 012 (`partner_high_schools`, `coach_submissions`, `visit_requests`, `visit_request_players`)
+
+**Architectural framing (2026-05-01 intake-log reframe):** `coach_submissions` and `visit_requests` are **intake-log tables** — append-only records of intake events, not per-coach or per-visit staging rows. Each row records what was asserted at submission time. Canonical coach identity (current contact info, multi-state verification) lives at the canonical layer (`college_coaches`), populated by a later enrichment pipeline. See EXECUTION_PLAN "Coach Identity Architecture (intake log + canonical)" section for the two-layer model. Migration `0041` carries the schema cascade: drop email UNIQUE, drop `verification_state` column, add `submitter_verified` boolean. `0041` ships before Phase 3 build resumes.
+
+**Phase 3 scope shift (2026-05-01):** `visit_request_players` was originally Sprint 013 D2. Pulled forward to Sprint 012 Phase 3 because the Phase 2 modal ships with a fully functional player picker — pulling D2 forward lets player selections persist immediately rather than waiting for Sprint 013 to add the schema. Migration `0040_visit_request_players.sql` introduces this fourth table. See EXECUTION_PLAN scope-shift entry for full rationale.
 
 **`partner_high_schools` table** (new in this sprint per DF-1 resolution 2026-05-01):
 - `id` (uuid, primary key)
@@ -100,18 +104,41 @@ Seed: BC High row populated in the `0039_*` migration. Belmont Hill onboards in 
 
 **Note on `school_id` FK target:** `visit_requests.school_id` references `partner_high_schools.id`, not the existing `schools` table (which holds NCAA institutions per audit Section A finding — `unitid integer` PK, BC High not in it). See DF-1 resolution.
 
-**`coach_submissions` table:**
+**`coach_submissions` table** (intake-log table — append-only):
 - `id` (uuid, primary key)
 - `name` (text)
-- `email` (text, unique)
+- `email` (text) — *not unique per DF-3 reframed 2026-05-01; intake-log tables don't enforce uniqueness on attribute columns. The `0041` migration drops the UNIQUE constraint that 0039 introduced.*
 - `program` (text)
 - `source` (enum: scheduler, registration — default `scheduler` for Sprint 012)
-- `verification_state` (text NOT NULL DEFAULT 'unverified', CHECK `verification_state IN ('unverified', 'email_verified', 'form_returned', 'auth_bound')`)
+- `submitter_verified` (boolean NOT NULL DEFAULT false) — *replaces the prior `verification_state` text column per DF-7 reframed 2026-05-01. Per-row verification flag, not a state machine. Multi-state coach verification lives at the canonical layer (`college_coaches`), not on the intake log. The `0041` migration drops `verification_state` and adds `submitter_verified`.*
 - `created_at` (timestamptz)
 
-**Note on `verification_state`:** column shape per DF-7 (resolved 2026-05-01). Replaces the prior `verified` boolean. Anon INSERT `WITH CHECK` requires `verification_state = 'unverified'` per DF-2 cascade. State transitions are owned by downstream sprints: `email_verified` by Sprint 013 (email send), `form_returned` by a future follow-up sprint, `auth_bound` by Sprint 6 (College Coach Auth). See EXECUTION_PLAN Open Decisions DF-7 for full state semantics.
+**Note on `submitter_verified` (post-0041 schema):** boolean default false. True only if the submitter's identity was verified at submission time (e.g., by a future server-side route checking the email against `college_coaches`). For Sprint 012, all anon submissions land with `submitter_verified = false`. Anon INSERT `WITH CHECK` requires `submitter_verified = false` per the DF-2 cascade (replacing the prior `verification_state = 'unverified'` clause). State transitions belong to the canonical layer (`college_coaches.verification_state`, to be designed when the enrichment pipeline is built). See EXECUTION_PLAN Open Decisions DF-7 (and the "Coach Identity Architecture" section) for the full two-layer model.
 
-**Behavior on duplicate email:** If a coach submits a second request with the same email, `coach_submissions` row is updated (most recent name/program); a new `visit_requests` row is still created.
+**Consumer-side pattern requirement (intake-log reframe, 2026-05-01):** anon writes use plain `supabase.from('...').insert(payload)` per the intake-log reframe (DF-5 reframed 2026-05-01). The prior `.insert().select()` finding (Phase 1) and `.upsert()` finding (Phase 3) no longer apply because the submit pattern is plain insert with no return-side reads. Both `coach_submissions` and `visit_requests` follow the same shape: `.insert(payload)`, no `.select()` chain, no `.upsert()` option bag. Each submit creates a new intake row. The two-call submit sequence (one row to `coach_submissions`, one row to `visit_requests` referencing it via FK) becomes:
+
+```js
+// 1. Append the coach intake event
+const { data: cs, error: csErr } = await supabase
+  .from('coach_submissions')
+  .insert(coachPayload);
+// 2. Append the visit request event (FK to coach_submissions.id)
+const { error: vrErr } = await supabase
+  .from('visit_requests')
+  .insert(visitPayload);
+```
+
+Note: because anon has no SELECT policy on `coach_submissions`, the modal cannot read the inserted `id` back from the response. Phase 3 wiring must generate the `coach_submissions.id` client-side (via `crypto.randomUUID()`) and reuse it as `visit_requests.coach_submission_id`. The probe pattern from the 0040 apply (probes 3b.i + 3b.ii) demonstrated this approach.
+
+**Behavior on duplicate email (intake-log reframe):** Each submission creates a new `coach_submissions` intake row regardless of whether the email matches a prior row. The new row carries the new submission's name and program values verbatim. The "current" name/program for a coach is determined by the enrichment pipeline at the canonical layer (later sprint), which reads intake rows most-recent-by-email and updates `college_coaches`. The original "last-write-wins via ON CONFLICT (email) DO UPDATE" framing (DF-3 + Sprint 012 spec) is superseded — the intake log preserves all submissions verbatim, the canonical layer determines current state.
+
+**`visit_request_players` table** (added Phase 3 via scope-pull-forward from Sprint 013 D2):
+- `visit_request_id` (uuid NOT NULL, FK to `visit_requests.id`, ON DELETE CASCADE)
+- `player_id` (uuid NOT NULL, FK to `profiles.user_id`, ON DELETE CASCADE)
+- `created_at` (timestamptz, default now())
+- Composite PK on (`visit_request_id`, `player_id`)
+
+Anon RLS: INSERT only with `WITH CHECK (true)` — integrity via FK on `visit_request_id` (B1 binding pattern from DF-2). No SELECT/UPDATE/DELETE for anon. Player FK references `profiles(user_id)`, the canonical identity column used by the Sprint 011 recruit roster (`profiles.user_id` carries a UNIQUE constraint that makes it a valid FK target). The composite PK prevents duplicate player selections per visit; ON DELETE CASCADE on both FKs cleans join rows when a parent record is removed.
 
 ### D7 — Mobile Modal Behavior
 
@@ -136,7 +163,7 @@ Form contains an invisible field (CSS-hidden, label with `tabindex="-1"`). If su
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| New tables ship without proper RLS policies; public scheduler becomes data exfiltration vector | High | Anon role: INSERT only with column-bounded `WITH CHECK` (`coach_submissions`: `verification_state='unverified'`, `source='scheduler'`; `visit_requests`: `status='pending'`). No SELECT policy for anon. FK-only binding between tables (DF-2 resolved 2026-05-01, see EXECUTION_PLAN) (verification_state shape per DF-7 resolved 2026-05-01). |
+| New tables ship without proper RLS policies; public scheduler becomes data exfiltration vector | High | Anon role: INSERT only with column-bounded `WITH CHECK` (`coach_submissions`: `submitter_verified=false`, `source='scheduler'`; `visit_requests`: `status='pending'`). No SELECT policy for anon. FK-only binding between tables (DF-2 resolved 2026-05-01, see EXECUTION_PLAN) (verification_state shape per DF-7 resolved 2026-05-01). |
 | Honeypot insufficient against sophisticated spam | Medium | Acceptable for MVP. Carry-forward Cloudflare Turnstile if abuse appears. |
 | Date picker shows dates the school can't actually host visits | Medium | Resolve via the date-filtering open question before sprint opens |
 | Modal can't be closed if submission fails | Medium | Submit failure path: show error, leave form data intact, allow retry or cancel |
