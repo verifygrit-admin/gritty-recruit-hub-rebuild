@@ -1,30 +1,33 @@
 /**
- * CoachSchedulerSection — Sprint 012 Phase 2 (revised)
+ * CoachSchedulerSection — Sprint 012 Phase 3
  *
  * Inline scheduler section embedded in /athletes between the roster grid and
- * the footer. Replaces the prior SlideOutShell modal scaffolding. The CTA
- * strip scroll-targets the #coach-scheduler-section anchor on this section.
+ * the footer. Phase 2 shipped the four cards + section-level Submit as a
+ * no-op. Phase 3 wires Submit to the intake-log reframed write pattern
+ * (EXECUTION_PLAN v5.8): plain .insert() on three tables, no .upsert(),
+ * no .select() chains.
  *
- * Architecture: all four cards (DateCard, TimeCard, PlayersCard, ContactCard)
- * are rendered live and interactive simultaneously inside a single section.
- * No step routing, no Back/Continue between cards. The user fills in any
- * order and the section-level Submit at the bottom is enabled only when all
- * four cards have valid input.
+ * Submit fires three sequential writes:
+ *   1. supabase.from('coach_submissions').insert(coach_payload)
+ *   2. supabase.from('visit_requests').insert(visit_payload)
+ *   3. supabase.from('visit_request_players').insert(join_rows)
  *
- * Internal subcomponents are co-located rather than split into their own
- * files because they are tightly coupled to the section's state and not
- * reused elsewhere. Each card composes the same .scheduler-card visual
- * shell (white card on the dark band).
+ * Both parent ids are generated client-side via crypto.randomUUID() so the
+ * downstream rows can FK them without needing a SELECT on the parent
+ * (anon has no SELECT policy on coach_submissions or visit_requests).
  *
- * Phase 2 Submit is a no-op. Phase 3 wires DF-5's two-call pattern:
- *   supabase.from('coach_submissions').upsert(payload, { onConflict: 'email' })
- *   supabase.from('visit_requests').insert(payload)
- * No .select() chains (Phase 1 retro 3a — anon has no SELECT policy).
+ * The school slug (e.g. 'bc-high') is resolved to partner_high_schools.id
+ * via a SELECT at section mount; visit_requests.school_id is the resolved
+ * uuid, not the slug.
+ *
+ * Honeypot semantics: a populated honeypot toggles to the success state
+ * silently and fires zero Supabase calls — bot deception.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RECRUIT_SCHOOLS } from '../../data/recruits-schools.js';
 import useRecruitsRoster from '../../hooks/useRecruitsRoster.js';
+import { supabase } from '../../lib/supabaseClient.js';
 
 /* ----------------------------- date helpers ----------------------------- */
 
@@ -490,6 +493,54 @@ const STYLE = `
     overflow: hidden;
   }
 
+  /* submitting state — mute the cards while writes are in flight */
+  .scheduler-card-row.submitting {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  /* error banner */
+  .scheduler-error-banner {
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-left: 3px solid #c53030;
+    border-radius: var(--gf-radius-sm);
+    padding: var(--gf-space-md) var(--gf-space-lg);
+    margin: var(--gf-space-xl) auto 0 auto;
+    max-width: 640px;
+    color: #742a2a;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  /* success panel — replaces the four cards on confirmed submit */
+  .scheduler-success-panel {
+    background: var(--gf-light-bg-elev);
+    color: var(--gf-light-text);
+    border-radius: var(--gf-radius-lg);
+    padding: var(--gf-space-2xl) var(--gf-space-xl);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .scheduler-success-h {
+    font-family: var(--gf-display);
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: var(--gf-light-text);
+    margin-bottom: var(--gf-space-md);
+  }
+  .scheduler-success-body {
+    color: var(--gf-light-text-muted);
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+  .scheduler-success-body strong {
+    color: var(--gf-light-text);
+    font-weight: 600;
+  }
+
   /* submit row */
   .scheduler-submit-wrap {
     display: flex;
@@ -855,10 +906,53 @@ export default function CoachSchedulerSection() {
   });
   const [touched, setTouched] = useState({});
 
+  // Phase 3: resolve the selected school's slug to partner_high_schools.id.
+  // Anon SELECT is granted on partner_high_schools per migration 0039.
+  // visit_requests.school_id requires the uuid, not the slug.
+  const [partnerSchoolId, setPartnerSchoolId] = useState(null);
+  const [partnerSchoolLoadError, setPartnerSchoolLoadError] = useState(null);
+
+  // Phase 3: submit lifecycle.
+  const [submitState, setSubmitState] = useState('idle'); // 'idle' | 'submitting' | 'success' | 'error'
+  const [submitError, setSubmitError] = useState(null);
+  // Snapshot of submission identity for the success panel — preserves the
+  // values even if the user edits the form again post-success (defensive).
+  const [confirmation, setConfirmation] = useState(null);
+
+  const submitting = submitState === 'submitting';
+
   const activeSchool = RECRUIT_SCHOOLS.find((s) => s.slug === selectedSchool);
   const { profiles, loading, error } = useRecruitsRoster({
     filter: activeSchool && activeSchool.active ? activeSchool.filter : null,
   });
+
+  // Resolve partner_high_schools.id whenever the selected school changes.
+  useEffect(() => {
+    let cancelled = false;
+    setPartnerSchoolId(null);
+    setPartnerSchoolLoadError(null);
+    if (!selectedSchool) return undefined;
+
+    (async () => {
+      const { data, error: fetchErr } = await supabase
+        .from('partner_high_schools')
+        .select('id')
+        .eq('slug', selectedSchool)
+        .limit(1);
+      if (cancelled) return;
+      if (fetchErr) {
+        setPartnerSchoolLoadError(fetchErr);
+        return;
+      }
+      if (!data || data.length === 0) {
+        setPartnerSchoolLoadError(new Error('Partner school not found.'));
+        return;
+      }
+      setPartnerSchoolId(data[0].id);
+    })();
+
+    return () => { cancelled = true; };
+  }, [selectedSchool]);
 
   // Reset player selection when the school changes — different roster.
   const handleSchoolChange = (slug) => {
@@ -877,22 +971,99 @@ export default function CoachSchedulerSection() {
     Boolean(selectedTimeWindow) &&
     selectedPlayerIds.length > 0 &&
     contactValid &&
-    honeypotEmpty;
+    honeypotEmpty &&
+    Boolean(partnerSchoolId) &&
+    !submitting;
 
   let hint = '';
-  if (!selectedDate) hint = 'Pick a date to continue.';
+  if (submitting) hint = 'Sending…';
+  else if (!selectedDate) hint = 'Pick a date to continue.';
   else if (!selectedTimeWindow) hint = 'Pick a time window.';
   else if (selectedPlayerIds.length === 0) hint = 'Select at least one player.';
   else if (!contactValid) hint = 'Complete the contact form.';
-  else hint = 'Ready to send.';
+  else if (!partnerSchoolId) {
+    hint = partnerSchoolLoadError
+      ? "Couldn't load school info — please retry."
+      : 'Loading school info…';
+  } else hint = 'Ready to send.';
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (submitting) return;
+
+    // Honeypot tripped — silent no-op, deceive the bot with success UI.
+    if (contactForm.honeypot !== '') {
+      setConfirmation({
+        name: contactForm.name,
+        email: contactForm.email,
+        schoolLabel: (activeSchool && activeSchool.label) || '',
+      });
+      setSubmitState('success');
+      return;
+    }
+
     if (!ready) return;
-    // Phase 2 no-op. Phase 3 wires:
-    //   supabase.from('coach_submissions').upsert(payload, { onConflict: 'email' })
-    //   supabase.from('visit_requests').insert(payload)
-    // No .select() chains — anon has no SELECT policy on these tables.
+
+    setSubmitState('submitting');
+    setSubmitError(null);
+
+    try {
+      const submissionId = crypto.randomUUID();
+      const visitRequestId = crypto.randomUUID();
+
+      // 1. Append the coach intake event.
+      // Plain .insert() — no .upsert() (DF-5 reframe), no .select() chain
+      // (Phase 1 retro 3a; anon has no SELECT policy on coach_submissions).
+      const { error: submissionErr } = await supabase
+        .from('coach_submissions')
+        .insert({
+          id: submissionId,
+          name: contactForm.name.trim(),
+          email: contactForm.email.trim(),
+          program: contactForm.program.trim(),
+          source: 'scheduler',
+          submitter_verified: false,
+        });
+      if (submissionErr) throw submissionErr;
+
+      // 2. Append the visit request event, FK to the coach_submissions row.
+      const { error: visitErr } = await supabase
+        .from('visit_requests')
+        .insert({
+          id: visitRequestId,
+          coach_submission_id: submissionId,
+          school_id: partnerSchoolId,
+          requested_date: selectedDate,
+          time_window: selectedTimeWindow,
+          notes: contactForm.notes.trim() || null,
+          status: 'pending',
+        });
+      if (visitErr) throw visitErr;
+
+      // 3. Bulk insert the player join rows, FK to the visit_requests row.
+      if (selectedPlayerIds.length > 0) {
+        const joinRows = selectedPlayerIds.map((uid) => ({
+          visit_request_id: visitRequestId,
+          player_id: uid,
+        }));
+        const { error: playersErr } = await supabase
+          .from('visit_request_players')
+          .insert(joinRows);
+        if (playersErr) throw playersErr;
+      }
+
+      setConfirmation({
+        name: contactForm.name.trim(),
+        email: contactForm.email.trim(),
+        schoolLabel: (activeSchool && activeSchool.label) || '',
+      });
+      setSubmitState('success');
+    } catch (err) {
+      setSubmitError((err && err.message) || 'Submission failed. Please try again.');
+      setSubmitState('error');
+    }
   };
+
+  const isSuccess = submitState === 'success';
 
   return (
     <section
@@ -908,52 +1079,88 @@ export default function CoachSchedulerSection() {
           Date → Time window → Player selection → Contact info.
         </p>
 
-        <SchedulerSchoolToggle
-          activeSlug={selectedSchool}
-          onChange={handleSchoolChange}
-        />
+        {!isSuccess && (
+          <SchedulerSchoolToggle
+            activeSlug={selectedSchool}
+            onChange={handleSchoolChange}
+          />
+        )}
 
-        <div className="scheduler-card-row">
-          <DateCard
-            selectedDate={selectedDate}
-            onSelect={setSelectedDate}
-          />
-          <TimeCard
-            selectedDate={selectedDate}
-            selectedTimeWindow={selectedTimeWindow}
-            onSelect={setSelectedTimeWindow}
-          />
-          <PlayersCard
-            schoolLabel={(activeSchool && activeSchool.label) || ''}
-            profiles={profiles}
-            loading={loading}
-            error={error}
-            selectedPlayerIds={selectedPlayerIds}
-            onToggle={setSelectedPlayerIds}
-          />
-          <ContactCard
-            values={contactForm}
-            errors={errors}
-            touched={touched}
-            onField={setField}
-            onBlur={markTouched}
-          />
-        </div>
-
-        <div className="scheduler-submit-wrap">
-          <button
-            type="button"
-            data-testid="scheduler-submit"
-            className="scheduler-submit-btn"
-            disabled={!ready}
-            onClick={handleSubmit}
+        {isSuccess ? (
+          <div
+            className="scheduler-success-panel"
+            data-testid="scheduler-success-panel"
+            role="status"
+            aria-live="polite"
           >
-            Submit drop-in request
-          </button>
-          <div className="scheduler-submit-hint" data-testid="scheduler-submit-hint">
-            {hint}
+            <div className="scheduler-success-h">
+              Thanks, {confirmation.name || 'coach'}!
+            </div>
+            <p className="scheduler-success-body">
+              Your drop-in request has been received. The{' '}
+              <strong>{confirmation.schoolLabel}</strong> coaching staff will
+              follow up at <strong>{confirmation.email}</strong> to confirm the
+              date and time.
+            </p>
           </div>
-        </div>
+        ) : (
+          <>
+            <div
+              className={`scheduler-card-row${submitting ? ' submitting' : ''}`}
+              aria-busy={submitting ? 'true' : 'false'}
+            >
+              <DateCard
+                selectedDate={selectedDate}
+                onSelect={setSelectedDate}
+              />
+              <TimeCard
+                selectedDate={selectedDate}
+                selectedTimeWindow={selectedTimeWindow}
+                onSelect={setSelectedTimeWindow}
+              />
+              <PlayersCard
+                schoolLabel={(activeSchool && activeSchool.label) || ''}
+                profiles={profiles}
+                loading={loading}
+                error={error}
+                selectedPlayerIds={selectedPlayerIds}
+                onToggle={setSelectedPlayerIds}
+              />
+              <ContactCard
+                values={contactForm}
+                errors={errors}
+                touched={touched}
+                onField={setField}
+                onBlur={markTouched}
+              />
+            </div>
+
+            {submitState === 'error' && submitError && (
+              <div
+                className="scheduler-error-banner"
+                data-testid="scheduler-error-banner"
+                role="alert"
+              >
+                {submitError}
+              </div>
+            )}
+
+            <div className="scheduler-submit-wrap">
+              <button
+                type="button"
+                data-testid="scheduler-submit"
+                className="scheduler-submit-btn"
+                disabled={!ready}
+                onClick={handleSubmit}
+              >
+                {submitting ? 'Sending…' : 'Submit drop-in request'}
+              </button>
+              <div className="scheduler-submit-hint" data-testid="scheduler-submit-hint">
+                {hint}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
