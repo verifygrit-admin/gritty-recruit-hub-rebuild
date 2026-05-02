@@ -26,3 +26,4 @@ tmp_*
 scripts/__pycache__/
 
 .vercel
+.env*.local

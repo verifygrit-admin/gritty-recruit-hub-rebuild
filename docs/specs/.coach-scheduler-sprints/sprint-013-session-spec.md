@@ -73,6 +73,46 @@ phase_1_carry_forward:
 master_head_at_phase_0_open: 413a680
 master_head_after_d0: a951ec9
 master_head_after_phase_0_close: a951ec9 (D11 was data-only, no commit)
+phase_1_progress:
+  d7_visit_request_deliveries:
+    status: complete
+    commit: c6330ce
+    closed: 2026-05-02
+    note: includes ride-along ALTER for partner_high_schools.timezone (OQ8 prep) + Paul Zukauskas display_name backfill (D1 carry-forward)
+  d1_dispatch_function:
+    status: complete
+    commits: [2a29159, 8671a82]
+    closed: 2026-05-02
+    note: 8671a82 corrects OQ5 runtime config syntax error (nodejs22.x → nodejs); spec lock language updated in retro section
+  d9_oq6_submit_handler_wiring:
+    status: complete
+    commit: 6650d58
+    closed: 2026-05-02
+    note: deliverable id corrected — work is D9 + OQ6 (D10 mobile constraint applied), not D10
+  d10_mobile_constraint:
+    status: applied
+    commit: 6650d58
+    closed: 2026-05-02
+    note: no CSS change required; existing .scheduler-success-panel @media (max-width 768px) handles new copy structurally
+phase_4_progress:
+  verification:
+    status: complete
+    closed: 2026-05-02
+    result: 3 emails delivered end-to-end to chris@grittyfb.com via routing pivot
+    notes: |
+      Three blockers surfaced and resolved during verification:
+      1. Vercel Deployment Protection (Standard) gated /api/* on Preview, blocking client fetch.
+         Resolved by toggling Vercel Authentication off for verification window; re-enabled after Phase 4.
+      2. D11 fixture head coach missing auth.identities row (D11 raw-SQL pattern skipped this).
+         Resolved with mirror INSERT for both fixture users (head coach + student).
+      3. D11 fixture auth.users had NULL token columns (confirmation_token, recovery_token,
+         email_change_token_new, email_change) where GoTrue requires empty string. Resolved by
+         pivoting verification path away from fixture entirely — chris@grittyfb.com (real auth user)
+         temporarily inserted as BC High head coach for verification, then removed post-verification.
+      ICS attachment present and parseable. Gmail web "Add to Calendar" has rendering issues
+      (floating local time interpretation) — deferred to OQ7 cross-client follow-up.
+oq7_status: deferred_to_follow_up
+master_head_after_phase_1_close: TBD on squash merge to master
 ---
 
 # Sprint 013 Session Spec — ICS Multi-Recipient Calendar Invite + Email Delivery
@@ -596,6 +636,53 @@ All times in school's local timezone (`America/New_York` for BC High).
 - EXECUTION_PLAN advances to v5.10+ with Sprint 013 outcomes recorded
 - Phase retro filed at sprint close
 - ERD canonical doc updated by D7 migration (`visit_request_deliveries`) in the same commit as the migration itself, validating the update discipline established by D0
+
+---
+
+## Sprint 013 Retro — Phase 1 + Phase 4 Findings
+
+### Carry-forward notes for future fixture seeding (D11 gaps)
+
+D11 raw-SQL fixture seeding produced two GoTrue compatibility gaps surfaced by D1 dispatch in Phase 4:
+
+1. **Missing auth.identities row.** Raw INSERT INTO auth.users does not auto-create the corresponding auth.identities row. GoTrue's auth.admin.getUserById() internally joins users ⨝ identities; missing identity row throws AuthApiError "Database error loading user" (code: unexpected_failure). Fixed during Phase 4 prep with mirror INSERT for both fixture users.
+
+2. **NULL values in four auth.users token columns.** confirmation_token, recovery_token, email_change_token_new, email_change have no schema default; raw INSERT without explicit values left them NULL; GoTrue's Go struct cannot deserialize NULL into non-pointer string and surfaces same generic "Database error loading user". Documented but not fixed — fixture path retired in favor of real-user pivot for Phase 4.
+
+**Pattern recommendation for future fixtures:** use supabase.auth.admin.createUser() instead of raw INSERT INTO auth.users. The admin API auto-populates all internal token columns AND inserts the corresponding auth.identities row. Raw SQL is sufficient only for FK-target shells where no auth-mediated read will ever happen — and even then, every auth admin endpoint is a future trap. Default to admin.createUser; reserve raw SQL for cases with explicit operator awareness of the schema invariants.
+
+**Schema observation:** auth.identities.email is a generated column (computed from identity_data->>'email'); information_schema does not surface this attribute (lives in pg_attribute.attgenerated). Inconsistent default state of auth.users token columns is a Supabase migration artifact. Documenting for future migration drafting.
+
+### OQ5 lock language correction
+
+Original OQ5 lock specified `runtime: 'nodejs22.x'` as the function-level pin. This syntax is invalid per Vercel's runtime API. Vercel's `config.runtime` accepts only the runtime family (`'edge'`, `'experimental-edge'`, `'nodejs'`), not versioned strings. Node version pinning happens via `package.json` engines, not via the function config.runtime field.
+
+**Corrected OQ5 lock language:**
+- Function-level: `export const config = { runtime: 'nodejs' }` (runtime family only)
+- Project-level (optional): `package.json` `engines.node` field if explicit version control needed
+- Sprint 013 D1 uses runtime family pin only; runs on Vercel default (currently Node 24 LTS); function uses no Node-22-specific APIs
+
+Fixed in commit 8671a82.
+
+### Test floor correction
+
+Phase 0/Phase 1 prompts stated test floor as 772/1/773. Actual floor at branch cut (master `15b0a23`): **762/1/763**. Discrepancy was a stale figure inherited from an earlier reference; never invalidated work but caused floor verification confusion in CC reports. Both pre-existing failures (schema.test.js > short_list_items.recruiting_journey_steps default, and load-failure of recruits-top-nav.test.jsx) verified pre-existing during D1 stash-and-rerun; not introduced by Sprint 013.
+
+### Phase 4 routing pivot — design lesson
+
+D11's fixture-head-coach approach was designed before D1 existed. D1's auth.admin.getUserById() requirement made the fixture pattern unworkable. Resolution: pivoted verification to use chris@grittyfb.com (real auth user, complete GoTrue state) as temporary BC High head coach for verification window, then restored production routing.
+
+**Lesson:** fixture data shape must be validated against actual consumer code paths, not designed in isolation. When D11 was authored, the dispatch function's auth lookup pattern wasn't yet defined; fixture seeding pattern wasn't tested against it. Future fixtures should be designed AFTER (or jointly with) the consumer code, OR use admin.createUser to guarantee GoTrue compatibility regardless of consumer pattern.
+
+### OQ7 ICS render issues — deferred to follow-up
+
+Gmail web preview of the ICS attachment showed "Add to Calendar" button but click did not import event reliably. Email body times rendered correctly (afternoon = 13:00–17:00 America/New_York per OQ8). Likely cause: floating local time emission (OQ8 lock A3 — `startInputType: 'local', startOutputType: 'local'`) interacts with Gmail's calendar import differently than UTC-emitted ICS files do.
+
+**Deferred to OQ7 cross-client follow-up sprint** (likely Sprint 014 or later). Documenting candidate paths:
+- Option A: Add VTIMEZONE block manually to ics-emitted file
+- Option B: Convert local → UTC at emission time using a TZ library (date-fns-tz or luxon — adds dependency)
+- Option C: Accept floating-local for now; document that recipients must verify time manually
+- Phase 4 verified delivery end-to-end; ICS render quality is a UX refinement, not a correctness blocker
 
 ---
 
