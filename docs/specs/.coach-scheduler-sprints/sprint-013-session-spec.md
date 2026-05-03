@@ -112,7 +112,7 @@ phase_4_progress:
       ICS attachment present and parseable. Gmail web "Add to Calendar" has rendering issues
       (floating local time interpretation) — deferred to OQ7 cross-client follow-up.
 oq7_status: deferred_to_follow_up
-master_head_after_phase_1_close: TBD on squash merge to master
+master_head_after_phase_1_close: 0e59f83
 ---
 
 # Sprint 013 Session Spec — ICS Multi-Recipient Calendar Invite + Email Delivery
