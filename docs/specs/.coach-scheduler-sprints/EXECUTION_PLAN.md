@@ -1,5 +1,55 @@
 # Gritty Recruits — Public Page + Visit Scheduler
-## Strategy Artifact / Sprint Plan v5
+## Strategy Artifact / Sprint Plan v5.13
+
+**Revision notes (v5.13 vs v5.12):**
+- **Sprint 013 Phase 1 + Phase 4 COMPLETE 2026-05-02.** All build deliverables shipped + verified end-to-end. Three commits on `sprint-013-coach-scheduler`: `c6330ce` (D7 — `visit_request_deliveries` + `partner_high_schools.timezone` ride-along + Paul display_name backfill), `2a29159` + `8671a82` (D1 dispatch function + runtime config syntax fix), `6650d58` (D9 + OQ6 submit handler wiring + D10 mobile constraint applied). Sprint branch advances on this commit.
+- **Phase 4 verification successful** with three blockers surfaced and resolved: (1) Vercel Deployment Protection (Standard) gated `/api/*` on Preview, blocking the client fetch — toggled off for verification window, re-enabled after Phase 4; (2) D11 fixture head coach missing `auth.identities` row — mirror INSERT applied for both fixture users; (3) D11 fixture `auth.users` had NULL token columns where GoTrue requires empty string — pivoted verification away from fixtures entirely, used `chris@grittyfb.com` as temporary BC High head coach for verification, restored production routing post-verification. Full retro in spec under "Sprint 013 Retro — Phase 1 + Phase 4 Findings".
+- **OQ5 lock language correction** captured in spec retro: `config.runtime` accepts runtime family only (`'edge'`, `'experimental-edge'`, `'nodejs'`), not versioned strings. Node version pinning via `package.json` `engines.node`. Sprint 013 D1 uses runtime family pin only; runs on Vercel default (currently Node 24 LTS); function uses no Node-22-specific APIs.
+- **D11 fixture seeding gaps documented** for future fixture-pattern guidance: prefer `supabase.auth.admin.createUser()` over raw `INSERT INTO auth.users` — admin API auto-populates internal token columns AND inserts the `auth.identities` row. Raw SQL is sufficient only for FK-target shells with no auth-mediated reads. Documenting `auth.identities.email` as a generated column (computed from `identity_data->>'email'`; not surfaced in `information_schema`).
+- **OQ7 cross-client testing deferred to follow-up sprint.** Gmail web "Add to Calendar" rendering quality issue identified (floating local time interpretation interacts with Gmail's calendar import differently than UTC-emitted ICS). Three candidate paths documented in spec retro: VTIMEZONE block, UTC conversion (adds TZ dependency), or accept floating-local. Phase 4 verified end-to-end delivery; render quality is UX refinement, not correctness blocker.
+- **Test floor correction logged.** Actual floor at sprint branch cut is 762/1/763, not 772/1/773 as some early prompts cited. Both pre-existing failures (`schema.test.js > short_list_items.recruiting_journey_steps default`, load-failure of `recruits-top-nav.test.jsx`) verified pre-existing during D1 stash-and-rerun.
+- **Hygiene commit** for `.gitignore` entry (`.env*.local`) auto-added by Vercel CLI during env var setup landed in this same commit (deferred from earlier session under Path A).
+- Master HEAD remains `15b0a23` (Phase 0 close); sprint branch advances on this commit. PR + squash merge are the next operator move.
+- Inputs: D7/D1/D9 build commits this session, Phase 4 verification (3-of-3 email delivery), CC retro reports.
+
+**Revision notes (v5.12 vs v5.11):**
+- **Sprint 013 Phase 0 COMPLETE 2026-05-02.** All Phase 0 deliverables shipped or locked. Master HEAD remains `a951ec9` (D0 was the only Phase 0 work that produced a commit; D11 was data-only inserts; D12 was operator-side verification). **Next move: cut `sprint-013-coach-scheduler` branch from master, Phase 1 (build) opens.**
+- **D11 (Test Fixture Seeding) closed** with two production fixtures: test student (`chris+sprint013-student@grittyfb.com`, BC High roster, linked to Paul Zukauskas via hs_coach_students) and test head coach (`chris+sprint013-headcoach@grittyfb.com`, hs_coach_schools row 4, is_head_coach=true at BC High). F-21 routing rule verified live: Paul wins by `created_at ASC` over fixture (linked 2026-05-02 vs 2026-03-26). Fixture 3 (test college coach) documented for Phase 4 form-submit.
+- **D12 (Test Inbox Provisioning) closed** with plus-addressing verified on `chris@grittyfb.com` via Google Workspace. No DNS work needed.
+- **OQ1 closed:** Resend domain `noreply.grittyfb.com` verified — DKIM, SPF, DMARC all green in Resend dashboard. DNS records added in Squarespace Custom Records panel. Existing `_dmarc.replies` orphan from prior Resend setup left as residue (separate housekeeping).
+- **OQ2 locked:** sender identity `scheduler@noreply.grittyfb.com` with reply-to dynamic to head coach.
+- **OQ5 locked with three sub-decisions:** (1) Runtime Node 22.x with function-level pin; (2) Env vars non-prefixed (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM_ADDRESS`); (3) Mixed-runtime project accepted — `api/recruits-auth.ts` stays Edge, `api/coach-scheduler-dispatch.ts` will be Node. Vercel scaffold readiness verified live: `vercel.json` rewrites-only (no edits required), `api/` auto-detection mounts D1 at `/api/coach-scheduler-dispatch`.
+- **OQ6 locked:** client-invoked synchronous trigger pattern (per spec recommendation).
+- **OQ8 locked:** full-window mapping per spec table; `partner_high_schools.timezone` column existence check folds into D1's Phase 1 prep — if absent, ride-along ALTER on D7's `0042` migration commit.
+- **OQ7 deferred to Phase 1 close:** cross-client ICS testing requires D1/D5/D6 ship first; runs against D11/D12 fixtures after Phase 1 build.
+- **Phase 1 carry-forwards locked:** D1 head coach display name source — backfill Paul Zukauskas's `raw_user_meta_data.display_name` via one-time UPDATE during Phase 1 prompt construction (alongside D7 commit), D1 reads `display_name` with email-local-part fallback. Surfaced by D11.
+- Inputs: D11 Step 1 schema spot-check + Step 3 verification report, OQ1 Resend verification, OQ5 Vercel scaffold readiness check, in-session OQ6/OQ8 locks.
+
+**Revision notes (v5.11 vs v5.10):**
+- **D0 (ERD Reconciliation) closed 2026-05-02 at master `a951ec9`.** Phase 0a (read + spot-check + write v2) and Phase 0b (corrections + rename + delete + commit) executed in single session under canonical operating pattern. Output: `docs/specs/erd/erd-current-state.md` (1,083 lines, single canonical schema document with update discipline header). Old ERD trio at `docs/superpowers/specs/` deleted in same commit. Flag register reconciled: F-09/F-10/F-11/F-15/F-17 closed by shipped migrations; F-19/F-20/F-21/F-22 newly surfaced.
+- **OQ4 RESOLVED 2026-05-02 by D0.** HS coaches table verified as `hs_coach_schools` with `is_head_coach` boolean. BC High `hs_program_id` is `de54b9af-c03c-46b8-a312-b87585a06328` with one head_coach=true row (Paul Zukauskas).
+- **D7 migration numbering confirmed** as `0042_visit_request_deliveries.sql` (the "0042 or 0043" hedge in the spec is closed; 0042 is available).
+- **Architectural Carry-Forward #8 (ERD update discipline) operationalized.** Canonical ERD now lives at fixed path with update discipline statement in document header. Every future migration touching schema updates this ERD in the same commit as the migration file.
+- **Verbatim-print discipline saved a real preservation issue during D0 Phase 0b.** Operator review of Section 6 caught thinning of 8 Action-column entries (most consequentially F-01, F-04, F-09, F-14, F-15, F-16); restoration applied before commit. The discipline functioned as designed — structural completeness ("all flag IDs present") would have committed silently if substantive content had not been spot-checked.
+- **Active sprint state after D0:** Phase 0 in progress. Six OQs remaining (OQ1, OQ2, OQ5, OQ6, OQ7, OQ8). Two Phase 0 deliverables remaining (D11 test fixture seeding, D12 test inbox provisioning). Sprint branch `sprint-013-coach-scheduler` not yet cut; cuts at Phase 1 open.
+- Inputs: Sprint 013 D0 Phase 0a + 0b execution this session, Section 6 preservation-fidelity review.
+
+**Revision notes (v5.10 vs v5.9):**
+- Sprint 013 pre-sprint diagnostic session opened 2026-05-02 under canonical operating pattern. Sprint 013 became the active sprint at session-open (status: `not_started`); spec adapted in-session with four substantive changes: (1) new foundational deliverable **D0 — ERD Reconciliation** added before D1–D10, (2) **D11 — Test Fixture Seeding** added after D10 as Phase 0 close artifact (Supabase rows), (3) **D12 — Email Test Inbox Provisioning** added as separate Phase 0 operator task (DNS + inbox setup, no Claude Code involvement), (4) D3 reframed from `users.head_coach` to HS coaches table after operator clarified head_coach designation lives on the coaching-staff junction table (likely `hs_coach_schools` per Sprint 011 baseline; D0 confirms exact shape). In-session adjustments to an active sprint spec are *adjustments*, not drafting — the `draft` status flag is reserved for untracked sibling files (e.g., sprint-014/015/016 specs that exist in the folder but are not the active sprint).
+- **OQ3 resolved 2026-05-02.** Operator confirmed signed contact waiver establishes per-school player communication consent. Player emails ship in Sprint 013 scope. D11 + D12 handle test isolation so real student inboxes never receive test ICS invites.
+- **OQ4 reframed 2026-05-02 and pending closure by D0.** Head coach designation lives on HS coaches table, not on `users`. The boolean is intentionally not unique-constrained to support test fixture coexistence with real coaches. Routing rule (default `created_at ASC`) handles multiple-row case.
+- **OQ7 dependency on D12.** ICS cross-client testing matrix requires reachable inboxes on Apple Mail, Gmail web + mobile, Outlook web + desktop. D12 simplified per operator decision 2026-05-02 to single-inbox plus-addressing on `chris@grittyfb.com` (`chris+sprint013-<role>@grittyfb.com`). No DNS work required. OQ7 cross-client testing has per-client setup overhead (add `chris@grittyfb.com` to Apple Mail / Outlook accounts, or forward samples) handled at OQ7 testing time.
+- **ERD reconciliation introduced as architectural carry-forward.** Existing ERD docs at `docs/superpowers/specs/` (`erd-current-state.md`, `erd-after-state.md`, `erd-flags.md`) last updated 2026-03-31, predate every coach-scheduler migration (0033–0041), and operate in older governance vocabulary that doesn't apply under the canonical operating pattern. D0 produces a single canonical ERD doc replacing the pair, with **update discipline established in document header**: every future migration updates the ERD in the same commit as the migration file. This becomes the eighth architectural carry-forward going forward (see updated section below).
+- The data structure / topology content currently embedded in this EXECUTION_PLAN's "System Topology" section remains useful as sprint-strategy context but **the canonical schema reference moves to the new ERD doc** once D0 lands. Going forward, EXECUTION_PLAN references the ERD; the ERD does not duplicate EXECUTION_PLAN content.
+- Inputs: Sprint 013 spec adaptation (this session), operator clarifications on head coach table location, signed waiver, test inbox needs, ERD docs review.
+
+**Revision notes (v5.9 vs v5.8):**
+- Sprint 012 (called "Sprint 2" in this plan's numbering scheme) shipped to production at master `413a680` on 2026-05-02, including hotfix #4 for nav anchor corrections + mobile hamburger menu. Sprint 2 section rewritten to capture what actually shipped: the inline scheduler section on `/athletes` (not a modal — pivoted from the original SlideOutShell modal scaffold mid-Phase-2), four production tables, intake-log architecture, three migrations (`0039`, `0040`, `0041`), end-to-end submit verified.
+- Sprint 013 spec opened against this plan version with `status: draft` (the convention at v5.9 — superseded at v5.10 when Sprint 013 became the active sprint and spec status flipped to `not_started`). Player picker D2 closed by Sprint 012 Phase 3. `coach_submissions` and `visit_requests` are intake-log tables; Sprint 013's server-side function reads intake rows, generates ICS, sends email via Resend, writes per-recipient delivery rows to a new `visit_request_deliveries` table. Sprint 3 section rewritten to match the adapted spec.
+- "Open Decisions Forward of Sprint 012" section retitled "Resolved Decisions from Sprint 012" — every DF item is now RESOLVED, REFRAMED, or SUPERSEDED. No open decisions remain in this register; the section now functions as historical record.
+- "Active risk during Sprints 0–4" updated to reflect current state: Sprints 010, 011, 012 shipped; admin persistence bug remains as Sprint 5 scope.
+- Brief acknowledgment of the **Canonical Operating Pattern** discovered during Sprint 012 close (Sprint Mode Primer v0.2 Section 9.5). The full pattern lives in `_org/primers/sprint-mode-primer.md`; this plan operates under the pattern (single-mode operation for prototype-driven feature work, feature-folder-as-unit-of-development, "all thoughts are operations" mantra). EXECUTION_PLAN itself is the strategic ground truth for the coach-scheduler feature workstream per the pattern.
+- Inputs: Sprint 012 Phase 0 retro, Phase 1 retro, Phase 2+3 retro with Section 7 close addendum, Sprint 013 adapted spec.
 
 **Revision notes (v5 vs v4):**
 - Path correction throughout: public route is `/athletes`, not `/recruits`. Five path call-sites updated (topology diagram, Sprint 1 desired output, Sprint 1 acceptance test, Sprint 2 desired output, Marketing Task URL). The page brand remains "Gritty Recruits"; only the URL changed. Pivot occurred mid-Sprint-011 after a legacy `/recruits/<slug>/` reverse proxy was discovered live in production.
@@ -45,13 +95,15 @@
 
 ---
 
-## Active risk during Sprints 0–4
+## Active risk forward (post-Sprint-012)
 
-The admin panel currently has a persistence bug: edits show as saved in the UI but do not persist past session/toggle. This means the public page (Sprint 1) will read from Supabase data that may not accurately reflect what the admin intended.
+The admin panel currently has a persistence bug: edits show as saved in the UI but do not persist past session/toggle. This affects both the public page (Sprint 1 — shipped as Sprint 011) and the scheduler-fed tables (Sprint 2 — shipped as Sprint 012) because the public-facing data depends on Supabase records that the admin panel ought to be able to maintain reliably.
 
-**Mitigation during Sprints 0–4:** Critical data edits (especially height, weight, GPA, Hudl URLs, X handles — anything publicly visible on the recruits page) are made directly in Supabase Studio rather than through the admin panel. The admin panel can still be used for read-only browsing.
+**Mitigation through Sprint 4:** Critical data edits (especially height, weight, GPA, Hudl URLs, X handles — anything publicly visible on the recruits page; plus `partner_high_schools` seed data, `users.head_coach` flagging, etc.) are made directly in Supabase Studio rather than through the admin panel. The admin panel can still be used for read-only browsing.
 
 **Why this matters:** A college coach scheduling a visit based on stale data is a higher-cost failure than a coach not seeing certain players. Accuracy > completeness during this window.
+
+**Sprint 5 sequencing:** Admin panel repair is scheduled after the public scheduler feature ships (Sprints 0–4 shipped through Sprint 012; Sprint 4 — Coach Dashboard Visit Requests tab — not yet opened). The persistence bug is a real blocker for Sprint 4's status-update controls and is the natural trigger to open Sprint 5.
 
 ---
 
@@ -77,18 +129,31 @@ The admin panel currently has a persistence bug: edits show as saved in the UI b
                                             │  │  - profiles                │  │
                                             │  │  - schools (NCAA, 662)     │  │
                                             │  │  - users (head_coach flag) │  │
-                                            │  │  - visit_requests (new)    │  │
+                                            │  │  - partner_high_schools    │  │
+                                            │  │    (Sprint 012, BC High)   │  │
+                                            │  │  - visit_requests          │  │
+                                            │  │    (Sprint 012, intake-log)│  │
                                             │  │  - visit_request_players   │  │
-                                            │  │  - coach_submissions (new) │  │
-                                            │  │  - college_coach_contacts  │  │
-                                            │  │    (existing, scraped)     │  │
+                                            │  │    (Sprint 012 Phase 3,    │  │
+                                            │  │    pulled from Sprint 013) │  │
+                                            │  │  - coach_submissions       │  │
+                                            │  │    (Sprint 012, intake-log)│  │
+                                            │  │  - visit_request_deliveries│  │
+                                            │  │    (Sprint 013 — pending)  │  │
+                                            │  │  - college_coaches         │  │
+                                            │  │    (canonical layer —      │  │
+                                            │  │    enrichment pipeline     │  │
+                                            │  │    deferred)               │  │
                                             │  │  - audit_log (existing,    │  │
                                             │  │    needs Sprint 5 wiring)  │  │
                                             │  └────────────────────────────┘  │
                                             │              │                   │
                                             │              ▼                   │
-                                            │  Transactional email (Resend?)   │
-                                            │   → .ics to all attendees        │
+                                            │  Vercel function (Sprint 013)    │
+                                            │   reads intake rows →            │
+                                            │   generates ICS →                │
+                                            │   sends via Resend →             │
+                                            │   writes deliveries              │
                                             └──────────────────────────────────┘
 ```
 
@@ -125,6 +190,10 @@ Components that need `@media` queries, `:hover`, or `:focus` states cannot rely 
 ### PII boundary defense in depth (Sprint 011)
 
 Sensitive columns on `profiles` (`email`, `phone`, `parent_guardian_email`, `agi`, `dependents`, plus location, timestamps, and SAT) are excluded at three layers: data-layer SELECT whitelist (the hook never asks for them), render-layer destructure boundary (the component takes only whitelisted props), and boundary tests at both layers (the test suite passes a profile with PII fields populated and asserts none surface in render). **Anchors:** `src/hooks/useRecruitsRoster.js` (data layer, `PROFILES_WHITELIST_SELECT`), `src/components/recruits/RecruitCard.jsx` (render layer destructure), `tests/unit/` (33 boundary assertions across the Sprint 011 test files). **Downstream conformance:** any future card-shaped surface reading sensitive tables follows the same triple-layer pattern. Sprint 012's new tables (`coach_submissions`, `visit_requests`) are write-only from anon and do not surface PII on the public page, but the convention remains the standard for any future read surface.
+
+### ERD update discipline (Sprint 013 D0 introduces, all sprints conform)
+
+**Source of canonical schema documentation lives at `docs/specs/erd/erd-current-state.md` (active 2026-05-02 at master `a951ec9`).** Every migration that adds, drops, or modifies a table, column, constraint, RLS policy, or FK relationship updates this ERD in the same commit as the migration file itself. The discipline statement lives in the ERD doc's header as the primary authoritative location; this carry-forward is the cross-reference. **Anchors:** the ERD doc itself; `supabase/migrations/` (every file 0042+ has a paired ERD update). **Downstream conformance:** Sprint 013's D7 (`visit_request_deliveries` migration, confirmed as `0042`) is the first deliverable to validate this discipline by updating the ERD in the same commit. Sprint 5's admin panel repair migrations conform. All future feature folders conform. **Failure mode this protects against:** the precise condition that motivated D0 — multiple migrations shipping without ERD updates, leaving the canonical schema reference stale enough that downstream sprints reconstruct schema from migration files individually rather than from a coherent document. The Sprint 012 data-architecture-confusion incident (Supabase vs Google Sheets canonical question) is the kind of confusion this discipline prevents going forward.
 
 ---
 
@@ -181,78 +250,125 @@ Sensitive columns on `profiles` (`email`, `phone`, `parent_guardian_email`, `agi
 
 ---
 
-### Sprint 2 — Schedule-a-Drop-In CTA + Modal (Date/Time + Coach Info)
+### Sprint 2 — Schedule-a-Drop-In (SHIPPED as Sprint 012, 2026-05-02)
 
-**Input state:**
-- Public page from Sprint 1 deployed
-- No `visit_requests` or `coach_submissions` table in Supabase
-- No CTA on the public page
+> **Status: SHIPPED.** Closed at master `413a680` (squash merge of PR #3 at `debd2ed`, plus close addendum at `640f3ed`, plus hotfix #4 squash merge at `413a680`). Production live at `https://app.grittyfb.com/athletes`. This section records what actually shipped; the original framing has been preserved in revision history.
 
-**Desired output state:**
-- Persistent sticky CTA strip on `/athletes` ("Coach? Schedule a Drop-In")
-- Modal with three steps (player picker comes in Sprint 3): date selector → time window → contact form (with honeypot)
-- Submit creates two records:
-  - `visit_requests` table: status `pending`, no players linked yet
-  - `coach_submissions` table: soft profile (name, email, program, submitted_at)
-- Confirmation screen
+**What shipped:**
+- Persistent sticky CTA strip on `/athletes` ("Coach? Schedule a Drop-In") with imperative `window.scrollTo` and 72px scroll-margin offset. Mobile-responsive.
+- **Inline scheduler section** below the recruit roster grid (NOT a modal — pivoted from initial `SlideOutShell` modal scaffold during Phase 2 after prototype review confirmed the UX is an inline section). Four cards visible simultaneously: Date, Time, Players, Contact. Plus an inline contact form with honeypot defense-in-depth (button disabled when honeypot populated, AND onClick handler short-circuits to fake success UI).
+- **Date card:** 6 visible date buttons by default, "Earlier"/"Later" navigation, "Show more dates" expansion from 60-day default to 180-day max (per DF-4 resolution).
+- **Time card:** Five named time windows (Morning, Midday, Afternoon, Evening, Flexible).
+- **Players card:** Multi-select via `useRecruitsRoster` hook, scoped by school toggle (BC High active, Belmont Hill placeholder).
+- **Contact card:** Name, email, program, optional notes, honeypot (no `position` field — DF-3 relevant).
+- **Submit handler:** Three sequential plain `.insert()` calls (`coach_submissions` → `visit_requests` → `visit_request_players` bulk), client-side `crypto.randomUUID()` for FK chaining, no `.upsert()`, no `.select()` chains. UI state machine: idle / submitting / success / error. Error preserves form data for retry.
+- **Confirmation panel:** Replaces cards with "Thanks, [name]! Your drop-in request has been received. The [school] coaching staff will follow up at [email] to confirm the date and time."
+- **Mobile hamburger menu** (Sprint 012 hotfix #4): Four nav anchors (Why GrittyFB, Partnership, Outcomes, Contact) plus Coach Login consolidated into a hamburger dropdown at `@media (max-width: 768px)`. Recruits link stays always-visible. Nav anchor hrefs corrected to current `www.grittyfb.com` section ids (`#opportunity`, `#partner`, `#proof`, `#cta`).
 
-**Acceptance test:**
-- Coach completes flow on public page, both records land in Supabase
-- Honeypot rejects automated submissions
-- Mobile-responsive modal
+**Schema delivered (three migrations):**
+- `0039_coach_scheduler_tables.sql` — `partner_high_schools` (BC High seed), `coach_submissions`, `visit_requests` with anon RLS (anon SELECT on partner schools; anon INSERT only on the other two with column-bounded `WITH CHECK`).
+- `0040_visit_request_players.sql` — join table pulled forward from Sprint 013 D2. Composite PK on `(visit_request_id, player_id)`, FK cascade to `visit_requests` and `profiles(user_id)`. Anon INSERT with FK-only integrity.
+- `0041_coach_submissions_intake_log_reframe.sql` — drops email UNIQUE constraint, drops `verification_state` column with CHECK, adds `submitter_verified` boolean default false, recreates anon INSERT policy with new `WITH CHECK (submitter_verified=false AND source='scheduler')`.
 
-**Open questions to resolve before Sprint 2 opens:**
-- **`visit_requests` schema fields.** Minimum: id, coach_submission_id (FK), requested_date, time_window, notes, status, created_at, school identifier (FK type and target undecided — see DF-1).
-- **`coach_submissions` schema fields.** Minimum: id, name, email, program, source ('scheduler'), created_at, verified (default false). Email must be declared with explicit `UNIQUE` constraint at DDL time, not just spec-language "unique" (see DF-3, resolved).
+**Architectural reframing during Phase 3 (intake-log architecture):** A discovery during the `0040` apply surfaced that supabase-js v2's `.upsert()` defaults `Prefer: return=representation` internally, triggering 42501 RLS denial under anon. After an initial workaround amendment (DF-5.1: `ignoreDuplicates: true`) carried a documented compromise, the operator pivoted to a deeper architectural reframe: `coach_submissions` and `visit_requests` are append-only intake records, not staging rows. Each submit creates a new row capturing what was asserted at that moment. Canonical coach identity (current contact info, multi-state verification) is deferred to `college_coaches`; an enrichment pipeline (later sprint) reads intake rows and updates canonical tables. Plain `.insert()` per submit dissolves the upsert problem entirely. See "Coach Identity Architecture (intake log + canonical)" section below for the two-layer model.
+
+**End-to-end verification (operator + Claude in Chrome):**
+- Test 1 happy path: three rows landed in production with correct FKs and player join data
+- Test 2 honeypot bot deception: zero Supabase calls, fake success UI rendered
+- Test 3 error path: error banner + form preservation + successful retry
+- Test 4 repeat email: same email submitted twice produced two distinct intake rows, both 201, no 409 conflict — intake-log architecture verified end-to-end
+
+**Phase structure (recorded for forward reference):**
+- Phase 0 — pre-sprint audit, seven DFs resolved, EXECUTION_PLAN advanced v4 → v5.5
+- Phase 1 — `0039` migration applied to production via `npm run migrate`
+- Phase 2 — inline scheduler section build (commits `6a62076` build + `3d22e45` hotfixes after `SlideOutShell` modal pivot)
+- Phase 3 — `0040` and `0041` migrations + submit wiring + intake-log reframe (commits `2bd90a1` schema + `9ecea09` wiring)
+- Sprint close — Phase 2+3 retro with Section 7 close addendum capturing PR cycle, canonical operating pattern discovery, final state, Sprint 013 readiness
+
+**Carry-forwards into Sprint 013 (now Sprint 3 below):**
+- `visit_request_players` already exists; Sprint 013 D2 reduced to historical pointer
+- Intake-log architecture means Sprint 013's email-send work is a downstream consumer of intake rows, not a migration of existing submit path
+- DF-5's Sprint 013 reopener for server-side route is no longer architecturally required (intake-log eliminates the upsert problem) but remains required functionally for sender credentials and ICS generation
+
+**Carry-forwards as discipline items (per Phase 2+3 retro Section 7e):**
+- Verify file/branch/decision state before referencing in prompts (recurring failure pattern caught at session-open, mid-session, and PR review)
+- Cascade enumeration when decisions ripple across multiple documents
+- Verbatim-print-before-apply discipline for migrations
 
 ---
 
-### Sprint 3 — Player Selection + ICS Multi-Recipient Invite
+### Sprint 3 — ICS Multi-Recipient Calendar Invite + Email Delivery (active as Sprint 013, status: not_started, Phase 0 + Phase 1 + Phase 4 COMPLETE, ready for PR)
+
+> **Status: not_started. Phase 0 + Phase 1 + Phase 4 COMPLETE 2026-05-02.** Build phases shipped on `sprint-013-coach-scheduler` branch (`c6330ce` D7, `2a29159` + `8671a82` D1, `6650d58` D9+OQ6). Phase 4 verification successful (3-of-3 email delivery end-to-end via routing pivot). Production routing restored. OQ7 cross-client ICS testing deferred to follow-up sprint. **Next move: PR creation + squash merge sprint branch → master.** Sprint retro material in spec under "Sprint 013 Retro — Phase 1 + Phase 4 Findings". Sprint 012's intake-log architecture substantially reduced this sprint's scope; player picker D2 already shipped via Sprint 012's `0040` migration. Canonical schema reference at `docs/specs/erd/erd-current-state.md` per Architectural Carry-Forward #8.
 
 **Input state:**
-- Sprint 2 modal collects date/time + coach info
-- No player linkage on `visit_requests`
-- No ICS generation, no transactional email service configured
+- Sprint 012 shipped to master `413a680`. Production `/athletes` is live with the inline four-card scheduler.
+- Production schema includes the four Sprint 012 tables (`partner_high_schools`, `coach_submissions` intake-log shape, `visit_requests` intake-log shape, `visit_request_players`).
+- Submit handler writes three intake rows per submission via plain `.insert()`. No email send today; the confirmation panel reads "The [school] coaching staff will follow up at [email] to confirm the date and time" with no actual outreach happening.
+- No transactional email provider configured; no domain auth (SPF/DKIM/DMARC) on `grittyfb.com`; no `visit_request_deliveries` table.
+- ERD documentation at `docs/superpowers/specs/` is stale (last updated 2026-03-31, predates 0033–0041). D0 reconciles before any other Sprint 013 work proceeds.
+- Player communication consent established by signed waiver (operator confirmed 2026-05-02). Test isolation via D11 fixture pattern.
 
 **Desired output state:**
-- Modal gains player selection step (order: date → time → players → contact info → submit)
-- Player picker shows current school's roster, multi-select, chip-style UX
-- New join table `visit_request_players`
-- `users` table confirmed to have `head_coach` boolean scoped by `school_id`
-- On submit, server generates one `.ics` (ORGANIZER = head coach email; ATTENDEE list = college coach + selected players + head coach, all visible) and sends via transactional email
-- Failure path: per-recipient delivery status tracked
+- **D0:** Single canonical ERD doc at `docs/specs/erd/erd-current-state.md` (operator-confirmed path) reflecting current production schema, with update discipline established in header. Old ERD docs deleted; flag register reconciled.
+- **D11:** Tagged test fixture rows (test student profile, test head coach on HS coaches table, fixture college coach payload) live in production, isolated from real student inboxes by email domain + name suffix tagging.
+- **D12:** Plus-addressing on `chris@grittyfb.com` verified. Three fixture addresses (`chris+sprint013-student@`, `chris+sprint013-headcoach@`, `chris+sprint013-collegecoach@`) reachable at single operator inbox. Inbox-to-role mapping documented.
+- Server-side function (Vercel function at `api/coach-scheduler-dispatch.ts` recommended; Supabase Edge Function as alternative — provider decision in OQ5) that reads intake rows by `visit_request_id`, generates a single `.ics` file with full attendee visibility, sends email via Resend (recommended provider, OQ1), and writes per-recipient delivery rows.
+- New `visit_request_deliveries` table (introduced via `0042` migration; D0 confirms numbering availability): `recipient_email`, `recipient_role` (CHECK in `college_coach`/`head_coach`/`player`), `send_status` (CHECK in `sent`/`failed`/`bounced`/`pending`), provider message id, error code/message, attempted/delivered timestamps. **Migration commit also updates the ERD doc** per the update discipline carry-forward.
+- ICS file conforming to RFC 5545: ORGANIZER = head coach; ATTENDEE list (all visible) = college coach + selected players + head coach; SUMMARY/LOCATION/DTSTART/DTEND/DESCRIPTION populated from intake rows + partner school meeting_location; deterministic UID `<visit_request_id>@grittyfb.com`.
+- Sprint 012's submit handler invokes the dispatch function after intake inserts succeed (client-invoked pattern recommended in OQ6). Confirmation panel updates based on dispatch response (full success / partial success / fallback when dispatch unavailable).
+- Failure path: per-recipient failures logged in `visit_request_deliveries` with error details; user sees partial-success confirmation. Function-level failures leave intake rows intact (admin-triggered re-dispatch deferred to Sprint 4 or later).
 
 **Acceptance test:**
-- Coach completes full flow, single .ics generated, all attendees receive email, can add to calendar
-- Supabase has request, player links, delivery status per recipient
-- Per-recipient failure logged, others still succeed
+- Coach completes the four-card scheduler flow on `/athletes` (already functional from Sprint 012)
+- Single `.ics` generated per submit with correct LOCATION, DTSTART/DTEND, and full attendee list per Decision H
+- College coach + head coach + selected players (D11 fixtures during verification) receive the email at D12-provisioned inboxes; ICS auto-imports in Apple Mail, Gmail web + mobile, Outlook web + desktop (verified during pre-sprint OQ7 testing using D12 inbox topology)
+- Production has intake-log rows (Sprint 012) plus per-recipient `visit_request_deliveries` rows (Sprint 013)
+- Per-recipient failure logged, others still succeed, user sees partial-success confirmation
+- Vitest floor 772/1/773 holds plus any new assertions for client-side touches
+- No regressions on Sprint 012 functionality
+- ERD doc reflects `visit_request_deliveries` table and any other schema touches (D7 commit validates the update discipline established by D0)
 
-**Open questions to resolve before Sprint 3 opens:**
-- Transactional email provider (Resend recommended)
-- Sender identity (`noreply@grittyfb.com` or head coach with reply-to)
-- Meeting location field on schools table
-- Player email source + consent verification
-- Head coach identification logic (one per school, or handle multi)
+**Open questions status (eight items, OQ1–OQ8):**
+- ~~**OQ3** (player consent)~~ **RESOLVED 2026-05-02** — signed waiver establishes per-school consent.
+- ~~**OQ4** (head coach identification)~~ **REFRAMED 2026-05-02; closes with D0** — head_coach lives on HS coaches table, not `users`. Multiple-row case handled by routing rule (`created_at ASC` default).
+- **OQ1 — Transactional email provider:** Resend recommended. Operator setup task (account creation, domain auth).
+- **OQ2 — Sender identity:** `scheduler@grittyfb.com` with reply-to head coach. Operator setup task.
+- **OQ5 — Function provider:** Vercel function recommended. Claude Code verifies scaffold readiness during Phase 0.
+- **OQ6 — Function trigger pattern:** client-invoked synchronous recommended. Locks fast.
+- **OQ7 — ICS format edge cases:** Phase 0 close test using D11 fixture inboxes across Apple Mail, Gmail web + mobile, Outlook web + desktop.
+- **OQ8 — Time window → time conversion:** full-window ICS event mapping locked in spec; needs `partner_high_schools.timezone` if absent (D0 surfaces).
+
+**Sprint 014+ carry-forward candidates surfaced from Sprint 013 scope:**
+- Bulk re-dispatch / admin retry mechanism for full-function-failure cases (vs per-recipient failures within the function)
+- Coach Dashboard tab reads `visit_request_deliveries` to surface delivery problems and provide manual retry — already named as Sprint 4 below
+- Player consent infrastructure if OQ3 path (a) or (b) is chosen post-Sprint 013
+- Multi-head-coach routing if OQ4 surfaces ambiguity in production
+- `partner_high_schools.timezone` column if absent and required for OQ8 implementation
+- Calendar invite cancellation/update flow (Sprint 013 ships invite-creation only)
 
 ---
 
 ### Sprint 4 — Coach Dashboard "Visit Requests" Tab
 
 **Input state:**
-- Visit requests landing in Supabase from Sprint 3
+- Visit requests landing in Supabase from Sprint 2 (Sprint 012 — shipped)
+- Per-recipient `visit_request_deliveries` rows landing from Sprint 3 (Sprint 013 — pending)
 - Coach Dashboard exists with Students / Recruiting Intelligence / Calendar / Reports tabs
 
 **Desired output state:**
 - New tab: "Visit Requests"
 - List view sortable by date
-- Each row shows: coach name + program, date/time, players selected, status, delivery status per recipient
-- Status update controls (confirm / reschedule / cancel)
-- Visible to head coach for their school
+- Each row shows: coach name + program (from `coach_submissions` intake row), date/time, players selected (joined via `visit_request_players`), status, per-recipient delivery status (read from `visit_request_deliveries` populated by Sprint 013's dispatch function)
+- Status update controls (confirm / reschedule / cancel) — writes to `visit_requests.status`
+- Manual re-dispatch control for failed deliveries (re-invokes Sprint 013's dispatch function, scoped to specific failed recipients)
+- Visible to head coach for their school (RLS-scoped by `school_id` on the dashboard read)
 
 **Acceptance test:**
 - Head coach sees all visit requests for their school, sort and filter
 - Status changes persist
-- Delivery status visible
+- Per-recipient delivery status visible (sent / failed / bounced / pending)
+- Manual re-dispatch fires for failed recipients only
 - Auth-gated
 
 ---
@@ -341,9 +457,11 @@ Can ship in parallel with Sprint 1.
 
 ---
 
-## Open Decisions Forward of Sprint 012
+## Resolved Decisions from Sprint 012
 
-Six items surfaced by the Sprint 012 Phase 0 audit (`docs/specs/.coach-scheduler-sprints/sprint-012-phase-0-audit.md`, Decisions Forced + Section G reconciliation). Each carries a sprint dependency and a recommended resolution path.
+> **Section status:** All seven decisions forced (DF-1 through DF-7) plus one amendment (DF-5.1) and one scope shift are resolved as of Sprint 012 close. Three were reframed mid-sprint by the intake-log architecture pivot (DF-3, DF-5, DF-7). One amendment was superseded by the same pivot (DF-5.1). Section retained as historical record; this register has no open items as of v5.9.
+
+Originally surfaced by the Sprint 012 Phase 0 audit (`docs/specs/.coach-scheduler-sprints/sprint-012-phase-0-audit.md`, Decisions Forced + Section G reconciliation) plus mid-sprint discoveries.
 
 ### DF-1 — High-school identity column on `visit_requests` (RESOLVED 2026-05-01)
 
@@ -544,27 +662,58 @@ Items deferred from Sprint 012 resolutions that should be picked up in a future 
 
 **Sequential dependency chain:** Sprint 0 → Sprint 1 → Sprint 2 → Sprint 3 → Sprint 4 → Sprint 5. Sprint 6 deferred. Marketing task parallelizes with Sprint 1.
 
-**Highest-risk sprint:** Sprint 3 (transactional email setup, player email consent). Sprint 5 also has unknown scope until pre-sprint audit completes.
+**Status as of v5.9 (2026-05-02):**
+- Sprint 0 (design tokens) — shipped as Sprint 010
+- Sprint 1 (public roster page) — shipped as Sprint 011
+- Sprint 2 (scheduler CTA + flow) — shipped as Sprint 012, including hotfix #4
+- Sprint 3 (ICS multi-recipient invite) — active as Sprint 013, status `not_started`; Phase 1 branch cut after remaining OQs (OQ1, OQ2, OQ5, OQ6, OQ7, OQ8) resolve and Phase 0 deliverables (D0, D11, D12) ship
+- Sprint 4 (Coach Dashboard tab) — not yet opened; depends on Sprint 013
+- Sprint 5 (Admin Panel Repair) — not yet opened; depends on Sprint 4 (the Coach Dashboard tab will surface persistence issues that motivate the repair)
+- Sprint 6 (College Coach Auth) — deferred per Decision L
 
-**Active risk during Sprints 0–4:** Admin persistence bug means public page may display stale or partially-edited data. Mitigated by direct Supabase Studio edits for accuracy-critical changes.
+**Highest-risk forward sprint:** Sprint 3 (Sprint 013) — player email consent (OQ3) is a hard gate; ICS deliverability across major email clients (OQ7) requires pre-sprint testing. Sprint 5 (Admin Panel Repair) also has unknown scope until pre-sprint audit completes.
+
+**Active risk forward:** Admin persistence bug means the public page may display stale or partially-edited data, and Sprint 4's status-update controls (confirm/reschedule/cancel writes) will hit the same persistence issue if not resolved. Mitigated by direct Supabase Studio edits for accuracy-critical changes.
 
 **Carry-forward / future enhancements:**
 - Recruiting calendar overlay (multi-division scaling)
 - Full college coach profiles + auth (Sprint 6)
-- Scheduler reschedule flow
-- Notification email to head coach when request lands
-- Volume metrics + reporting in Coach Dashboard tab
+- Scheduler reschedule flow (post-Sprint 4)
+- Notification email to head coach when request lands (subset of Sprint 013 — covered by D6)
+- Volume metrics + reporting in Coach Dashboard tab (Sprint 4 surface)
 - Bulk admin edit / CSV import (post-Sprint 5)
 - Field-level edit history UI (post-Sprint 5)
+- **Bulk re-dispatch / admin retry mechanism** for full-function-failure cases (surfaced by Sprint 013 scope; candidate for Sprint 4 or later)
+- **Player consent infrastructure** (own feature folder candidate if OQ3 path (a) or (b) is chosen post-Sprint 013)
+- **`partner_high_schools.timezone` column** if needed for OQ8 implementation
+- **Calendar invite cancellation/update flow** (Sprint 013 ships invite-creation only)
+- **Enrichment pipeline** that promotes intake-log rows to canonical `college_coaches` records (natural Sprint 6 work)
 
 ---
 
 ## What to do next
 
-1. Confirm v5 plan
-2. Resolve Sprint 0 open question: Tailwind theme tokens vs. CSS variable file
-3. Open Sprint 0 with coach-me, using prototype's `--gf-*` variables as reference
-4. Note for later: schedule a pre-Sprint 5 diagnostic session to audit admin panel before opening Sprint 5
+1. Sprint 012 closed at master `413a680`; production live at `https://app.grittyfb.com/athletes`. Sprint Mode Primer evolved to v0.2 with Canonical Operating Pattern Section 9.5 (full pattern at `_org/primers/sprint-mode-primer.md`).
+2. **Sprint 013 pre-sprint diagnostic session opened 2026-05-02.** Spec adapted in this session: D0 (ERD Reconciliation), D11 (Test Fixture Seeding), D3 reframed to HS coaches table. OQ3 RESOLVED (signed waiver). OQ4 reframed and pending closure by D0.
+3. **Next operational moves (in order):**
+   - ~~**D0 Phase 0a** — Claude Code reads migration files chronologically + spot-checks live Supabase, produces `erd-current-state-v2.md` additively. Operator reviews.~~ **DONE 2026-05-02.**
+   - ~~**D0 Phase 0b** — Rename + delete, single commit on master.~~ **DONE 2026-05-02 at `a951ec9`.**
+   - ~~**OQ4 closes** as D0 byproduct.~~ **DONE 2026-05-02 by D0.** D3 finalized: `hs_coach_schools.is_head_coach`. ~~Migration 0042 numbering confirmed for D7.~~ **CONFIRMED.**
+   - ~~**OQ1 + OQ2** operator setup~~ **DONE 2026-05-02.** Resend domain `noreply.grittyfb.com` verified; sender identity `scheduler@noreply.grittyfb.com` locked.
+   - ~~**OQ5** Claude Code verifies Vercel function scaffold readiness.~~ **DONE 2026-05-02.** Three sub-decisions locked: Node 22.x function-level pin, non-prefixed env vars, mixed-runtime project accepted.
+   - ~~**OQ6, OQ8** lock against spec recommendations.~~ **DONE 2026-05-02.** OQ6 client-invoked synchronous; OQ8 full-window mapping; `partner_high_schools.timezone` check folds into D1 prep.
+   - ~~**D11** test fixture seeding (Supabase rows) — Claude Code-suitable.~~ **DONE 2026-05-02.** Two fixtures seeded; F-21 routing rule verified live.
+   - ~~**D12** test inbox provisioning~~ **DONE 2026-05-02.** Plus-addressing verified.
+   - ~~**OQ7** ICS rendering test — DEFERRED to Phase 1 close.~~ **DEFERRED to follow-up sprint 2026-05-02.** Phase 4 surfaced Gmail web "Add to Calendar" render quality issue (floating local time interpretation); end-to-end delivery verified, render quality is UX refinement.
+   - ~~**Cut `sprint-013-coach-scheduler` branch from master.**~~ **DONE 2026-05-02.** Branch cut at `15b0a23`.
+   - ~~**Phase 1 — D7 (`visit_request_deliveries` migration + ride-along timezone column + Paul display_name backfill).**~~ **DONE 2026-05-02 at `c6330ce`.**
+   - ~~**Phase 1 — D1 (Vercel Node dispatch function).**~~ **DONE 2026-05-02 at `2a29159`** + runtime config syntax fix at `8671a82`.
+   - ~~**Phase 1 — D9 + OQ6 (submit handler dispatch invocation + confirmation panel branches) with D10 mobile constraint applied.**~~ **DONE 2026-05-02 at `6650d58`.**
+   - ~~**Phase 4 — end-to-end verification against fixture inboxes.**~~ **DONE 2026-05-02.** 3-of-3 email delivery via routing pivot to `chris@grittyfb.com`. Three blockers resolved (Vercel Deployment Protection, D11 fixture GoTrue gaps, NULL token columns).
+   - ~~**Phase 4 cleanup — restore production routing.**~~ **DONE 2026-05-02.** Paul reactivated as sole BC High head coach; chris-as-head-coach row deleted; fixture row 4 stays disabled (data hygiene).
+   - **NEXT MOVE: PR creation + squash merge `sprint-013-coach-scheduler` → master.**
+4. Schedule a pre-Sprint 5 diagnostic session to audit admin panel persistence bug before opening Sprint 5 (per Sprint 5 section guidance).
+5. **Note:** EXECUTION_PLAN updates and sprint retros are sprint-mode artifacts under the canonical operating pattern. Strategy and governance work compress into the prototype/diagnostic phase upstream of build; mid-sprint reframings update this doc in place with revision history. The doc is canonical for the coach-scheduler feature workstream. **Schema reference moves to the new ERD doc once D0 lands** — EXECUTION_PLAN going forward references the ERD rather than embedding schema content.
 
 ---
 
@@ -572,6 +721,11 @@ Items deferred from Sprint 012 resolutions that should be picked up in a future 
 
 | Version | Date | Summary |
 |---|---|---|
+| v5.13 | 2026-05-02 | **Sprint 013 Phase 1 + Phase 4 COMPLETE.** D7 (`visit_request_deliveries` + `partner_high_schools.timezone` ride-along), D1 (dispatch function with runtime config syntax fix), D9 + OQ6 (submit handler wiring + confirmation panel), D10 (mobile constraint applied) all shipped on sprint branch (`c6330ce`, `2a29159` + `8671a82`, `6650d58`). Phase 4 verification successful — 3 emails delivered end-to-end to `chris@grittyfb.com` via routing pivot. Three blockers surfaced and resolved: Vercel Deployment Protection (Standard) gating `/api/*` on Preview, D11 fixture GoTrue gaps (missing `auth.identities` row), NULL token columns in fixture `auth.users` (GoTrue admin API cannot deserialize). **OQ5 lock language correction:** `config.runtime` accepts runtime family only, not versioned strings; version pinning via `package.json` `engines.node`. **D11 fixture seeding pattern recommendations documented:** prefer `supabase.auth.admin.createUser()` over raw SQL. **OQ7 cross-client testing deferred to follow-up sprint** (Gmail web "Add to Calendar" render quality issue identified). **Test floor correction logged:** actual floor at branch cut is 762/1/763, not 772/1/773. **`.gitignore` hygiene** (Vercel CLI auto-added `.env*.local`) committed alongside spec/EP updates. Master HEAD remains `15b0a23`. Sprint branch ready for PR + squash merge. |
+| v5.12 | 2026-05-02 | **Sprint 013 Phase 0 COMPLETE.** All Phase 0 deliverables shipped or locked in single coaching session. D11 closed (two fixtures seeded, F-21 routing verified live). D12 closed (plus-addressing on `chris@grittyfb.com`). OQ1 closed (Resend `noreply.grittyfb.com` verified). OQ2 locked (`scheduler@noreply.grittyfb.com` + reply-to head coach). OQ5 locked (Node 22.x, non-prefixed env vars, mixed runtime). OQ6 locked (client-invoked synchronous). OQ8 locked (full-window mapping). OQ7 deferred to Phase 1 close. Phase 1 carry-forwards locked: D1 head coach display name source — backfill Paul Zukauskas's `raw_user_meta_data.display_name` in D7 commit, D1 reads display_name with email-local-part fallback. Master HEAD remains `a951ec9`. **Next move: cut `sprint-013-coach-scheduler` branch from master, Phase 1 opens.** |
+| v5.11 | 2026-05-02 | **D0 (ERD Reconciliation) closed at master `a951ec9`.** Phase 0a + 0b executed in single session under canonical operating pattern. Output: `docs/specs/erd/erd-current-state.md` (1,083 lines, single canonical schema document with update discipline header). Old ERD trio at `docs/superpowers/specs/` deleted in same commit. Flag register reconciled with full preservation: F-09/F-10/F-11/F-15/F-17 closed by shipped migrations; F-19/F-20/F-21/F-22 newly surfaced; six restorations applied during preservation-fidelity review (F-01/F-04/F-09/F-14/F-15/F-16). **OQ4 RESOLVED by D0**: HS coaches table verified as `hs_coach_schools.is_head_coach`, BC High has 1 head_coach=true row (Paul Zukauskas, hs_program_id `de54b9af-c03c-46b8-a312-b87585a06328`). **D7 migration numbering confirmed** as 0042. **Architectural Carry-Forward #8 operationalized** with canonical ERD at fixed path. **Verbatim-print discipline saved a real preservation issue** during Phase 0b: structural completeness in Section 6 ("all flag IDs present") would have committed silently if substantive Action-column content had not been spot-checked; restoration applied before commit. Sprint 013 spec updated: D0 marked CLOSED with closure note; D3 marked VERIFIED with actual values; D7 hedge dropped; OQ4 marked RESOLVED; Notes for Phase 1 Branch Cut updated; Risk Register stale-ERD row CLOSED; Definition of Done D0 line marked done. Active sprint state: Phase 0 in progress, six OQs remaining (OQ1, OQ2, OQ5, OQ6, OQ7, OQ8), two Phase 0 deliverables remaining (D11, D12). |
+| v5.10 | 2026-05-02 | Sprint 013 became the active sprint (status flipped to `not_started`; pre-sprint diagnostic session opened in-session). Spec adapted with four substantive changes: (1) **D0 — ERD Reconciliation** added as foundational deliverable (read migrations chronologically + spot-check live Supabase, produce single canonical ERD doc replacing the stale current-state/after-state pair at `docs/superpowers/specs/`, two-commit pattern on master); (2) **D11 — Test Fixture Seeding** added as Phase 0 close artifact (Supabase rows: tagged test student/head coach/college coach using `chris+sprint013-<role>@grittyfb.com` plus-aliasing for Phase 4 isolation from real student inboxes); (3) **D12 — Email Test Inbox Provisioning** added as separate Phase 0 operator task (single-inbox plus-addressing on `chris@grittyfb.com` per operator decision; ~5min verification step, no DNS work; runs in parallel with D11 since it's pure operator work); (4) **D3 reframed** from `users.head_coach` to HS coaches table per operator clarification — head_coach designation lives on coaching-staff junction table (likely `hs_coach_schools`), not on `users`. **OQ3 RESOLVED** by signed contact waiver establishing per-school player communication consent. **OQ4 reframed and pending closure by D0** — head_coach boolean is intentionally not unique-constrained to support test fixture coexistence; routing rule (default `created_at ASC`) handles multiple-row case. **OQ7 now depends on D12** for cross-client testing inboxes (single-inbox approach has per-client setup overhead handled at testing time). **Status convention codified:** `draft` is reserved for untracked sibling files in `docs/specs/.coach-scheduler-sprints/` (e.g., sprint-014/015/016 specs not yet active); active sprint specs are `not_started` from session open onward. In-session spec changes are *adjustments*, not drafting. New architectural carry-forward added: **ERD update discipline** — every migration touching schema updates the canonical ERD doc in the same commit. Spec Risk Register expanded (stale ERD risk closed by D0; test ICS to real students risk closed by D11+D12). DoD updated. Notes for Promotion replaced with Notes for Phase 1 Branch Cut. |
+| v5.9 | 2026-05-02 | Sprint 012 closed at master `413a680` (squash merge `debd2ed` + close addendum `640f3ed` + hotfix #4 squash merge `413a680`). Sprint 2 section rewritten as SHIPPED capturing actual outcomes (inline section pivot from modal, four production tables, three migrations, intake-log architecture, end-to-end verification, hotfix #4 nav anchors + mobile hamburger). Sprint 3 section rewritten to reflect adapted Sprint 013 spec (intake-log inheritance, Vercel function recommendation, eight Open Questions OQ1–OQ8). Sprint 4 section updated to reference `visit_request_deliveries` reads. "Open Decisions Forward of Sprint 012" retitled "Resolved Decisions from Sprint 012" — register has no open items. System topology diagram updated for Sprint 012 schema + Sprint 013 dispatch function. Active Risk section reframed for current sprint state. Carry-forward list expanded with Sprint 013 surface candidates. Brief acknowledgment of Canonical Operating Pattern (Sprint Mode Primer v0.2 Section 9.5; full pattern at `_org/primers/sprint-mode-primer.md`). |
 | v5.8 | 2026-05-01 | Intake-log reframe — `coach_submissions` and `visit_requests` treated as append-only intake records, not staging rows. DF-3 (email UNIQUE), DF-5 (upsert pattern), DF-5.1 (ignoreDuplicates amendment), and DF-7 (verification_state) reframed. Decision J updated to reference canonical-layer verification. Decision K sharpened with intake-log vocabulary. New "Coach Identity Architecture" section added. 0041 migration scope: drop email UNIQUE, drop verification_state column, add submitter_verified boolean. |
 | v5.7 | 2026-05-01 | DF-5.1 amendment — supabase-js v2 `.upsert()` requires `ignoreDuplicates: true` to operate under anon (PostgREST `Prefer: return=representation` default triggers SELECT-side RLS denial otherwise; surfaced during 0040 probe setup). Coach name/program no longer update on repeat submissions; Sprint 013 server-side route fixes. Sprint 012 spec D6 Consumer-side pattern bullet updated to capture both `.insert().select()` and `.upsert()` defaults findings. |
 | v5.6 | 2026-05-01 | Scope shift — `visit_request_players` pulled forward from Sprint 013 D2 to Sprint 012 Phase 3 via `0040` migration. FK on `profiles(user_id)` per existing Sprint 011 roster identity convention. Sprint 012 spec D6 expanded to four tables; Sprint 013 spec D2 reduced to historical note. |
