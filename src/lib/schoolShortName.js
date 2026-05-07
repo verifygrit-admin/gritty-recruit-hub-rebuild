@@ -13,6 +13,7 @@
 
 export const SCHOOL_SHORT_NAMES = {
   'Boston College High School': 'BC HIGH',
+  'Belmont Hill School': 'BELMONT HILL',
 };
 
 const MAX_FALLBACK_LEN = 20;

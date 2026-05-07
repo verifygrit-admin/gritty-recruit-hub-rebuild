@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
+import { useSchoolIdentity } from '../hooks/useSchoolIdentity.js';
 import { supabase } from '../lib/supabaseClient.js';
+import { SCHOOL_STAFF, findStaffByUserId } from '../data/school-staff.js';
 import HudlLogo from '../components/HudlLogo.jsx';
 
 const POSITIONS = [
@@ -37,6 +39,13 @@ const thirdCol = { flex: '1 1 30%', minWidth: 150 };
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { session, notifyProfileUpdate } = useAuth();
+
+  // Sprint 017 D5/3d — school-conditional staff lookup. schoolSlug is null for
+  // anon or unresolvable users; staff is null for any school not yet onboarded
+  // (renders coach/counselor sections hidden in that case — graceful degrade).
+  const { schoolSlug } = useSchoolIdentity();
+  const staff = schoolSlug ? SCHOOL_STAFF[schoolSlug] : null;
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
@@ -55,20 +64,6 @@ export default function ProfilePage() {
   const [hsQuery, setHsQuery] = useState('');
   const [hsResults, setHsResults] = useState([]);
   const [hsSelected, setHsSelected] = useState(false);
-
-  // Static BC High coach + counselor data (UUIDs never shown to user)
-  const BC_HIGH_COACH = {
-    user_id: '9177ba55-eb83-4bce-b4cd-01ce3078d4a3',
-    name: 'Paul Zukauskas',
-    title: 'Head Coach, Boston College High School',
-    email: 'pzukauskas@bchigh.edu',
-    hs_program_id: 'de54b9af-c03c-46b8-a312-b87585a06328',
-  };
-  const BC_HIGH_COUNSELORS = [
-    { user_id: '92dbdc93-18b6-4361-8925-2d0e1fbd68ad', name: 'Devon Balfour', email: 'dbalfour@bchigh.edu' },
-    { user_id: 'b80f1b4c-c5c3-4285-a88a-0cc39e650e02', name: "Caitlin O'Connell", email: 'coconnell@bchigh.edu' },
-    { user_id: 'e0c99343-e525-411a-b6a8-8691bdc31da7', name: 'Kyle Swords', email: 'kswords@bchigh.edu' },
-  ];
 
   // Track avatar state
   const [avatarStoragePath, setAvatarStoragePath] = useState(null);
@@ -133,21 +128,24 @@ export default function ProfilePage() {
         setForm(prev => ({ ...prev, email: session.user.email || '' }));
       }
 
-      // Check for existing coach confirmation (static BC High only)
+      // Check for existing coach confirmation. Resolves staff name via
+      // SCHOOL_STAFF reverse lookup (findStaffByUserId) — works regardless of
+      // useSchoolIdentity's async resolution timing in the same render pass.
       const { data: existingCoachLinks } = await supabase
         .from('hs_coach_students').select('coach_user_id')
         .eq('student_user_id', session.user.id);
       if (existingCoachLinks && existingCoachLinks.length > 0) {
         setCoachConfirmed(true);
-        setConfirmedCoachName(BC_HIGH_COACH.name);
+        const linkedCoach = findStaffByUserId(existingCoachLinks[0].coach_user_id);
+        setConfirmedCoachName(linkedCoach?.name || 'Your head coach');
         // Check for existing counselor confirmation
         const { data: existingCounselorLinks } = await supabase
           .from('hs_counselor_students').select('counselor_user_id')
           .eq('student_user_id', session.user.id);
         if (existingCounselorLinks && existingCounselorLinks.length > 0) {
           setCounselorConfirmed(true);
-          const matched = BC_HIGH_COUNSELORS.find(c => c.user_id === existingCounselorLinks[0].counselor_user_id);
-          setConfirmedCounselorName(matched?.name || 'Your counselor');
+          const linkedCounselor = findStaffByUserId(existingCounselorLinks[0].counselor_user_id);
+          setConfirmedCounselorName(linkedCounselor?.name || 'Your counselor');
         }
       }
       setLoading(false);
@@ -169,7 +167,8 @@ export default function ProfilePage() {
     return () => clearTimeout(timer);
   }, [hsQuery, hsSelected]);
 
-  // Dynamic fetch useEffects removed — coach and counselor are now static BC High hardcodes.
+  // Coach/counselor display data resolved from src/data/school-staff.js via
+  // SCHOOL_STAFF[schoolSlug] (see Sprint 017 retro / C-9 carry-forward).
 
   const handleHsSelect = (school) => {
     setForm(prev => ({ ...prev, high_school: school.school_name, hs_lat: null, hs_lng: null }));
@@ -183,20 +182,20 @@ export default function ProfilePage() {
   };
 
   const handleConfirmCoach = async () => {
-    if (!session) return;
+    if (!session || !staff?.head_coach) return;
     setCoachConfirming(true); setCoachError(null);
     const { error } = await supabase.from('hs_coach_students').insert({
-      coach_user_id: BC_HIGH_COACH.user_id,
+      coach_user_id: staff.head_coach.user_id,
       student_user_id: session.user.id,
     });
     if (error) {
       if (error.code === '23505') {
         setCoachConfirmed(true);
-        setConfirmedCoachName(BC_HIGH_COACH.name);
+        setConfirmedCoachName(staff.head_coach.name);
       } else { setCoachError('Failed to confirm coach. Please try again.'); }
     } else {
       setCoachConfirmed(true);
-      setConfirmedCoachName(BC_HIGH_COACH.name);
+      setConfirmedCoachName(staff.head_coach.name);
     }
     setCoachConfirming(false);
   };
@@ -210,11 +209,11 @@ export default function ProfilePage() {
     if (error) {
       if (error.code === '23505') {
         setCounselorConfirmed(true);
-        setConfirmedCounselorName(BC_HIGH_COUNSELORS.find(c => c.user_id === selectedCounselorId)?.name || 'Your counselor');
+        setConfirmedCounselorName(staff?.counselors?.find(c => c.user_id === selectedCounselorId)?.name || 'Your counselor');
       } else { setCounselorError('Failed to confirm counselor. Please try again.'); }
     } else {
       setCounselorConfirmed(true);
-      setConfirmedCounselorName(BC_HIGH_COUNSELORS.find(c => c.user_id === selectedCounselorId)?.name || 'Your counselor');
+      setConfirmedCounselorName(staff?.counselors?.find(c => c.user_id === selectedCounselorId)?.name || 'Your counselor');
     }
     setCounselorConfirming(false);
   };
@@ -474,8 +473,9 @@ export default function ProfilePage() {
           {renderInput('hudl_url', 'Hudl Profile URL', 'input-hudl-url', { placeholder: 'https://www.hudl.com/profile/...', help: '(Optional — share your highlight film with coaches)' })}
         </section>
 
-        {/* Section: Confirm Your Head Coach — static BC High */}
-        {selectedHsProgramId && (
+        {/* Section: Confirm Your Head Coach — school-conditional via SCHOOL_STAFF.
+            Hides if school is unresolved or not in SCHOOL_STAFF (graceful degrade). */}
+        {selectedHsProgramId && staff?.head_coach && (
           <section style={sectionStyle} data-testid="section-coach-confirm">
             <h3 style={headingStyle}>Confirm Your Head Coach</h3>
             <hr style={{ border: 'none', borderTop: '1px solid #E8E8E8', marginBottom: 16 }} />
@@ -490,9 +490,9 @@ export default function ProfilePage() {
             ) : (
               <div>
                 <div style={{ ...fieldWrap, padding: '12px 16px', backgroundColor: '#F9F9F9', border: '1px solid #E8E8E8', borderRadius: 4 }}>
-                  <div style={{ fontSize: '1rem', fontWeight: 600, color: '#2C2C2C' }}>{BC_HIGH_COACH.name}</div>
-                  <div style={{ fontSize: '0.875rem', color: '#6B6B6B', marginTop: 2 }}>{BC_HIGH_COACH.title}</div>
-                  <div style={{ fontSize: '0.875rem', color: '#6B6B6B', marginTop: 2 }}>{BC_HIGH_COACH.email}</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 600, color: '#2C2C2C' }}>{staff.head_coach.name}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6B6B6B', marginTop: 2 }}>{staff.head_coach.title}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6B6B6B', marginTop: 2 }}>{staff.head_coach.email}</div>
                 </div>
                 <span style={{ ...helpStyle, display: 'block', marginBottom: 12 }}>
                   Confirming your coach grants them access to view your profile and recruiting activity.
@@ -513,8 +513,10 @@ export default function ProfilePage() {
           </section>
         )}
 
-        {/* Section: Confirm Your Guidance Counselor — static BC High, radio buttons */}
-        {coachConfirmed && selectedHsProgramId && (
+        {/* Section: Confirm Your Guidance Counselor — school-conditional via
+            SCHOOL_STAFF, radio buttons. Hides if no counselors are configured
+            for the resolved school. */}
+        {coachConfirmed && selectedHsProgramId && (staff?.counselors?.length ?? 0) > 0 && (
           <section style={sectionStyle} data-testid="section-counselor-confirm">
             <h3 style={headingStyle}>Confirm Your Guidance Counselor</h3>
             <hr style={{ border: 'none', borderTop: '1px solid #E8E8E8', marginBottom: 16 }} />
@@ -529,7 +531,7 @@ export default function ProfilePage() {
             ) : (
               <div>
                 <div style={{ ...fieldWrap }}>
-                  {BC_HIGH_COUNSELORS.map(c => (
+                  {staff.counselors.map(c => (
                     <label key={c.user_id} style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
                       marginBottom: 8, border: `1px solid ${selectedCounselorId === c.user_id ? '#4CAF50' : '#E8E8E8'}`,

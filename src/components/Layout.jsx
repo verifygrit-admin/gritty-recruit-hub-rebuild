@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
-import teamPhoto from '../assets/bchigh-team.jpg';
 import HudlLogo from './HudlLogo.jsx';
-import { getSchoolShortName } from '../lib/schoolShortName.js';
+import { useSchoolIdentity } from '../hooks/useSchoolIdentity.js';
 import { STUDENT_NAV_LINKS, COACH_NAV_LINKS } from '../lib/navLinks.js';
 
 /**
@@ -62,36 +61,45 @@ export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { session, userType, signOut } = useAuth();
-  const [schoolName, setSchoolName] = useState('GRITTY');
+
+  // Sprint 017 D5 — school identity is owned by useSchoolIdentity. The prior
+  // inline resolver hardcoded 'BC HIGH' for coach/counselor sessions, which
+  // mis-themed any non-BC-High partner school. Hook returns null for
+  // unresolvable cases; consumer falls back to 'GRITTY' for masthead display.
+  const { schoolName: resolvedSchoolName, schoolSlug } = useSchoolIdentity();
+  const schoolName = resolvedSchoolName || 'GRITTY';
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [avatarStoragePath, setAvatarStoragePath] = useState(null);
   const [hudlUrl, setHudlUrl] = useState(null);
   const [avatarError, setAvatarError] = useState(false);
 
+  // Student profile fetch (name + avatar + hudl_url only — school identity
+  // moved to useSchoolIdentity above). Coaches/counselors don't need this.
   useEffect(() => {
     if (!session) return;
-    // Students: fetch name, school, avatar_storage_path, hudl_url
-    // Coaches/counselors: only need school label
     const isStudent = userType !== 'hs_coach' && userType !== 'hs_guidance_counselor';
-    const selectFields = isStudent
-      ? 'high_school, name, avatar_storage_path, hudl_url'
-      : 'high_school';
-
-    supabase.from('profiles').select(selectFields).eq('user_id', session.user.id).single()
+    if (!isStudent) return;
+    supabase.from('profiles')
+      .select('name, avatar_storage_path, hudl_url')
+      .eq('user_id', session.user.id)
+      .single()
       .then(({ data }) => {
-        if (data?.high_school) {
-          setSchoolName(getSchoolShortName(data.high_school));
-        } else if (userType === 'hs_coach' || userType === 'hs_guidance_counselor') {
-          setSchoolName('BC HIGH');
-        }
-        if (isStudent && data) {
-          if (data.name) setStudentName(data.name.split(' ')[0]); // first name only
-          setAvatarStoragePath(data.avatar_storage_path || null);
-          setHudlUrl(data.hudl_url || null);
-        }
+        if (!data) return;
+        if (data.name) setStudentName(data.name.split(' ')[0]); // first name only
+        setAvatarStoragePath(data.avatar_storage_path || null);
+        setHudlUrl(data.hudl_url || null);
       });
   }, [session, userType]);
+
+  // Body-class side-effect — drives Sprint 017 D5/3b CSS swap. One set-and-
+  // remove pass per schoolSlug change; no cleanup-on-dependency-change to
+  // avoid flash-of-unstyled-content during user/role transitions.
+  useEffect(() => {
+    document.body.classList.remove('school-bc-high', 'school-belmont-hill');
+    if (schoolSlug) document.body.classList.add(`school-${schoolSlug}`);
+  }, [schoolSlug]);
 
   // Close menu on route change
   useEffect(() => {
@@ -314,16 +322,15 @@ export default function Layout({ children }) {
         )}
       </header>
 
-      {/* Main content */}
-      <main style={{
+      {/* Main content. Sprint 017 D5/3b: background-image moved to CSS rules
+          keyed on body.school-* class set by useSchoolIdentity. The
+          `layout-main` className is the CSS hook; remaining inline styles
+          are layout-only. */}
+      <main className="layout-main" style={{
         flex: 1,
         display: 'flex',
         justifyContent: 'center',
         position: 'relative',
-        backgroundImage: `url(${teamPhoto})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
       }}>
         <div style={{
           position: 'absolute',

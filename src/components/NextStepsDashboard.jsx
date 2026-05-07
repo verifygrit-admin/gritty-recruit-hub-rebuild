@@ -12,6 +12,32 @@
 import { ATH_STANDARDS, TIER_ORDER, RECRUIT_BUDGETS } from '../lib/constants.js';
 import { getClassLabel, calcAthleticFit } from '../lib/scoring.js';
 import { deriveReason, getMetricScores, ACAD_CLUSTER_FLOOR } from '../lib/nextStepsUtils.js';
+import { useSchoolIdentity } from '../hooks/useSchoolIdentity.js';
+
+/**
+ * Sprint 017 D5/3e — school-conditional S&C tip overrides for the
+ * "Compound lifts 3–4x per week" tip in StayGrittyFocus. Keyed on the slug
+ * returned by useSchoolIdentity. Schools not in this map (or anon users)
+ * see the unmodified default tip.
+ *
+ *   stripStrongliftsClause — when true, removes the "(free at stronglifts.com)"
+ *                             clause from the default tip text.
+ *   appendText             — text appended to the (possibly stripped) tip text.
+ *
+ * Decision per operator (D3, 2026-05-07): Belmont Hill keeps the
+ * stronglifts.com clause AND adds the Markham append; BC High strips and
+ * appends.
+ */
+const SCHOOL_SC_OVERRIDES = {
+  'bc-high': {
+    stripStrongliftsClause: true,
+    appendText: 'At BC High, your best resources are Director of Strength & Conditioning Coach Kiely and Assistant Strength & Conditioning Coach McClune — reach out to them directly or find their contact info in the bchigh.edu directory.',
+  },
+  'belmont-hill': {
+    stripStrongliftsClause: false,
+    appendText: 'At Belmont Hill, your best resource is Strength & Conditioning Coach Andrew Markham — reach out to him directly at markham@belmonthill.org or find additional staff contacts in the belmonthill.org directory.',
+  },
+};
 
 /** Position suggestion pools — analogous positions by group */
 const SUGGESTION_POOLS = {
@@ -384,19 +410,28 @@ function TipsList({ tips, header }) {
   );
 }
 
-function StayGrittyFocus({ weakestMetric, closestTier, isBCHigh }) {
+function StayGrittyFocus({ weakestMetric, closestTier, schoolSlug }) {
   const metricLabel = weakestMetric === 'height' ? 'Height'
     : weakestMetric === 'weight' ? 'Weight' : '40-Yard Dash';
   let tips = weakestMetric === 'height' ? HEIGHT_TIPS
     : weakestMetric === 'weight' ? WEIGHT_TIPS : SPEED_TIPS;
 
-  // BC High: customize compound lifts tip — remove stronglifts.com plug, add S&C coaches
-  if (isBCHigh && weakestMetric === 'weight') {
-    tips = tips.map(tip =>
-      tip.title === 'Compound lifts 3–4x per week'
-        ? { ...tip, text: tip.text.replace(' (free at stronglifts.com)', '') + ' At BC High, your best resources are Director of Strength & Conditioning Coach Kiely and Assistant Strength & Conditioning Coach McClune — reach out to them directly or find their contact info in the bchigh.edu directory.' }
-        : tip
-    );
+  // School-conditional S&C tip override (Sprint 017 D5/3e). schoolSlug === null
+  // (anon, or school not yet onboarded) leaves tips untouched — student sees
+  // the default text with no school-specific append.
+  const scOverride = SCHOOL_SC_OVERRIDES[schoolSlug];
+  if (scOverride && weakestMetric === 'weight') {
+    tips = tips.map(tip => {
+      if (tip.title !== 'Compound lifts 3–4x per week') return tip;
+      let text = tip.text;
+      if (scOverride.stripStrongliftsClause) {
+        text = text.replace(' (free at stronglifts.com)', '');
+      }
+      if (scOverride.appendText) {
+        text = text + ' ' + scOverride.appendText;
+      }
+      return { ...tip, text };
+    });
   }
 
   return (
@@ -544,7 +579,9 @@ export default function NextStepsDashboard({ scoringResult, profile, onEditProfi
   const weightNum = profile.weight ? +profile.weight : 0;
   const speedNum = profile.speed_40 ? +profile.speed_40 : 0;
   const position = profile.position || '';
-  const isBCHigh = /bc\s*high|boston\s*college\s*high/i.test(profile.high_school || '');
+  // Sprint 017 D5/3e — school identity sourced from the canonical hook;
+  // replaces the prior regex against profile.high_school which only matched BC High.
+  const { schoolSlug } = useSchoolIdentity();
 
   // Closest tier — use topTier if available, otherwise find closest
   const closestTier = scoringResult.topTier ||
@@ -663,7 +700,7 @@ export default function NextStepsDashboard({ scoringResult, profile, onEditProfi
       ))}
 
       {/* ── Section 5: Stay Gritty Focus + Training Tips ── */}
-      <StayGrittyFocus weakestMetric={weakestMetric} closestTier={closestTier} isBCHigh={isBCHigh} />
+      <StayGrittyFocus weakestMetric={weakestMetric} closestTier={closestTier} schoolSlug={schoolSlug} />
 
       {/* ── Section 6: Academic Improvement Strategies ── */}
       {showAcademicStrategies && (

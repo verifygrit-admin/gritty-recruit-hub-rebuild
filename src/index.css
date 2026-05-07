@@ -9,6 +9,41 @@
   --brand-gold-dark: #A8871D;
 }
 
+/* Sprint 017 D5 / 3b — Belmont Hill brand-token override.
+   Keyed on body class set by useSchoolIdentity (Layout.jsx). The :root
+   defaults above remain BC High; Belmont Hill sessions swap values via the
+   class. The 6 brand-token consumers (RecruitingScoreboard, OfferBadge,
+   ShortlistRow, LandingPage, CollapsibleTitleStrip, plus this file) require
+   no edits — variable names are stable, only values change. */
+body.school-belmont-hill {
+  --brand-maroon: #1B3D8F;       /* Deep Blue (Primary)   */
+  --brand-gold:   #B41F2E;       /* Scarlet (Secondary)   */
+  --brand-gold-dark: #8A1722;    /* Darker scarlet accent */
+}
+
+/* Sprint 017 D5 / 3b — Layout main background image, school-conditional.
+   Targets <main className="layout-main"> inside Layout.jsx. Anon-fallback
+   rule preserves the existing BC High team photo for unauthenticated `/`
+   visitors (LandingPage renders inside Layout without a ProtectedRoute). */
+body.school-bc-high main.layout-main {
+  background-image: url('./assets/bchigh-team.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+body.school-belmont-hill main.layout-main {
+  background-image: url('./assets/Belmont Hill background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+body:not(.school-bc-high):not(.school-belmont-hill) main.layout-main {
+  background-image: url('./assets/bchigh-team.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
 /* ── SPRINT 010 — GrittyFB Design Token System ────────────────────────────
    Authoritative source: docs/specs/.coach-scheduler-sprints/index.html :root
    All tokens prefixed `gf-` to prevent collision with existing --brand-* /
