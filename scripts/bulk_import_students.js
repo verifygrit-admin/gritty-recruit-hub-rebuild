@@ -51,21 +51,96 @@ if (!SUPABASE_SERVICE_ROLE_KEY) {
 const SHEET_ID = '1zW7vFntjyAmu0GB0g2ZoNuHzPkqepGz59DcWB_RxcIQ';
 const SHEET_TAB = 'bulk_schema';
 
-// Paul Zukauskas — confirmed seeded values from import_paul_zukauskas.py
-const PAUL_EMAIL_CANONICAL = 'pzukauskas@bchigh.edu';
-const PAUL_UUID_KNOWN = '9177ba55-eb83-4bce-b4cd-01ce3078d4a3';
-const BC_HIGH_PROGRAM_ID = 'de54b9af-c03c-46b8-a312-b87585a06328';
-const BC_HIGH_SCHOOL_NAME = 'Boston College High School';
-const DEFAULT_HS_LAT = 42.3097;
-const DEFAULT_HS_LNG = -71.0527;
-const DEFAULT_STATE = 'MA';
+// ---------------------------------------------------------------------------
+// School configurations — Sprint 017 parameterization. BC High default behavior
+// preserved exactly; Belmont Hill onboards as a new configuration entry.
+// ---------------------------------------------------------------------------
 
-// Valid counselor emails for BC High
-const VALID_COUNSELOR_EMAILS = new Set([
-  'dbalfour@bchigh.edu',
-  'coconnell@bchigh.edu',
-  'kswords@bchigh.edu',
-]);
+const SCHOOL_CONFIGS = {
+  'bc-high': {
+    program_id: 'de54b9af-c03c-46b8-a312-b87585a06328',
+    school_name: 'Boston College High School',
+    state: 'MA',
+    default_password: 'eagles2026',
+    default_hs_lat: 42.3097,
+    default_hs_lng: -71.0527,
+    head_coach_uuid: '9177ba55-eb83-4bce-b4cd-01ce3078d4a3',
+    head_coach_email: 'pzukauskas@bchigh.edu',
+    valid_counselor_emails: new Set([
+      'dbalfour@bchigh.edu',
+      'coconnell@bchigh.edu',
+      'kswords@bchigh.edu',
+    ]),
+    skip_preflight: false,
+    skip_coach_student_links: false,
+    skip_counselor_student_links: false,
+    header_map: null, // canonical snake_case already
+  },
+  'belmont-hill': {
+    program_id: '4ce4c5e4-2efe-4927-b0d2-4c727d244b33', // Sprint 017 D3 pinned
+    school_name: 'Belmont Hill School',
+    state: 'MA',
+    default_password: 'sextants2027',
+    default_hs_lat: 42.4069,
+    default_hs_lng: -71.1842,
+    head_coach_uuid: null, // not yet seeded — coach runs after students per operator order
+    head_coach_email: 'roche@belmonthill.org',
+    valid_counselor_emails: new Set(['schmunk@belmonthill.org']),
+    // Operator order for Belmont: students FIRST (this script), then coach + counselor
+    // (seed_users.js with --school belmont-hill --role coach|counselor) which adds
+    // junction-students rows. So this script skips preflight + steps 6/7 for Belmont.
+    skip_preflight: true,
+    skip_coach_student_links: true,
+    skip_counselor_student_links: true,
+    header_map: {
+      'Full Name': 'full_name',
+      'Email': 'email',
+      'High School': 'high_school',
+      'Grad Year': 'grad_year',
+      'State': 'state',
+      'Phone': 'phone',
+      'Twitter': 'twitter',
+      'Hudl': 'hudl_url',
+      'Head Coach Email': 'coach_email',
+      'Guidance Counselor Email': 'counselor_email',
+      'GPA': 'gpa',
+      'Position': 'position',
+      'Height': 'height',
+      'Weight': 'weight',
+      '40 yd dash': 'speed_40',
+      'Expected starter': 'expected_starter',
+      'Team Captain': 'captain',
+      'All-Conference': 'all_conference',
+      'All-State': 'all_state',
+      'AGI': 'agi',
+      'Dependents': 'dependents',
+      'Parent Email': 'parent_guardian_email',
+    },
+  },
+};
+
+// CLI arg parsing — minimal additive
+const _cliArgs = process.argv.slice(2);
+function _getArg(flag) {
+  const i = _cliArgs.indexOf(flag);
+  return i !== -1 ? _cliArgs[i + 1] : null;
+}
+const SCHOOL_ID = _getArg('--school') || 'bc-high';
+const SCHOOL_CONFIG = SCHOOL_CONFIGS[SCHOOL_ID];
+if (!SCHOOL_CONFIG) {
+  console.error(`ERROR: Unknown --school '${SCHOOL_ID}'. Available: ${Object.keys(SCHOOL_CONFIGS).join(', ')}`);
+  process.exit(1);
+}
+
+// Backward-compat aliases — preserve existing references throughout the script.
+const PAUL_EMAIL_CANONICAL = SCHOOL_CONFIG.head_coach_email;
+const PAUL_UUID_KNOWN = SCHOOL_CONFIG.head_coach_uuid;
+const BC_HIGH_PROGRAM_ID = SCHOOL_CONFIG.program_id;
+const BC_HIGH_SCHOOL_NAME = SCHOOL_CONFIG.school_name;
+const DEFAULT_HS_LAT = SCHOOL_CONFIG.default_hs_lat;
+const DEFAULT_HS_LNG = SCHOOL_CONFIG.default_hs_lng;
+const DEFAULT_STATE = SCHOOL_CONFIG.state;
+const VALID_COUNSELOR_EMAILS = SCHOOL_CONFIG.valid_counselor_emails;
 
 const REQUIRED_FIELDS = ['email', 'full_name', 'coach_email', 'counselor_email'];
 
@@ -88,10 +163,16 @@ function normalizeEmail(email) {
   return (email ?? '').trim().toLowerCase();
 }
 
-/** Parse CSV where fields may be simple strings (no embedded commas in this dataset). */
+/** Parse CSV where fields may be simple strings (no embedded commas in this dataset).
+ *  Sprint 017: applies SCHOOL_CONFIG.header_map normalization if defined.
+ */
 function parseCSV(raw) {
   const lines = raw.trim().split('\n');
-  const headers = lines[0].split(',').map((h) => h.trim());
+  const rawHeaders = lines[0].split(',').map((h) => h.trim());
+  const headerMap = SCHOOL_CONFIG.header_map;
+  const headers = headerMap
+    ? rawHeaders.map((h) => headerMap[h] || h)
+    : rawHeaders;
   return lines.slice(1).map((line) => {
     const values = line.split(',').map((v) => v.trim());
     return Object.fromEntries(headers.map((h, i) => [h, values[i] ?? '']));
@@ -238,6 +319,15 @@ async function resolveEmailToUUID(email) {
 }
 
 async function resolveCoachAndCounselors(rows) {
+  // Sprint 017: Belmont path skips this step — coach + counselor are seeded by
+  // seed_users.js AFTER this script runs, so neither exists in auth.users yet.
+  // Junction-students rows are also created by seed_users.js (Belmont path),
+  // not by this script (Steps 6 + 7 are skipped below).
+  if (SCHOOL_CONFIG.skip_preflight) {
+    console.log('\n[STEP 2] SKIPPED — school config skip_preflight=true (Belmont order: students first, coach + counselor + junction-students after).');
+    return { coachUUID: null, counselorUUIDs: {} };
+  }
+
   console.log('\n[STEP 2] Resolving coach + counselor emails to UUIDs...');
 
   // Collect unique counselor emails from the data
@@ -322,7 +412,7 @@ async function createAuthUsers(rows) {
 
   for (const row of rows) {
     const email = normalizeEmail(row.email);
-    const password = row.temp_password || 'eagles2026';
+    const password = row.temp_password || SCHOOL_CONFIG.default_password;
 
     const { data, error } = await supabase.auth.admin.createUser({
       email,
@@ -517,6 +607,11 @@ async function upsertProfiles(rows, uuidMap) {
 // ---------------------------------------------------------------------------
 
 async function upsertCoachStudents(rows, uuidMap, coachUUID) {
+  if (SCHOOL_CONFIG.skip_coach_student_links) {
+    console.log('\n[STEP 6] SKIPPED — school config skip_coach_student_links=true (handled by seed_users.js for this school).');
+    return { coachLinksInserted: 0, coachLinksErrors: [] };
+  }
+
   console.log(`\n[STEP 6] Upserting hs_coach_students rows (coach => ${coachUUID})...`);
   let inserted = 0;
   const errors = [];
@@ -560,6 +655,11 @@ async function upsertCoachStudents(rows, uuidMap, coachUUID) {
 // ---------------------------------------------------------------------------
 
 async function upsertCounselorStudents(rows, uuidMap, counselorUUIDs) {
+  if (SCHOOL_CONFIG.skip_counselor_student_links) {
+    console.log('\n[STEP 7] SKIPPED — school config skip_counselor_student_links=true (handled by seed_users.js for this school).');
+    return { counselorLinksInserted: 0, counselorLinksErrors: [] };
+  }
+
   console.log(`\n[STEP 7] Upserting hs_counselor_students rows...`);
   let inserted = 0;
   const errors = [];
