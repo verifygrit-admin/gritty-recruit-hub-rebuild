@@ -25,8 +25,7 @@ export const RECRUIT_SCHOOLS = [
   {
     slug: 'belmont-hill',
     label: 'Belmont Hill',
-    filter: null,
-    active: false,
-    comingMonth: 'May 2026',
+    filter: 'Belmont Hill School',
+    active: true,
   },
 ];
