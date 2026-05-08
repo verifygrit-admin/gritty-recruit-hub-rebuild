@@ -22,7 +22,13 @@ body.school-belmont-hill {
   --brand-maroon: #1B3D8F;                  /* Deep Blue (Primary)        */
   --brand-gold:   #B41F2E;                  /* Scarlet (Secondary)        */
   --brand-gold-dark: #8A1722;               /* Darker scarlet accent      */
-  --brand-overlay-rgba: rgba(180, 31, 46, 0.08); /* Scarlet warm tint, 8% */
+  /* Sprint 018 — overlay tint bumped from rgba(180, 31, 46, 0.08) to a
+     high-opacity scarlet-tinted off-white. The HF-A 8% pure-scarlet
+     value was imperceptible over a saturated outdoor background photo
+     and produced the production "no wash" symptom on Belmont Hill.
+     New value mirrors BC High's 90% cream-wash weight (legibility
+     surface) with a subtle scarlet undertone (brand identity).        */
+  --brand-overlay-rgba: rgba(245, 232, 234, 0.92);
 }
 
 /* Sprint 017 HF-B — main-content background-image rules removed from CSS.
