@@ -3,10 +3,13 @@
   --font-heading: 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-body: 'DM Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
-  /* Brand color tokens — Sprint 003 D2c added --gold-dark for welcome CTA. */
+  /* Brand color tokens — Sprint 003 D2c added --gold-dark for welcome CTA.
+     Sprint 017 HF-A added --brand-overlay-rgba for the Layout main overlay
+     tint (school-conditional via body.school-* override below). */
   --brand-maroon: #8B3A3A;
   --brand-gold: #D4AF37;
   --brand-gold-dark: #A8871D;
+  --brand-overlay-rgba: rgba(245, 239, 224, 0.9);
 }
 
 /* Sprint 017 D5 / 3b — Belmont Hill brand-token override.
@@ -16,9 +19,10 @@
    ShortlistRow, LandingPage, CollapsibleTitleStrip, plus this file) require
    no edits — variable names are stable, only values change. */
 body.school-belmont-hill {
-  --brand-maroon: #1B3D8F;       /* Deep Blue (Primary)   */
-  --brand-gold:   #B41F2E;       /* Scarlet (Secondary)   */
-  --brand-gold-dark: #8A1722;    /* Darker scarlet accent */
+  --brand-maroon: #1B3D8F;                  /* Deep Blue (Primary)        */
+  --brand-gold:   #B41F2E;                  /* Scarlet (Secondary)        */
+  --brand-gold-dark: #8A1722;               /* Darker scarlet accent      */
+  --brand-overlay-rgba: rgba(180, 31, 46, 0.08); /* Scarlet warm tint, 8% */
 }
 
 /* Sprint 017 D5 / 3b — Layout main background image, school-conditional.

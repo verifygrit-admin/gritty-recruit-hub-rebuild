@@ -132,7 +132,7 @@ export default function Layout({ children }) {
 
       {/* Header */}
       <header style={{
-        backgroundColor: '#8B3A3A',
+        backgroundColor: 'var(--brand-maroon)',
         padding: '0 24px',
         position: 'relative',
       }}>
@@ -167,7 +167,7 @@ export default function Layout({ children }) {
                     fontSize: '0.875rem',
                     fontWeight: isActive ? 600 : 400,
                     paddingBottom: 4,
-                    borderBottom: isActive ? '3px solid #D4AF37' : '3px solid transparent',
+                    borderBottom: isActive ? '3px solid var(--brand-gold)' : '3px solid transparent',
                   }}
                 >
                   {label}
@@ -335,7 +335,7 @@ export default function Layout({ children }) {
         <div style={{
           position: 'absolute',
           inset: 0,
-          backgroundColor: 'rgba(245, 239, 224, 0.9)',
+          backgroundColor: 'var(--brand-overlay-rgba)',
           pointerEvents: 'none',
         }} />
         <div style={{ width: '100%', maxWidth: 1200, padding: 48, position: 'relative', zIndex: 1 }}>
