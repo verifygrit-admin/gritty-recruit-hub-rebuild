@@ -25,28 +25,12 @@ body.school-belmont-hill {
   --brand-overlay-rgba: rgba(180, 31, 46, 0.08); /* Scarlet warm tint, 8% */
 }
 
-/* Sprint 017 D5 / 3b — Layout main background image, school-conditional.
-   Targets <main className="layout-main"> inside Layout.jsx. Anon-fallback
-   rule preserves the existing BC High team photo for unauthenticated `/`
-   visitors (LandingPage renders inside Layout without a ProtectedRoute). */
-body.school-bc-high main.layout-main {
-  background-image: url('./assets/bchigh-team.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-}
-body.school-belmont-hill main.layout-main {
-  background-image: url('./assets/Belmont Hill background.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-}
-body:not(.school-bc-high):not(.school-belmont-hill) main.layout-main {
-  background-image: url('./assets/bchigh-team.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-}
+/* Sprint 017 HF-B — main-content background-image rules removed from CSS.
+   Backgrounds are now driven by JS-imported asset URLs in Layout.jsx (see
+   bcHighBg / belmontHillBg imports + SCHOOL_BACKGROUNDS map + bgUrl inline
+   style on <main>). Brand-token swap (above) stays CSS-driven and works
+   correctly. C-12 carry-forward documents the spaces-in-filename
+   fragility that motivated the change. */
 
 /* ── SPRINT 010 — GrittyFB Design Token System ────────────────────────────
    Authoritative source: docs/specs/.coach-scheduler-sprints/index.html :root

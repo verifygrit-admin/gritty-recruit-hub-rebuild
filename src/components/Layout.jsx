@@ -5,6 +5,12 @@ import { supabase } from '../lib/supabaseClient.js';
 import HudlLogo from './HudlLogo.jsx';
 import { useSchoolIdentity } from '../hooks/useSchoolIdentity.js';
 import { STUDENT_NAV_LINKS, COACH_NAV_LINKS } from '../lib/navLinks.js';
+// Sprint 017 HF-B — JS-imported background assets (bypasses CSS-relative
+// asset resolution; restored to the proven pre-3b pattern, generalized for
+// two schools). See C-12 carry-forward: spaces in production asset filenames
+// are fragile across build/CDN chains.
+import bcHighBg from '../assets/bchigh-team.jpg';
+import belmontHillBg from '../assets/Belmont Hill background.jpg';
 
 /**
  * AvatarBadge — renders a circular avatar for the header.
@@ -57,6 +63,14 @@ function AvatarBadge({ storagePath, hudlUrl, name, size = 32, avatarError, onErr
 const studentNavLinks = STUDENT_NAV_LINKS;
 const coachNavLinks = COACH_NAV_LINKS;
 
+// Sprint 017 HF-B — school-keyed background image map. Slugs match
+// useSchoolIdentity / RECRUIT_SCHOOLS convention. Anon path falls back to
+// bcHighBg in the consumer (preserves existing anon LandingPage default).
+const SCHOOL_BACKGROUNDS = {
+  'bc-high': bcHighBg,
+  'belmont-hill': belmontHillBg,
+};
+
 export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -68,6 +82,10 @@ export default function Layout({ children }) {
   // unresolvable cases; consumer falls back to 'GRITTY' for masthead display.
   const { schoolName: resolvedSchoolName, schoolSlug } = useSchoolIdentity();
   const schoolName = resolvedSchoolName || 'GRITTY';
+
+  // HF-B — main background image, JS-import driven. Anon (or unconfigured
+  // school) falls back to bcHighBg matching prior anon visual default.
+  const bgUrl = (schoolSlug && SCHOOL_BACKGROUNDS[schoolSlug]) || bcHighBg;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [studentName, setStudentName] = useState('');
@@ -322,15 +340,21 @@ export default function Layout({ children }) {
         )}
       </header>
 
-      {/* Main content. Sprint 017 D5/3b: background-image moved to CSS rules
-          keyed on body.school-* class set by useSchoolIdentity. The
-          `layout-main` className is the CSS hook; remaining inline styles
-          are layout-only. */}
+      {/* Main content. Sprint 017 HF-B: background-image driven by JS-imported
+          asset URL (bgUrl) keyed on schoolSlug. The CSS-relative resolution
+          path used in 3b broke on the spaces-in-filename Belmont Hill asset
+          across the production CDN chain — JS-import restores reliability.
+          The `layout-main` className is retained for backward compatibility
+          (no current CSS rules consume it post-HF-B). */}
       <main className="layout-main" style={{
         flex: 1,
         display: 'flex',
         justifyContent: 'center',
         position: 'relative',
+        backgroundImage: `url(${bgUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
       }}>
         <div style={{
           position: 'absolute',
