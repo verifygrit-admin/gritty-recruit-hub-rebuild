@@ -356,10 +356,23 @@ export default function Layout({ children }) {
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
       }}>
+        {/* Sprint 018 — overlay tint. Hardened against two regression
+            modes that produced production "no wash" symptom:
+            (1) `inset: 0` shorthand replaced with explicit
+            top/right/bottom/left longhand (eliminates Safari < 14.1
+            and any React style-processing edge case that would
+            collapse the box to 0×0); (2) `var(--brand-overlay-rgba)`
+            given an explicit rgba fallback so the property never
+            becomes invalid if the variable fails to resolve at
+            paint time. The token still drives the school-conditional
+            tint via :root / body.school-belmont-hill in index.css. */}
         <div style={{
           position: 'absolute',
-          inset: 0,
-          backgroundColor: 'var(--brand-overlay-rgba)',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          backgroundColor: 'var(--brand-overlay-rgba, rgba(245, 239, 224, 0.9))',
           pointerEvents: 'none',
         }} />
         <div style={{ width: '100%', maxWidth: 1200, padding: 48, position: 'relative', zIndex: 1 }}>
