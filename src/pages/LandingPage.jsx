@@ -40,7 +40,7 @@ export default function LandingPage() {
       .then(({ data }) => {
         if (data) {
           const first = (data.name || '').split(' ')[0];
-          setFirstName(first || 'Athlete');
+          setFirstName(first || (isCoach ? roleLabel : 'Athlete'));
           setProfileComplete(!!(data.position && data.gpa));
         }
         // Show helmet animation on first visit per session
