@@ -3,7 +3,13 @@
  *
  * Canonical mapping from studentEmail (lowercased) → published Grit Guide
  * URLs on app.grittyfb.com/recruits/[lastNameSlug]. One entry per student;
- * each entry can have multiple guides (home + timeline + future variants).
+ * each entry can have multiple guides (home + future variants).
+ *
+ * Timelines are not published as standalone guides. The home guide embeds
+ * a link to the timeline view. See Sprint 022 hotfix.
+ *
+ * The `type` field is preserved on each guide for forward compatibility,
+ * but only `"home"` is in active use.
  *
  * Lifecycle: Build-time. Updates require git commit + Vercel deploy.
  *
@@ -32,12 +38,6 @@ export const GRIT_GUIDES = [
         url: 'https://app.grittyfb.com/recruits/monteiro',
         publishedAt: '2026-04-25T20:04:33-04:00',
         type: 'home',
-      },
-      {
-        title: 'Recruiting Timeline',
-        url: 'https://app.grittyfb.com/recruits/monteiro/timeline',
-        publishedAt: '2026-04-25T20:04:33-04:00',
-        type: 'timeline',
       },
     ],
   },
