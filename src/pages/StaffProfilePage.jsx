@@ -158,7 +158,7 @@ export default function StaffProfilePage() {
           Access Denied
         </h2>
         <p style={{ fontSize: '1rem', color: '#6B6B6B' }}>
-          The Coach Profile page is available to coaches and guidance counselors only.
+          This page is available to coaches and guidance counselors only.
         </p>
       </div>
     );

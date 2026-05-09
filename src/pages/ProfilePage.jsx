@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useSchoolIdentity } from '../hooks/useSchoolIdentity.js';
 import { supabase } from '../lib/supabaseClient.js';
@@ -41,14 +41,10 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const { session, userType, notifyProfileUpdate } = useAuth();
 
-  // Sprint 023 §8 test #9 — staff role guard. Hooks run above this point
-  // (useSchoolIdentity, useState, useEffect), so an early <Navigate> return
-  // would violate rules of hooks. Use useEffect + imperative navigate instead;
-  // render null while staff users are being redirected to /coach/profile.
+  // Sprint 023 §8 test #9 — staff role guard. Boolean computed here so it
+  // can be referenced once all hooks have run; the `<Navigate>` early-return
+  // is placed below the hook block (single-render redirect, no extra effect).
   const isStaffUser = userType === 'hs_coach' || userType === 'hs_guidance_counselor';
-  useEffect(() => {
-    if (isStaffUser) navigate('/coach/profile', { replace: true });
-  }, [isStaffUser, navigate]);
 
   // Sprint 017 D5/3d — school-conditional staff lookup. schoolSlug is null for
   // anon or unresolvable users; staff is null for any school not yet onboarded
@@ -317,6 +313,10 @@ export default function ProfilePage() {
   // Staff role guard — return null while the useEffect-driven redirect fires.
   if (isStaffUser) return null;
 
+  // Staff redirect lives AFTER all hooks have been called (rules-of-hooks
+  // safe) and BEFORE the loading branch so staff users don't briefly see the
+  // student loading copy on their way to /coach/profile. (Spec §8 test #9.)
+  if (isStaffUser) return <Navigate to="/coach/profile" replace />;
   if (loading) return <div style={{ padding: 48, textAlign: 'center', color: '#6B6B6B' }}>Loading profile...</div>;
 
   const renderInput = (field, label, testId, opts = {}) => (
