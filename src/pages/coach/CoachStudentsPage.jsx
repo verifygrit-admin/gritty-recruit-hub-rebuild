@@ -159,7 +159,7 @@ export default function CoachStudentsPage({ students, shortlistByStudent, counse
           <button
             onClick={() => { setFilterName(''); setFilterGradYear(''); }}
             style={{
-              background: 'none', border: 'none', color: '#8B3A3A',
+              background: 'none', border: 'none', color: 'var(--brand-maroon)',
               textDecoration: 'underline', cursor: 'pointer', fontSize: '0.875rem',
             }}
           >
@@ -239,7 +239,7 @@ export default function CoachStudentsPage({ students, shortlistByStudent, counse
           <button
             onClick={() => { setFilterName(''); setFilterGradYear(''); }}
             style={{
-              background: 'none', border: 'none', color: '#8B3A3A',
+              background: 'none', border: 'none', color: 'var(--brand-maroon)',
               textDecoration: 'underline', cursor: 'pointer', fontSize: '1rem',
             }}
           >
@@ -253,7 +253,7 @@ export default function CoachStudentsPage({ students, shortlistByStudent, counse
         <div style={{
           marginTop: 24,
           background: '#F5EFE0',
-          border: '1px solid #D4AF37',
+          border: '1px solid var(--brand-gold)',
           borderRadius: 8,
           overflow: 'hidden',
         }}>
@@ -268,7 +268,7 @@ export default function CoachStudentsPage({ students, shortlistByStudent, counse
           >
             <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#2C2C2C', textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Students Needing GRIT FIT Support
-              <span style={{ marginLeft: 8, fontSize: '0.75rem', color: '#8B3A3A', fontWeight: 700 }}>
+              <span style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--brand-maroon)', fontWeight: 700 }}>
                 {zeroMatchStudents.length} student{zeroMatchStudents.length !== 1 ? 's' : ''}
               </span>
             </span>
@@ -323,8 +323,8 @@ export default function CoachStudentsPage({ students, shortlistByStudent, counse
                       <a
                         href={mailto}
                         style={{
-                          fontSize: '0.75rem', color: '#8B3A3A', fontWeight: 600,
-                          textDecoration: 'none', padding: '4px 8px', border: '1px solid #8B3A3A',
+                          fontSize: '0.75rem', color: 'var(--brand-maroon)', fontWeight: 600,
+                          textDecoration: 'none', padding: '4px 8px', border: '1px solid var(--brand-maroon)',
                           borderRadius: 4,
                         }}
                       >
@@ -355,7 +355,7 @@ export default function CoachStudentsPage({ students, shortlistByStudent, counse
                     href={href}
                     style={{
                       display: 'inline-block', marginTop: 8, padding: '8px 16px',
-                      border: '2px solid #8B3A3A', borderRadius: 4, color: '#8B3A3A',
+                      border: '2px solid var(--brand-maroon)', borderRadius: 4, color: 'var(--brand-maroon)',
                       backgroundColor: 'transparent', fontSize: '0.875rem', fontWeight: 600,
                       textDecoration: 'none',
                     }}

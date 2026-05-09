@@ -189,8 +189,8 @@ export function GritFitMapFilters({
           disabled={recalculating}
           style={{
             padding: '12px 24px',
-            backgroundColor: recalculating ? '#E8E8E8' : '#D4AF37',
-            color: recalculating ? '#6B6B6B' : '#2C2C2C',
+            backgroundColor: recalculating ? '#E8E8E8' : 'var(--brand-maroon)',
+            color: recalculating ? '#6B6B6B' : 'var(--brand-on-maroon-text)',
             border: 'none',
             borderRadius: 4,
             fontSize: '1rem',
@@ -215,7 +215,7 @@ export function GritFitMapFilters({
             onClick={handleClear}
             style={{
               background: 'none', border: 'none', textDecoration: 'underline',
-              color: '#8B3A3A', fontSize: '0.875rem', cursor: 'pointer', padding: 0,
+              color: 'var(--brand-maroon)', fontSize: '0.875rem', cursor: 'pointer', padding: 0,
             }}
           >
             Clear all filters
@@ -229,7 +229,7 @@ export function GritFitMapFilters({
           data-testid="filter-recruiting-list"
           value={recruitingList}
           onChange={(e) => onFilterChange({ ...filters, recruitingList: e.target.value })}
-          style={{ ...filterDropdownBase, borderColor: '#8B3A3A', fontWeight: 600 }}
+          style={{ ...filterDropdownBase, borderColor: 'var(--brand-maroon)', fontWeight: 600 }}
           aria-label="Recruiting List filter"
         >
           {RECRUITING_LIST_OPTIONS.map(o => (
@@ -339,7 +339,7 @@ export function GritFitMapFilters({
 }
 
 const toggleBtnBase = {
-  padding: '8px 12px', border: '2px solid #8B3A3A', borderRadius: 4,
+  padding: '8px 12px', border: '2px solid var(--brand-maroon)', borderRadius: 4,
   fontSize: '1rem', fontWeight: 500, cursor: 'pointer',
   transition: 'background-color 150ms ease-in-out, color 150ms ease-in-out',
 };
@@ -661,11 +661,11 @@ export default function GritFitPage() {
   if (error) {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
-        <p style={{ color: '#8B3A3A', fontSize: '1.125rem', marginBottom: 16 }}>{error}</p>
+        <p style={{ color: 'var(--brand-maroon)', fontSize: '1.125rem', marginBottom: 16 }}>{error}</p>
         <a
           href="/profile"
           style={{
-            display: 'inline-block', padding: '12px 24px', backgroundColor: '#8B3A3A',
+            display: 'inline-block', padding: '12px 24px', backgroundColor: 'var(--brand-maroon)',
             color: '#FFFFFF', borderRadius: 4, textDecoration: 'none', fontWeight: 600,
           }}
         >
@@ -710,7 +710,7 @@ export default function GritFitPage() {
       {/* Page Heading */}
       <h2
         data-testid="grit-fit-page-title"
-        style={{ fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', margin: '0 0 8px' }}
+        style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--brand-maroon)', margin: '0 0 8px' }}
       >
         Your GRIT FIT Matches
       </h2>
@@ -798,8 +798,8 @@ export default function GritFitPage() {
             ...toggleBtnBase,
             borderRight: 'none',
             borderTopRightRadius: 0, borderBottomRightRadius: 0,
-            backgroundColor: view === 'map' ? '#8B3A3A' : 'transparent',
-            color: view === 'map' ? '#FFFFFF' : '#8B3A3A',
+            backgroundColor: view === 'map' ? 'var(--brand-maroon)' : 'transparent',
+            color: view === 'map' ? '#FFFFFF' : 'var(--brand-maroon)',
           }}
         >
           Map View
@@ -812,8 +812,8 @@ export default function GritFitPage() {
           style={{
             ...toggleBtnBase,
             borderTopLeftRadius: 0, borderBottomLeftRadius: 0,
-            backgroundColor: view === 'table' ? '#8B3A3A' : 'transparent',
-            color: view === 'table' ? '#FFFFFF' : '#8B3A3A',
+            backgroundColor: view === 'table' ? 'var(--brand-maroon)' : 'transparent',
+            color: view === 'table' ? '#FFFFFF' : 'var(--brand-maroon)',
           }}
         >
           Table View
@@ -869,7 +869,7 @@ export default function GritFitPage() {
               setSelectedStatuses(STATUS_ORDER.slice());
             }}
             style={{
-              background: 'none', border: 'none', color: '#8B3A3A',
+              background: 'none', border: 'none', color: 'var(--brand-maroon)',
               textDecoration: 'underline', cursor: 'pointer', fontSize: '1rem',
             }}
           >

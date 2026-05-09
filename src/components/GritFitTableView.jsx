@@ -156,7 +156,7 @@ export default function GritFitTableView({
 
   const renderSortIndicator = (key) => {
     if (sortKey !== key) return <span style={{ visibility: 'hidden', marginLeft: 4 }}>{'\u2191'}</span>;
-    return <span style={{ color: '#D4AF37', marginLeft: 4 }}>{sortDir === 'asc' ? '\u2191' : '\u2193'}</span>;
+    return <span style={{ color: 'var(--brand-gold)', marginLeft: 4 }}>{sortDir === 'asc' ? '\u2191' : '\u2193'}</span>;
   };
 
   // ── Mobile card layout ──
@@ -228,11 +228,11 @@ export default function GritFitTableView({
                 style={{
                   padding: '8px 12px',
                   minHeight: 40,
-                  border: `1px solid ${active ? '#8B3A3A' : '#D4D4D4'}`,
+                  border: `1px solid ${active ? 'var(--brand-maroon)' : '#D4D4D4'}`,
                   borderRadius: 4,
                   fontSize: '0.8125rem',
                   fontWeight: active ? 600 : 500,
-                  backgroundColor: active ? '#8B3A3A' : '#FFFFFF',
+                  backgroundColor: active ? 'var(--brand-maroon)' : '#FFFFFF',
                   color: active ? '#FFFFFF' : '#2C2C2C',
                   cursor: 'pointer',
                   flex: '1 1 auto',
@@ -276,7 +276,7 @@ export default function GritFitTableView({
                 cursor: 'pointer',
               }}
             >
-              <h3 style={{ margin: '0 0 4px', fontSize: '1.125rem', color: '#8B3A3A' }}>
+              <h3 style={{ margin: '0 0 4px', fontSize: '1.125rem', color: 'var(--brand-maroon)' }}>
                 Rank {school.matchRank}. {school.school_name}
               </h3>
               {(() => {
@@ -310,8 +310,8 @@ export default function GritFitTableView({
                 style={{
                   width: '100%', height: 44, border: 'none', borderRadius: 4,
                   fontSize: '0.875rem', fontWeight: 600, cursor: inList ? 'default' : 'pointer',
-                  backgroundColor: inList ? '#E8E8E8' : '#D4AF37',
-                  color: inList ? '#6B6B6B' : '#8B3A3A',
+                  backgroundColor: inList ? '#E8E8E8' : 'var(--brand-gold)',
+                  color: inList ? '#6B6B6B' : 'var(--brand-maroon)',
                 }}
               >
                 {inList ? '\u2713 In Shortlist' : '+ Add to Shortlist'}
@@ -409,7 +409,7 @@ export default function GritFitTableView({
                 >
                   <td data-testid="rank-cell" style={cellStyle}>{school.matchRank}</td>
                   <td data-testid="school-cell" style={cellStyle}>
-                    <strong data-testid="school-name" style={{ color: '#8B3A3A' }}>
+                    <strong data-testid="school-name" style={{ color: 'var(--brand-maroon)' }}>
                       {school.school_name}
                     </strong>
                     {(() => {
@@ -452,8 +452,8 @@ export default function GritFitTableView({
                         width: 120, height: 36, border: 'none', borderRadius: 4,
                         fontSize: '0.8rem', fontWeight: 600,
                         cursor: inList ? 'default' : 'pointer',
-                        backgroundColor: inList ? '#E8E8E8' : '#D4AF37',
-                        color: inList ? '#6B6B6B' : '#8B3A3A',
+                        backgroundColor: inList ? '#E8E8E8' : 'var(--brand-gold)',
+                        color: inList ? '#6B6B6B' : 'var(--brand-maroon)',
                         transition: 'background-color 150ms',
                       }}
                     >
@@ -527,7 +527,7 @@ export default function GritFitTableView({
               style={{
                 padding: '6px 12px', border: '1px solid #D4D4D4', borderRadius: 4,
                 fontSize: '0.875rem', cursor: 'pointer', minWidth: 36,
-                backgroundColor: p === page ? '#8B3A3A' : '#FFFFFF',
+                backgroundColor: p === page ? 'var(--brand-maroon)' : '#FFFFFF',
                 color: p === page ? '#FFFFFF' : '#2C2C2C',
               }}
             >

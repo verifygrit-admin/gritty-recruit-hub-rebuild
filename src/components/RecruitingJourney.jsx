@@ -69,7 +69,7 @@ function StepRow({ step, updating, readOnly, onToggleStep }) {
           role="img"
           style={{
             ...checkboxBase,
-            backgroundColor: step.completed ? '#8B3A3A' : '#FFFFFF',
+            backgroundColor: step.completed ? 'var(--brand-maroon)' : '#FFFFFF',
             color: step.completed ? '#FFFFFF' : 'transparent',
             border: step.completed ? 'none' : '2px solid #D4D4D4',
             cursor: 'default',
@@ -87,7 +87,7 @@ function StepRow({ step, updating, readOnly, onToggleStep }) {
           onClick={() => onToggleStep(step.step_id, !step.completed)}
           style={{
             ...checkboxBase,
-            backgroundColor: step.completed ? '#8B3A3A' : '#FFFFFF',
+            backgroundColor: step.completed ? 'var(--brand-maroon)' : '#FFFFFF',
             color: step.completed ? '#FFFFFF' : 'transparent',
             border: step.completed ? 'none' : '2px solid #D4D4D4',
             opacity: isUpdating ? 0.5 : 1,
@@ -158,7 +158,7 @@ export default function RecruitingJourney({ steps, onToggleStep, updating, readO
           style={{
             height: '100%',
             width: `${pct}%`,
-            background: 'linear-gradient(90deg, #8B3A3A, #6B2C2C)',
+            background: 'linear-gradient(90deg, var(--brand-maroon), var(--brand-maroon-darker))',
             borderRadius: 4,
             transition: 'width 300ms ease-in-out',
           }}

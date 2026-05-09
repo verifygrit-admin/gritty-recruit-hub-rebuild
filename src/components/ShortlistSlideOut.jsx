@@ -46,7 +46,7 @@ import useIsNarrowViewport from '../hooks/useIsNarrowViewport.js';
 import { buildMailtoHref, resolveTemplateTokens } from '../lib/copy/shortlistMailtoCopy.js';
 import { hasVerbalOffer, hasWrittenOffer } from '../lib/offerStatus.js';
 
-const MAROON = '#8B3A3A';
+const MAROON = 'var(--brand-maroon)';
 const MUTED = '#6B6B6B';
 
 // The expected Pre-Read doc types for the Shortlist slide-out. Key =
@@ -450,9 +450,9 @@ export default function ShortlistSlideOut({
                           borderRadius: 4,
                           fontSize: '0.875rem',
                           fontWeight: 700,
-                          backgroundColor: isComplete ? '#8B3A3A' : '#FFFFFF',
+                          backgroundColor: isComplete ? 'var(--brand-maroon)' : '#FFFFFF',
                           color: isComplete ? '#FFFFFF' : 'transparent',
-                          border: isComplete ? '2px solid #8B3A3A' : '2px solid #B89B7A',
+                          border: isComplete ? '2px solid var(--brand-maroon)' : '2px solid #B89B7A',
                           boxSizing: 'border-box',
                           lineHeight: 1,
                           transition: 'background-color 150ms, border-color 150ms',

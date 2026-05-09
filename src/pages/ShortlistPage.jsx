@@ -854,11 +854,11 @@ export default function ShortlistPage() {
   if (error) {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
-        <p style={{ color: '#8B3A3A', fontSize: '1.125rem', marginBottom: 16 }}>{error}</p>
+        <p style={{ color: 'var(--brand-maroon)', fontSize: '1.125rem', marginBottom: 16 }}>{error}</p>
         <button
           onClick={loadData}
           style={{
-            padding: '12px 24px', backgroundColor: '#8B3A3A', color: '#FFFFFF',
+            padding: '12px 24px', backgroundColor: 'var(--brand-maroon)', color: '#FFFFFF',
             border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600,
           }}
         >
@@ -872,7 +872,7 @@ export default function ShortlistPage() {
   if (items.length === 0) {
     return (
       <div data-testid="shortlist-empty" style={{ padding: 48, textAlign: 'center' }}>
-        <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', margin: '0 0 8px' }}>
+        <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--brand-maroon)', margin: '0 0 8px' }}>
           Your Shortlist (0 schools)
         </h2>
         <h3 style={{ fontSize: '1.25rem', color: '#2C2C2C', margin: '24px 0 8px' }}>
@@ -887,8 +887,8 @@ export default function ShortlistPage() {
             data-testid="cta-gritfit"
             style={{
               display: 'inline-block', padding: '12px 24px',
-              border: '2px solid #8B3A3A', borderRadius: 4,
-              color: '#8B3A3A', textDecoration: 'none', fontWeight: 600,
+              border: '2px solid var(--brand-maroon)', borderRadius: 4,
+              color: 'var(--brand-maroon)', textDecoration: 'none', fontWeight: 600,
             }}
           >
             View GRIT FIT Matches
@@ -925,7 +925,7 @@ export default function ShortlistPage() {
         <div>
           <h2
             data-testid="shortlist-page-title"
-            style={{ fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', margin: '0 0 4px' }}
+            style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--brand-maroon)', margin: '0 0 4px' }}
           >
             Your Shortlist
           </h2>
@@ -945,10 +945,10 @@ export default function ShortlistPage() {
           disabled={refreshing}
           style={{
             padding: '8px 16px',
-            border: '2px solid #8B3A3A',
+            border: '2px solid var(--brand-maroon)',
             borderRadius: 4,
             backgroundColor: 'transparent',
-            color: '#8B3A3A',
+            color: 'var(--brand-maroon)',
             fontSize: '0.875rem',
             fontWeight: 500,
             cursor: refreshing ? 'default' : 'pointer',
@@ -1098,7 +1098,7 @@ export default function ShortlistPage() {
             data-testid="clear-filters-inline"
             onClick={() => setFilters({ status: '', division: '', conference: '' })}
             style={{
-              background: 'none', border: 'none', color: '#8B3A3A',
+              background: 'none', border: 'none', color: 'var(--brand-maroon)',
               textDecoration: 'underline', cursor: 'pointer', fontSize: '1rem',
             }}
           >

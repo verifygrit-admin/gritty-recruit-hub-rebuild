@@ -10,7 +10,7 @@ export default function JourneyCard({ heading, body, cta, href, stepNumber }) {
       data-testid={`journey-card-${stepNumber}`}
       style={{
         backgroundColor: '#FFFFFF',
-        border: '2px solid #8B3A3A',
+        border: '2px solid var(--brand-maroon)',
         borderRadius: 8,
         padding: '24px 28px',
         boxShadow: '0 4px 12px rgba(139,58,58,0.12)',
@@ -49,7 +49,7 @@ export default function JourneyCard({ heading, body, cta, href, stepNumber }) {
             width: 32,
             height: 32,
             borderRadius: '50%',
-            backgroundColor: '#8B3A3A',
+            backgroundColor: 'var(--brand-maroon)',
             color: '#FFFFFF',
             fontWeight: 700,
             fontSize: '0.9rem',
@@ -98,7 +98,7 @@ export default function JourneyCard({ heading, body, cta, href, stepNumber }) {
           alignSelf: 'flex-start',
           marginTop: 8,
           padding: '10px 24px',
-          backgroundColor: '#8B3A3A',
+          backgroundColor: 'var(--brand-maroon)',
           color: '#FFFFFF',
           borderRadius: 4,
           textDecoration: 'none',

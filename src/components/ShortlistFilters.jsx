@@ -137,7 +137,7 @@ export default function ShortlistFilters({
           style={{
             background: 'none',
             border: 'none',
-            color: '#8B3A3A',
+            color: 'var(--brand-maroon)',
             textDecoration: 'underline',
             cursor: 'pointer',
             fontSize: '0.875rem',

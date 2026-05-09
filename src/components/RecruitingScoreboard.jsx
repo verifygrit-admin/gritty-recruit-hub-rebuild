@@ -284,8 +284,8 @@ export default function RecruitingScoreboard({
   };
 
   const toggleStyle = {
-    background: C.burgundy,
-    color: 'var(--brand-gold)',
+    background: 'var(--brand-maroon)',
+    color: 'var(--brand-on-maroon-text)',
     padding: '14px 22px',
     minHeight: 56, // ≥ 44px tap target per Phase B Addition Part 2
     display: 'flex',
@@ -780,7 +780,7 @@ function ScoreboardRowGroup({ row, rank, showBoundary, threshold, tdBaseStyle, B
                 display: 'block',
                 fontWeight: 500,
                 fontSize: 'inherit',
-                color: '#8B3A3A',
+                color: 'var(--brand-maroon)',
                 background: 'none',
                 border: 'none',
                 padding: 0,

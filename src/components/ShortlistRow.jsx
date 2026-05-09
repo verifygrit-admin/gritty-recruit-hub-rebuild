@@ -37,7 +37,7 @@ const ROW_BG_ODD = '#F5EFE0';   // cream stripe
 const ROW_BG_EVEN = '#FFFFFF';  // white
 const ROW_BORDER = '1px solid #E8E8E8';
 
-const MAROON = '#8B3A3A';
+const MAROON = 'var(--brand-maroon)';
 const MUTED = '#6B6B6B';
 
 // Sprint 007 hotfix HF-5 — Recruiting Journey progress denominator. Matches
@@ -208,7 +208,7 @@ export default function ShortlistRow({ item, rank, index, onClick }) {
             style={{
               width: `${progressPct.toFixed(2)}%`,
               height: '100%',
-              background: 'var(--brand-maroon, #8B3A3A)',
+              background: 'var(--brand-maroon, var(--brand-maroon))',
               borderRadius: 5,
               transition: 'width 0.4s ease',
             }}

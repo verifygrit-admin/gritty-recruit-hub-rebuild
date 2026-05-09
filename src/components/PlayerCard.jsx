@@ -19,17 +19,17 @@ export default function PlayerCard({ player, onCardClick }) {
         position: 'relative', overflow: 'hidden',
         boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(139,58,58,0.12)'; e.currentTarget.style.borderColor = '#8B3A3A'; }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(139,58,58,0.12)'; e.currentTarget.style.borderColor = 'var(--brand-maroon)'; }}
       onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor = '#E8E8E8'; }}
     >
       {/* Top accent bar */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: '#8B3A3A' }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: 'var(--brand-maroon)' }} />
 
       {/* Zero-match badge */}
       {player.isZeroMatch && (
         <span style={{
           position: 'absolute', top: 10, right: 10,
-          background: '#D4AF37', color: '#2C2C2C', fontSize: '0.625rem',
+          background: 'var(--brand-gold)', color: '#2C2C2C', fontSize: '0.625rem',
           textTransform: 'uppercase', letterSpacing: 0.5, padding: '4px 8px',
           borderRadius: 12, fontWeight: 600, zIndex: 1,
         }}>
@@ -42,7 +42,7 @@ export default function PlayerCard({ player, onCardClick }) {
         <div style={{
           width: 44, height: 44, borderRadius: '50%', backgroundColor: '#F5EFE0',
           border: '2px solid #E8E8E8', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '1.1rem', fontWeight: 800, color: '#8B3A3A', flexShrink: 0, overflow: 'hidden',
+          fontSize: '1.1rem', fontWeight: 800, color: 'var(--brand-maroon)', flexShrink: 0, overflow: 'hidden',
         }}>
           {(() => {
             // Fallback chain: Storage photo > Hudl logo > initial letter
@@ -81,7 +81,7 @@ export default function PlayerCard({ player, onCardClick }) {
             <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
               {player.hasVerbalOffer && (
                 <span style={{
-                  background: '#D4AF37', color: '#2C2C2C', fontSize: '0.75rem',
+                  background: 'var(--brand-gold)', color: '#2C2C2C', fontSize: '0.75rem',
                   fontWeight: 600, padding: '4px 10px', borderRadius: 12,
                 }}>
                   Verbal Offer
@@ -89,7 +89,7 @@ export default function PlayerCard({ player, onCardClick }) {
               )}
               {player.hasWrittenOffer && (
                 <span style={{
-                  background: '#8B3A3A', color: '#FFFFFF', fontSize: '0.75rem',
+                  background: 'var(--brand-maroon)', color: '#FFFFFF', fontSize: '0.75rem',
                   fontWeight: 600, padding: '4px 10px', borderRadius: 12,
                 }}>
                   Written Offer
@@ -103,13 +103,13 @@ export default function PlayerCard({ player, onCardClick }) {
       {/* Stats row */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#8B3A3A' }}>
+          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--brand-maroon)' }}>
             {player.gpa?.toFixed(2) || '—'}
           </div>
           <div style={{ fontSize: '0.65rem', color: '#6B6B6B' }}>GPA</div>
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#D4AF37' }}>
+          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--brand-gold)' }}>
             {player.shortlistCount ?? 0}
           </div>
           <div style={{ fontSize: '0.65rem', color: '#6B6B6B' }}>Schools</div>
@@ -128,10 +128,10 @@ export default function PlayerCard({ player, onCardClick }) {
       <div style={{ marginBottom: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: '0.7rem', color: '#6B6B6B' }}>Recruiting Progress</span>
-          <strong style={{ fontSize: '0.7rem', color: '#8B3A3A', fontWeight: 700 }}>{progressPct}%</strong>
+          <strong style={{ fontSize: '0.7rem', color: 'var(--brand-maroon)', fontWeight: 700 }}>{progressPct}%</strong>
         </div>
         <div style={{ height: 6, backgroundColor: '#F0F0F0', borderRadius: 3, overflow: 'hidden' }}>
-          <div style={{ height: '100%', backgroundColor: '#8B3A3A', borderRadius: 3, width: `${progressPct}%`, transition: 'width 1s ease' }} />
+          <div style={{ height: '100%', backgroundColor: 'var(--brand-maroon)', borderRadius: 3, width: `${progressPct}%`, transition: 'width 1s ease' }} />
         </div>
       </div>
 
@@ -146,7 +146,7 @@ export default function PlayerCard({ player, onCardClick }) {
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
         marginTop: 12, padding: 8, backgroundColor: '#F5EFE0', borderRadius: 8,
-        fontSize: '0.75rem', fontWeight: 600, color: '#8B3A3A',
+        fontSize: '0.75rem', fontWeight: 600, color: 'var(--brand-maroon)',
       }}>
         View Full Profile &rarr;
       </div>

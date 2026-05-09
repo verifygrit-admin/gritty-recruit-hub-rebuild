@@ -10,6 +10,34 @@
   --brand-gold: #D4AF37;
   --brand-gold-dark: #A8871D;
   --brand-overlay-rgba: rgba(245, 239, 224, 0.9);
+
+  /* Sprint 021 Phase 1 — Six additional brand tokens for Belmont Hill style
+     remediation. See docs/specs/sprint-021/PHASE_0_REMEDIATION_MAP.md. These
+     :root values are the BC High defaults; body.school-belmont-hill overrides
+     below. Phase 1 introduces the tokens only — component-level swaps from
+     hardcoded hex/rgba values land in Phase 2+.
+
+     --brand-cream            tinted off-white surface (alt-row, hover, badge bg)
+     --brand-maroon-darker    gradient endpoint (progress bars, hero gradients)
+     --brand-maroon-rgb       RGB triplet for rgba(var(--brand-maroon-rgb), α)
+     --brand-gold-rgb         RGB triplet for gold rgba use
+     --brand-mobile-menu-bg   slightly darker than --brand-maroon for mobile menu
+
+     Hotfix tokens (generalise the prior single-purpose strip-text token):
+     --brand-on-maroon-text   text/icon ON --brand-maroon backgrounds
+                              (collapsible headers, badges, button text on
+                              scarlet/blue strips). Gold-on-maroon BC High;
+                              white-on-blue Belmont Hill.
+     --brand-button-border    button border. BC High wraps maroon CTAs in a
+                              gold border; BH renders borderless.
+  */
+  --brand-cream: #F5EFE0;
+  --brand-maroon-darker: #6B2C2C;
+  --brand-maroon-rgb: 139, 58, 58;
+  --brand-gold-rgb: 212, 175, 55;
+  --brand-mobile-menu-bg: #7A3232;
+  --brand-on-maroon-text: var(--brand-gold);
+  --brand-button-border: var(--brand-gold);
 }
 
 /* Sprint 017 D5 / 3b — Belmont Hill brand-token override.
@@ -29,6 +57,17 @@ body.school-belmont-hill {
      New value mirrors BC High's 90% cream-wash weight (legibility
      surface) with a subtle scarlet undertone (brand identity).        */
   --brand-overlay-rgba: rgba(245, 232, 234, 0.92);
+
+  /* Sprint 021 Phase 1 — Belmont Hill overrides for the six new tokens.
+     See docs/specs/sprint-021/PHASE_0_REMEDIATION_MAP.md §2 for value
+     rationale. Operator-approved values:                                */
+  --brand-cream: #FAF0F1;                   /* scarlet-tinted off-white   */
+  --brand-maroon-darker: #142C66;           /* darker deep-blue endpoint  */
+  --brand-maroon-rgb: 27, 61, 143;          /* deep-blue RGB channels     */
+  --brand-gold-rgb: 180, 31, 46;            /* scarlet RGB channels       */
+  --brand-mobile-menu-bg: #15327A;          /* slightly darker than blue  */
+  --brand-on-maroon-text: #FFFFFF;          /* white on blue, legible     */
+  --brand-button-border: transparent;       /* borderless CTA on BH       */
 }
 
 /* Sprint 017 HF-B — main-content background-image rules removed from CSS.
@@ -201,15 +240,20 @@ input, select, button, textarea {
 }
 
 /* ── MARKER CLUSTER OVERRIDES (light theme) ─────────────── */
+/* Sprint 021 Phase 1 — converted hardcoded rgba(139, 58, 58, α) to
+   rgba(var(--brand-maroon-rgb), α) so cluster circles brand-swap with
+   the body.school-* class. BC High = (139, 58, 58); Belmont Hill =
+   (27, 61, 143). The rgb-channel token is defined in :root and
+   overridden in body.school-belmont-hill above. */
 .marker-cluster-small,
 .marker-cluster-medium,
 .marker-cluster-large {
-  background: rgba(139, 58, 58, 0.2) !important;
+  background: rgba(var(--brand-maroon-rgb), 0.2) !important;
 }
 .marker-cluster-small div,
 .marker-cluster-medium div,
 .marker-cluster-large div {
-  background: rgba(139, 58, 58, 0.85) !important;
+  background: rgba(var(--brand-maroon-rgb), 0.85) !important;
   color: #FFFFFF !important;
   font-family: var(--font-body) !important;
   font-weight: 700 !important;

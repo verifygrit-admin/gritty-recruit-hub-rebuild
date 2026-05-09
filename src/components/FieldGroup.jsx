@@ -63,7 +63,7 @@ export default function FieldGroup({
           style={{
             fontSize: '0.875rem',
             fontWeight: 700,
-            color: '#8B3A3A',
+            color: 'var(--brand-maroon)',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
             marginBottom: 12,

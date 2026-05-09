@@ -157,7 +157,7 @@ export default function GritFitMapView({
     const isGritFit = overlay === 'star' || overlay === 'both';
     const btnStyle = inList
       ? 'background:#E8E8E8;color:#6B6B6B;cursor:default;'
-      : 'background:#D4AF37;color:#8B3A3A;cursor:pointer;';
+      : 'background:var(--brand-gold);color:var(--brand-maroon);cursor:pointer;';
     const lbl = 'margin:0 0 4px;color:#6B6B6B;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;';
     const val = 'margin:0 0 12px;';
 
@@ -195,7 +195,7 @@ export default function GritFitMapView({
 
     return `
       <div data-testid="school-popup-${school.unitid}" style="font-family:'Segoe UI',sans-serif;min-width:320px;max-width:360px;padding:16px;box-sizing:border-box;">
-        <h3 data-testid="popup-school-name" style="margin:0 0 6px;color:#8B3A3A;font-size:1.1rem;font-weight:700;line-height:1.2;">${name}${statusChip}</h3>
+        <h3 data-testid="popup-school-name" style="margin:0 0 6px;color:var(--brand-maroon);font-size:1.1rem;font-weight:700;line-height:1.2;">${name}${statusChip}</h3>
         <p data-testid="popup-school-meta" style="margin:0 0 14px;color:#6B6B6B;font-size:0.875rem;font-weight:500;">${division} | ${conf}</p>
         ${statusPillHtml ? `<div data-testid="popup-status-slot" style="margin:0 0 12px;">${statusPillHtml}</div>` : ''}
         ${offerBadgesHtml ? `<div data-testid="popup-offer-badges" style="margin:0 0 12px;display:flex;gap:6px;flex-wrap:wrap;">${offerBadgesHtml}</div>` : ''}
@@ -238,7 +238,7 @@ export default function GritFitMapView({
             <a href="${school.recruiting_q_link}" target="_blank" rel="noopener noreferrer"
                data-testid="rq-link-btn"
                style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:8px 12px;
-                      font-size:0.8rem;color:#8B3A3A;text-decoration:none;">
+                      font-size:0.8rem;color:var(--brand-maroon);text-decoration:none;">
               ✉ Recruiting Questionnaire
             </a>
           ` : ''}
@@ -246,7 +246,7 @@ export default function GritFitMapView({
             <a href="${school.coach_link}" target="_blank" rel="noopener noreferrer"
                data-testid="visit-profile-btn"
                style="text-align:center;border:1px solid #D4D4D4;border-radius:4px;padding:8px 12px;
-                      font-size:0.8rem;color:#8B3A3A;text-decoration:none;">
+                      font-size:0.8rem;color:var(--brand-maroon);text-decoration:none;">
               Contact Coaches
             </a>
           ` : ''}
@@ -271,7 +271,7 @@ export default function GritFitMapView({
         return L.divIcon({
           html: `<div style="
             width:${sz}px;height:${sz}px;border-radius:50%;
-            background:rgba(139,58,58,0.85);border:2px solid #8B3A3A;
+            background:rgba(139,58,58,0.85);border:2px solid var(--brand-maroon);
             display:flex;align-items:center;justify-content:center;
             color:#FFFFFF;font-size:${sz < 34 ? 11 : 13}px;font-weight:bold;
             font-family:var(--font-body);

@@ -354,7 +354,7 @@ export default function ProfilePage() {
         data-testid={testId}
         checked={form[field]}
         onChange={(e) => set(field, e.target.checked)}
-        style={{ width: 20, height: 20, accentColor: '#8B3A3A', cursor: 'pointer' }}
+        style={{ width: 20, height: 20, accentColor: 'var(--brand-maroon)', cursor: 'pointer' }}
       />
       <label htmlFor={field} style={{ fontSize: '1rem', color: '#2C2C2C', cursor: 'pointer' }}>{label}</label>
     </div>
@@ -386,7 +386,7 @@ export default function ProfilePage() {
           ) : form.hudl_url ? (
             <HudlLogo size={48} withBg={true} />
           ) : (
-            <span style={{ fontSize: '2rem', fontWeight: 800, color: '#8B3A3A' }}>
+            <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--brand-maroon)' }}>
               {form.name ? form.name.charAt(0).toUpperCase() : '?'}
             </span>
           )}
@@ -640,7 +640,7 @@ export default function ProfilePage() {
             type="button"
             data-testid="button-cancel"
             onClick={() => navigate('/')}
-            style={{ background: 'transparent', border: 'none', color: '#8B3A3A', fontSize: '1rem', cursor: 'pointer', padding: '12px 16px' }}
+            style={{ background: 'transparent', border: 'none', color: 'var(--brand-maroon)', fontSize: '1rem', cursor: 'pointer', padding: '12px 16px' }}
           >
             Cancel
           </button>
@@ -650,7 +650,7 @@ export default function ProfilePage() {
             disabled={saving}
             aria-busy={saving}
             style={{
-              padding: '12px 32px', backgroundColor: saving ? '#E8E8E8' : '#8B3A3A',
+              padding: '12px 32px', backgroundColor: saving ? '#E8E8E8' : 'var(--brand-maroon)',
               color: saving ? '#6B6B6B' : '#FFFFFF', border: 'none', borderRadius: 4,
               fontSize: '1rem', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
               boxShadow: '0 2px 4px rgba(0,0,0,0.2)', minHeight: 44,

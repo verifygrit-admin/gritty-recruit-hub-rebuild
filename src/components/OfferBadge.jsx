@@ -29,13 +29,13 @@ const SIZE_STYLES = {
 const VARIANTS = {
   verbal: {
     label: 'Verbal Offer',
-    bg: 'var(--brand-gold, #D4AF37)',
-    color: '#2A1F1A',
+    bg: 'var(--brand-maroon)',
+    color: 'var(--brand-on-maroon-text)',
   },
   written: {
     label: 'Written Offer',
-    bg: 'var(--brand-maroon, #8B3A3A)',
-    color: '#FFFFFF',
+    bg: 'var(--brand-maroon)',
+    color: 'var(--brand-on-maroon-text)',
   },
 };
 

@@ -1,5 +1,16 @@
 # Gritty Recruits — Public Page + Visit Scheduler
-## Strategy Artifact / Sprint Plan v5.13
+## Strategy Artifact / Sprint Plan v5.14
+
+**Revision notes (v5.14 vs v5.13):**
+- **Sprint 013 squash-merged to master at `0e59f83` via PR #5; backfill commit `ccc1079` is current master HEAD.** Production deploy fired automatically; `app.grittyfb.com/athletes` serves the dispatch function.
+- **Sprint 014 promoted from draft to not_started.** All four open questions resolved at promotion (OQ1 auth model, OQ2 status history table, OQ3 sequencing, OQ4 reschedule scope). Spec at `docs/specs/.coach-scheduler-sprints/sprint-014-session-spec.md` updated with full Phase 0 deliverables (D0 RLS school-scoping, D11 status history table, D12 folded into D0).
+- **OQ1 resolved:** `hs_coach_schools` is the binding coach-school linkage table (already exists from Sprint 002). Sprint 014's D0 adds RLS policies on `coach_submissions`, `visit_requests`, `visit_request_players`, `visit_request_deliveries` that join through `hs_coach_schools` to scope to the authenticated head coach's school. F-21 naming-hygiene join hop documented inline in the migration.
+- **OQ2 resolved:** Sprint 014 ships a dedicated `visit_request_status_history` table (not via existing `audit_log`). Operator-decided: audit_log is reserved for admin-viewer purposes; visit-request-specific history is a head-coach-visible operational artifact.
+- **OQ3 resolved:** Sprint 014 ships before Sprint 015. OQ2 resolution removes the audit_log dependency that previously forced sequencing-coupling.
+- **OQ4 locked carry-forward:** full reschedule (regenerate ICS + resend) deferred to Sprint 016+. Sprint 014 ships placeholder button only.
+- **Sprint 4 status block updated** to reflect Sprint 014 promotion and Phase 0 readiness.
+- **What to do next sequencing list updated:** Sprint 013 PR + merge items struck DONE; Sprint 014 D0 / D11 are the next operational moves.
+- Inputs: Sprint 013 close at `ccc1079`, ERD `docs/specs/erd/erd-current-state.md` (post-D7 state with `visit_request_deliveries` + `partner_high_schools.timezone` shipped), Sprint 014 spec promotion prep this session.
 
 **Revision notes (v5.13 vs v5.12):**
 - **Sprint 013 Phase 1 + Phase 4 COMPLETE 2026-05-02.** All build deliverables shipped + verified end-to-end. Three commits on `sprint-013-coach-scheduler`: `c6330ce` (D7 — `visit_request_deliveries` + `partner_high_schools.timezone` ride-along + Paul display_name backfill), `2a29159` + `8671a82` (D1 dispatch function + runtime config syntax fix), `6650d58` (D9 + OQ6 submit handler wiring + D10 mobile constraint applied). Sprint branch advances on this commit.
@@ -349,27 +360,34 @@ Sensitive columns on `profiles` (`email`, `phone`, `parent_guardian_email`, `agi
 
 ---
 
-### Sprint 4 — Coach Dashboard "Visit Requests" Tab
+### Sprint 4 — Coach Dashboard "Visit Requests" Tab (active as Sprint 014, status: not_started, Phase 0 ready to fire)
 
-**Input state:**
+> **Status: not_started.** Sprint 014 promoted from draft to not_started 2026-05-02. Spec at `docs/specs/.coach-scheduler-sprints/sprint-014-session-spec.md`. All four open questions resolved at promotion. Phase 0 has three deliverables: D0 (RLS school-scoping migration `0043_coach_dashboard_authenticated_rls.sql`), D11 (`visit_request_status_history` migration `0044_visit_request_status_history.sql`), D12 (visit_request_deliveries authenticated SELECT extension — folded into D0). Phase 1 build opens on `sprint-014-coach-dashboard-visit-requests` branch after Phase 0 lands on master. Inherits canonical schema reference from `docs/specs/erd/erd-current-state.md` per Architectural Carry-Forward #8.
+
+**Input state (post-Sprint-013):**
 - Visit requests landing in Supabase from Sprint 2 (Sprint 012 — shipped)
-- Per-recipient `visit_request_deliveries` rows landing from Sprint 3 (Sprint 013 — pending)
+- Per-recipient `visit_request_deliveries` rows landing from Sprint 3 (Sprint 013 — shipped, `0042` migration)
+- `partner_high_schools.timezone` column shipped (Sprint 013 D7 ride-along)
 - Coach Dashboard exists with Students / Recruiting Intelligence / Calendar / Reports tabs
+- `hs_coach_schools` provides authenticated coach-school linkage with `is_head_coach` boolean (Sprint 002 baseline)
 
 **Desired output state:**
-- New tab: "Visit Requests"
-- List view sortable by date
-- Each row shows: coach name + program (from `coach_submissions` intake row), date/time, players selected (joined via `visit_request_players`), status, per-recipient delivery status (read from `visit_request_deliveries` populated by Sprint 013's dispatch function)
-- Status update controls (confirm / reschedule / cancel) — writes to `visit_requests.status`
-- Manual re-dispatch control for failed deliveries (re-invokes Sprint 013's dispatch function, scoped to specific failed recipients)
-- Visible to head coach for their school (RLS-scoped by `school_id` on the dashboard read)
+- New tab: "Visit Requests" inside authenticated Coach Dashboard
+- List view sortable by date, with badge for pending count
+- Each row shows: coach name + program (from `coach_submissions`), date/time/timezone, players selected (joined via `visit_request_players` → `profiles`), status, per-recipient delivery status (read from `visit_request_deliveries`)
+- Detail view with status update controls (confirm / cancel / mark complete) writing to `visit_requests.status` + `visit_request_status_history`
+- "Resend invite" placeholder button (full implementation deferred pending OQ7 cross-client ICS testing close)
+- "Reschedule" placeholder button (full implementation deferred to Sprint 016+)
+- RLS-scoped to head coach's school via `hs_coach_schools` join (Phase 0 D0)
+- Mobile pairing on phone-sized viewports
 
 **Acceptance test:**
-- Head coach sees all visit requests for their school, sort and filter
-- Status changes persist
+- Authenticated head coach sees all visit requests for their school, sort and filter
+- Status changes persist + log to history table
 - Per-recipient delivery status visible (sent / failed / bounced / pending)
-- Manual re-dispatch fires for failed recipients only
-- Auth-gated
+- Auth-gated; non-head-coach authenticated users get empty result; anon SELECT denied
+- Mobile detail view renders as full-screen overlay; desktop renders as side panel
+- Vitest assertion count ≥ Sprint 013 floor (762/1/763)
 
 ---
 
@@ -711,7 +729,11 @@ Items deferred from Sprint 012 resolutions that should be picked up in a future 
    - ~~**Phase 1 — D9 + OQ6 (submit handler dispatch invocation + confirmation panel branches) with D10 mobile constraint applied.**~~ **DONE 2026-05-02 at `6650d58`.**
    - ~~**Phase 4 — end-to-end verification against fixture inboxes.**~~ **DONE 2026-05-02.** 3-of-3 email delivery via routing pivot to `chris@grittyfb.com`. Three blockers resolved (Vercel Deployment Protection, D11 fixture GoTrue gaps, NULL token columns).
    - ~~**Phase 4 cleanup — restore production routing.**~~ **DONE 2026-05-02.** Paul reactivated as sole BC High head coach; chris-as-head-coach row deleted; fixture row 4 stays disabled (data hygiene).
-   - **NEXT MOVE: PR creation + squash merge `sprint-013-coach-scheduler` → master.**
+   - ~~**PR creation + squash merge `sprint-013-coach-scheduler` → master.**~~ **DONE 2026-05-02.** PR #5 opened + squash-merged at `0e59f83`; backfill commit `ccc1079` is current master HEAD.
+   - ~~**Sprint 014 spec promotion from draft to not_started.**~~ **DONE 2026-05-02.** All four open questions resolved; Phase 0 deliverables defined (D0 RLS school-scoping, D11 status history table, D12 folded into D0).
+   - **NEXT MOVE: Sprint 014 Phase 0 — D0 RLS school-scoping migration `0043_coach_dashboard_authenticated_rls.sql` on master.** Adds authenticated SELECT policies on `coach_submissions`, `visit_requests`, `visit_request_players`, `visit_request_deliveries` joined through `hs_coach_schools` with F-21 naming-hygiene join hop documented inline. ERD updated in same commit per Carry-Forward #8.
+   - After D0 lands: D11 status history table migration `0044_visit_request_status_history.sql` on master.
+   - After D11 lands: cut `sprint-014-coach-dashboard-visit-requests` sprint branch from master; Phase 1 (UI build) opens.
 4. Schedule a pre-Sprint 5 diagnostic session to audit admin panel persistence bug before opening Sprint 5 (per Sprint 5 section guidance).
 5. **Note:** EXECUTION_PLAN updates and sprint retros are sprint-mode artifacts under the canonical operating pattern. Strategy and governance work compress into the prototype/diagnostic phase upstream of build; mid-sprint reframings update this doc in place with revision history. The doc is canonical for the coach-scheduler feature workstream. **Schema reference moves to the new ERD doc once D0 lands** — EXECUTION_PLAN going forward references the ERD rather than embedding schema content.
 
@@ -721,6 +743,7 @@ Items deferred from Sprint 012 resolutions that should be picked up in a future 
 
 | Version | Date | Summary |
 |---|---|---|
+| v5.14 | 2026-05-02 | **Sprint 013 squash-merged to master at `0e59f83` via PR #5; backfill commit `ccc1079` is current master HEAD.** Production deploy fired; `app.grittyfb.com/athletes` serves the dispatch function. **Sprint 014 promoted from draft to not_started.** All four open questions resolved at promotion: OQ1 auth model (`hs_coach_schools` is binding linkage; Sprint 014 D0 adds RLS join policies through it), OQ2 status history (dedicated `visit_request_status_history` table, not `audit_log`), OQ3 sequencing (Sprint 014 before Sprint 015; OQ2 resolution removes audit_log dependency), OQ4 reschedule scope (deferred to Sprint 016+; placeholder button only). Phase 0 deliverables defined: D0 RLS school-scoping migration `0043_coach_dashboard_authenticated_rls.sql` (adds authenticated SELECT policies on `coach_submissions`, `visit_requests`, `visit_request_players`, `visit_request_deliveries` with F-21 naming-hygiene join hop), D11 status history table migration `0044_visit_request_status_history.sql`, D12 folded into D0. Sprint 4 status block updated. What to do next sequencing: Sprint 013 PR/merge struck DONE; Sprint 014 D0 is next operational move. |
 | v5.13 | 2026-05-02 | **Sprint 013 Phase 1 + Phase 4 COMPLETE.** D7 (`visit_request_deliveries` + `partner_high_schools.timezone` ride-along), D1 (dispatch function with runtime config syntax fix), D9 + OQ6 (submit handler wiring + confirmation panel), D10 (mobile constraint applied) all shipped on sprint branch (`c6330ce`, `2a29159` + `8671a82`, `6650d58`). Phase 4 verification successful — 3 emails delivered end-to-end to `chris@grittyfb.com` via routing pivot. Three blockers surfaced and resolved: Vercel Deployment Protection (Standard) gating `/api/*` on Preview, D11 fixture GoTrue gaps (missing `auth.identities` row), NULL token columns in fixture `auth.users` (GoTrue admin API cannot deserialize). **OQ5 lock language correction:** `config.runtime` accepts runtime family only, not versioned strings; version pinning via `package.json` `engines.node`. **D11 fixture seeding pattern recommendations documented:** prefer `supabase.auth.admin.createUser()` over raw SQL. **OQ7 cross-client testing deferred to follow-up sprint** (Gmail web "Add to Calendar" render quality issue identified). **Test floor correction logged:** actual floor at branch cut is 762/1/763, not 772/1/773. **`.gitignore` hygiene** (Vercel CLI auto-added `.env*.local`) committed alongside spec/EP updates. Master HEAD remains `15b0a23`. Sprint branch ready for PR + squash merge. |
 | v5.12 | 2026-05-02 | **Sprint 013 Phase 0 COMPLETE.** All Phase 0 deliverables shipped or locked in single coaching session. D11 closed (two fixtures seeded, F-21 routing verified live). D12 closed (plus-addressing on `chris@grittyfb.com`). OQ1 closed (Resend `noreply.grittyfb.com` verified). OQ2 locked (`scheduler@noreply.grittyfb.com` + reply-to head coach). OQ5 locked (Node 22.x, non-prefixed env vars, mixed runtime). OQ6 locked (client-invoked synchronous). OQ8 locked (full-window mapping). OQ7 deferred to Phase 1 close. Phase 1 carry-forwards locked: D1 head coach display name source — backfill Paul Zukauskas's `raw_user_meta_data.display_name` in D7 commit, D1 reads display_name with email-local-part fallback. Master HEAD remains `a951ec9`. **Next move: cut `sprint-013-coach-scheduler` branch from master, Phase 1 opens.** |
 | v5.11 | 2026-05-02 | **D0 (ERD Reconciliation) closed at master `a951ec9`.** Phase 0a + 0b executed in single session under canonical operating pattern. Output: `docs/specs/erd/erd-current-state.md` (1,083 lines, single canonical schema document with update discipline header). Old ERD trio at `docs/superpowers/specs/` deleted in same commit. Flag register reconciled with full preservation: F-09/F-10/F-11/F-15/F-17 closed by shipped migrations; F-19/F-20/F-21/F-22 newly surfaced; six restorations applied during preservation-fidelity review (F-01/F-04/F-09/F-14/F-15/F-16). **OQ4 RESOLVED by D0**: HS coaches table verified as `hs_coach_schools.is_head_coach`, BC High has 1 head_coach=true row (Paul Zukauskas, hs_program_id `de54b9af-c03c-46b8-a312-b87585a06328`). **D7 migration numbering confirmed** as 0042. **Architectural Carry-Forward #8 operationalized** with canonical ERD at fixed path. **Verbatim-print discipline saved a real preservation issue** during Phase 0b: structural completeness in Section 6 ("all flag IDs present") would have committed silently if substantive Action-column content had not been spot-checked; restoration applied before commit. Sprint 013 spec updated: D0 marked CLOSED with closure note; D3 marked VERIFIED with actual values; D7 hedge dropped; OQ4 marked RESOLVED; Notes for Phase 1 Branch Cut updated; Risk Register stale-ERD row CLOSED; Definition of Done D0 line marked done. Active sprint state: Phase 0 in progress, six OQs remaining (OQ1, OQ2, OQ5, OQ6, OQ7, OQ8), two Phase 0 deliverables remaining (D11, D12). |

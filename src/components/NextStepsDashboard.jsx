@@ -97,7 +97,7 @@ const styles = {
   title: {
     fontSize: '2rem',
     fontWeight: 700,
-    color: '#8B3A3A',
+    color: 'var(--brand-maroon)',
     margin: '0 0 8px',
   },
   subtitle: {
@@ -115,11 +115,11 @@ const styles = {
   },
   boldGold: {
     fontWeight: 700,
-    color: '#D4AF37',
+    color: 'var(--brand-gold)',
   },
   boldMaroon: {
     fontWeight: 700,
-    color: '#8B3A3A',
+    color: 'var(--brand-maroon)',
   },
   sectionLabel: {
     fontSize: 12,
@@ -131,7 +131,7 @@ const styles = {
   },
   sectionLabelGold: {
     fontSize: 12,
-    color: '#8B3A3A',
+    color: 'var(--brand-maroon)',
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginBottom: 10,
@@ -179,12 +179,12 @@ const styles = {
   primaryBtn: {
     flex: 1,
     padding: '10px 20px',
-    background: '#8B3A3A',
+    background: 'var(--brand-maroon)',
     color: '#F5EFE0',
     fontSize: 16,
     fontWeight: 700,
     letterSpacing: 1,
-    border: '1px solid #D4AF37',
+    border: '1px solid var(--brand-gold)',
     borderRadius: 3,
     cursor: 'pointer',
     transition: 'background 150ms',
@@ -258,16 +258,16 @@ function AcademicSnapshot({ gpa, classLabel, requiredGpa, reason }) {
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontSize: 14, color: '#6B6B6B' }}>Your GPA</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#8B3A3A' }}>{gpa?.toFixed(2) || '—'}</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--brand-maroon)' }}>{gpa?.toFixed(2) || '—'}</div>
         </div>
         <div>
           <div style={{ fontSize: 14, color: '#6B6B6B' }}>{classLabel} Minimum</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#D4AF37' }}>{requiredGpa.toFixed(2)}</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--brand-gold)' }}>{requiredGpa.toFixed(2)}</div>
         </div>
         {hasGap && (
           <div>
             <div style={{ fontSize: 14, color: '#6B6B6B' }}>Gap to Close</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#D4AF37' }}>+{gap}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--brand-gold)' }}>+{gap}</div>
           </div>
         )}
       </div>
@@ -291,7 +291,7 @@ function AcademicSnapshot({ gpa, classLabel, requiredGpa, reason }) {
 function MetricBar({ name, score, yours, median, unit, isWeakest }) {
   const pct = Math.min(100, Math.round(score * 100));
   const barColor = pct >= 50 ? '#4CAF50' : '#F44336';
-  const labelColor = isWeakest ? '#8B3A3A' : '#6B6B6B';
+  const labelColor = isWeakest ? 'var(--brand-maroon)' : '#6B6B6B';
 
   return (
     <div style={{ marginBottom: 8 }}>
@@ -369,14 +369,14 @@ function WowCallout({ metricName, score, calloutText }) {
   return (
     <div style={{
       background: 'linear-gradient(135deg, #0E1F10, #0A1A0C)',
-      border: '1px solid #D4AF37',
+      border: '1px solid var(--brand-gold)',
       padding: '14px 16px',
       borderRadius: 4,
       marginBottom: 10,
     }}>
       <div style={{ marginBottom: 6 }}>
         <span role="presentation" aria-hidden="true" style={{ fontSize: 20 }}>🔥</span>{' '}
-        <span style={{ fontSize: 18, fontWeight: 700, color: '#D4AF37' }}>WOW!</span>{' '}
+        <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--brand-gold)' }}>WOW!</span>{' '}
         <span style={{ fontSize: 12, color: '#F5EFE0' }}>{metricName}</span>
       </div>
       <div style={{ fontSize: 14, fontWeight: 700, color: '#F5EFE0', marginBottom: 6 }}>
@@ -475,11 +475,11 @@ function AlternativePositions({ position, height, weight, speed40, closestTier }
           <span key={p.position} style={{
             padding: '5px 12px',
             background: '#F5EFE0',
-            border: '1px solid #D4AF37',
+            border: '1px solid var(--brand-gold)',
             borderRadius: 3,
             fontSize: 16,
             fontWeight: 700,
-            color: '#8B3A3A',
+            color: 'var(--brand-maroon)',
             letterSpacing: 1,
           }}>
             {p.position}
@@ -736,7 +736,7 @@ export default function NextStepsDashboard({ scoringResult, profile, onEditProfi
           )}{' '}
           The GRIT FIT Formula will run immediately and show you every program you qualify for.
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#8B3A3A', marginTop: 8 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand-maroon)', marginTop: 8 }}>
           One semester of focused work can change your entire recruiting picture.
         </div>
       </div>
@@ -757,14 +757,14 @@ export default function NextStepsDashboard({ scoringResult, profile, onEditProfi
           onClick={onEditProfile}
           style={styles.primaryBtn}
           onMouseEnter={e => { e.target.style.background = '#6B2C2C'; }}
-          onMouseLeave={e => { e.target.style.background = '#8B3A3A'; }}
+          onMouseLeave={e => { e.target.style.background = 'var(--brand-maroon)'; }}
         >
           Update My Profile →
         </button>
         <button
           onClick={onBrowseAllSchools}
           style={styles.secondaryBtn}
-          onMouseEnter={e => { e.target.style.borderColor = '#8B3A3A'; e.target.style.color = '#8B3A3A'; }}
+          onMouseEnter={e => { e.target.style.borderColor = 'var(--brand-maroon)'; e.target.style.color = 'var(--brand-maroon)'; }}
           onMouseLeave={e => { e.target.style.borderColor = '#E8E8E8'; e.target.style.color = '#6B6B6B'; }}
         >
           Home

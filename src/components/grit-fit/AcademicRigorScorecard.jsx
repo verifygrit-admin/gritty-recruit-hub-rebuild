@@ -76,7 +76,7 @@ export default function AcademicRigorScorecard({
             <div style={{ fontSize: '0.75rem', color: '#6B6B6B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Academic Rigor Score
             </div>
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(2.25rem, 7vw, 3rem)', fontWeight: 700, color: '#8B3A3A', lineHeight: 1.05 }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(2.25rem, 7vw, 3rem)', fontWeight: 700, color: 'var(--brand-maroon)', lineHeight: 1.05 }}>
               {pct(academicRigorScore)}
             </div>
             <div style={{ fontSize: '0.75rem', color: '#6B6B6B', lineHeight: 1.4 }}>
@@ -89,7 +89,7 @@ export default function AcademicRigorScorecard({
             <div style={{ fontSize: '0.75rem', color: '#6B6B6B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Test Optional Score
             </div>
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(2.25rem, 7vw, 3rem)', fontWeight: 700, color: '#8B3A3A', lineHeight: 1.05 }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(2.25rem, 7vw, 3rem)', fontWeight: 700, color: 'var(--brand-maroon)', lineHeight: 1.05 }}>
               {pct(testOptionalScore)}
             </div>
             <div style={{ fontSize: '0.75rem', color: '#6B6B6B', lineHeight: 1.4 }}>

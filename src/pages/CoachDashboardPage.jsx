@@ -191,7 +191,7 @@ export default function CoachDashboardPage() {
   if (!authLoading && (!session || !ALLOWED_ROLES.includes(userType))) {
     return (
       <div data-testid="coach-dashboard-denied" style={{ padding: 48, textAlign: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#8B3A3A', margin: '0 0 8px' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--brand-maroon)', margin: '0 0 8px' }}>
           Access Denied
         </h2>
         <p style={{ fontSize: '1rem', color: '#6B6B6B' }}>
@@ -214,11 +214,11 @@ export default function CoachDashboardPage() {
   if (error) {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
-        <p style={{ color: '#8B3A3A', fontSize: '1.125rem', marginBottom: 16 }}>{error}</p>
+        <p style={{ color: 'var(--brand-maroon)', fontSize: '1.125rem', marginBottom: 16 }}>{error}</p>
         <button
           onClick={loadDashboardData}
           style={{
-            padding: '12px 24px', backgroundColor: '#8B3A3A', color: '#FFFFFF',
+            padding: '12px 24px', backgroundColor: 'var(--brand-maroon)', color: '#FFFFFF',
             border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600,
           }}
         >
@@ -232,7 +232,7 @@ export default function CoachDashboardPage() {
   if (students.length === 0) {
     return (
       <div data-testid="coach-dashboard-empty" style={{ padding: 48, textAlign: 'center' }}>
-        <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', margin: '0 0 8px' }}>
+        <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--brand-maroon)', margin: '0 0 8px' }}>
           {roleLabel} Dashboard
         </h2>
         <h3 style={{ fontSize: '1.25rem', color: '#2C2C2C', margin: '24px 0 8px' }}>
@@ -256,7 +256,7 @@ export default function CoachDashboardPage() {
         <div>
           <h2
             data-testid="coach-dashboard-title"
-            style={{ fontSize: '2rem', fontWeight: 700, color: '#8B3A3A', margin: '0 0 4px' }}
+            style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--brand-maroon)', margin: '0 0 4px' }}
           >
             {roleLabel} Dashboard
           </h2>
@@ -268,8 +268,8 @@ export default function CoachDashboardPage() {
           data-testid="refresh-dashboard-btn"
           onClick={loadDashboardData}
           style={{
-            padding: '8px 16px', border: '2px solid #8B3A3A', borderRadius: 4,
-            backgroundColor: 'transparent', color: '#8B3A3A', fontSize: '0.875rem',
+            padding: '8px 16px', border: '2px solid var(--brand-maroon)', borderRadius: 4,
+            backgroundColor: 'transparent', color: 'var(--brand-maroon)', fontSize: '0.875rem',
             fontWeight: 500, cursor: 'pointer',
           }}
         >
@@ -297,8 +297,8 @@ export default function CoachDashboardPage() {
               padding: '12px 24px',
               background: 'none',
               border: 'none',
-              borderBottom: activeTab === tab.key ? '2px solid #8B3A3A' : '2px solid transparent',
-              color: activeTab === tab.key ? '#8B3A3A' : '#6B6B6B',
+              borderBottom: activeTab === tab.key ? '2px solid var(--brand-maroon)' : '2px solid transparent',
+              color: activeTab === tab.key ? 'var(--brand-maroon)' : '#6B6B6B',
               fontWeight: activeTab === tab.key ? 600 : 400,
               fontSize: '0.875rem',
               cursor: 'pointer',

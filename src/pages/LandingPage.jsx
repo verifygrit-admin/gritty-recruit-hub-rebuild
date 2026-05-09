@@ -436,13 +436,13 @@ export default function LandingPage() {
             padding: 0, marginBottom: openHelp !== null ? 16 : 0,
           }}
         >
-          <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#8B3A3A', margin: 0 }}>
+          <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--brand-maroon)', margin: 0 }}>
             Need Help?
           </h4>
           <span style={{
-            padding: '10px 24px', backgroundColor: '#8B3A3A', color: '#FFFFFF',
+            padding: '10px 24px', backgroundColor: 'var(--brand-maroon)', color: '#FFFFFF',
             borderRadius: 6, fontSize: '0.9375rem', fontWeight: 700,
-            border: '2px solid #D4AF37',
+            border: '2px solid var(--brand-button-border)',
             boxShadow: '0 4px 12px rgba(212,175,55,0.35)',
           }}>
             Take the Tour

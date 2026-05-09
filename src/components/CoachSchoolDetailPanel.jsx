@@ -178,7 +178,7 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
           {/* School Header */}
           <h3
             data-testid="school-detail-name"
-            style={{ fontSize: '1.5rem', fontWeight: 700, color: '#8B3A3A', margin: '0 0 4px' }}
+            style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--brand-maroon)', margin: '0 0 4px' }}
           >
             {item.school_name || `UNITID ${item.unitid}`}
           </h3>
@@ -208,13 +208,13 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
                 backgroundColor: '#F5EFE0',
                 borderRadius: 8,
                 marginBottom: 16,
-                border: '1px solid #D4AF37',
+                border: '1px solid var(--brand-gold)',
               }}
             >
               <span style={{ fontSize: '0.75rem', color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 }}>
                 Match Rank
               </span>
-              <span style={{ fontSize: '1.75rem', fontWeight: 700, color: '#8B3A3A' }}>
+              <span style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--brand-maroon)' }}>
                 #{item.match_rank}
               </span>
             </div>
@@ -432,11 +432,11 @@ export default function CoachSchoolDetailPanel({ item, student, counselorEmail, 
                               data-testid={`mailto-student-${slotKey}`}
                               style={{
                                 fontSize: '0.75rem',
-                                color: '#8B3A3A',
+                                color: 'var(--brand-maroon)',
                                 fontWeight: 600,
                                 textDecoration: 'none',
                                 padding: '3px 8px',
-                                border: '1px solid #8B3A3A',
+                                border: '1px solid var(--brand-maroon)',
                                 borderRadius: 4,
                                 whiteSpace: 'nowrap',
                                 display: 'inline-flex',

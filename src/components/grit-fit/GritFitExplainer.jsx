@@ -32,7 +32,7 @@ export default function GritFitExplainer() {
         padding: '20px 24px',
         backgroundColor: '#FFFFFF',
         border: '1px solid #E8E8E8',
-        borderLeft: '4px solid #8B3A3A',
+        borderLeft: '4px solid var(--brand-maroon)',
         borderRadius: 8,
         boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       }}

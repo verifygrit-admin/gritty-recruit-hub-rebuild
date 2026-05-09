@@ -196,7 +196,7 @@ export default function Tutorial({ type = 'browse', onClose }) {
           )}
           <h3 style={{
             fontFamily: 'var(--font-heading)', fontSize: '1.375rem', fontWeight: 700,
-            color: '#2C2C2C', marginBottom: 12, lineHeight: 1.2, margin: '0 0 12px',
+            color: 'var(--brand-maroon)', marginBottom: 12, lineHeight: 1.2, margin: '0 0 12px',
           }}>
             {slide.title}
           </h3>
@@ -213,7 +213,7 @@ export default function Tutorial({ type = 'browse', onClose }) {
           {slide.tip && (
             <div style={{
               fontSize: '0.8125rem', color: '#6B6B6B', backgroundColor: '#FFF8DC',
-              borderLeft: '3px solid #D4AF37', padding: '8px 12px', borderRadius: '0 4px 4px 0',
+              borderLeft: '3px solid var(--brand-gold)', padding: '8px 12px', borderRadius: '0 4px 4px 0',
               marginTop: 12, lineHeight: 1.5,
             }}>
               {slide.tip}
@@ -226,7 +226,7 @@ export default function Tutorial({ type = 'browse', onClose }) {
           textAlign: 'center', fontSize: '0.6875rem', color: '#6B6B6B',
           paddingTop: 16, borderTop: '1px solid #E8E8E8', marginTop: 12,
         }}>
-          Support: <a href="mailto:support@grittyfb.com" style={{ color: '#8B3A3A' }}>support@grittyfb.com</a>
+          Support: <a href="mailto:support@grittyfb.com" style={{ color: 'var(--brand-maroon)' }}>support@grittyfb.com</a>
         </div>
 
         {/* Navigation */}
@@ -246,7 +246,7 @@ export default function Tutorial({ type = 'browse', onClose }) {
             {slides.map((_, i) => (
               <div key={i} onClick={() => setIdx(i)} style={{
                 width: 8, height: 8, borderRadius: '50%', cursor: 'pointer',
-                backgroundColor: i === idx ? '#8B3A3A' : '#D4D4D4',
+                backgroundColor: i === idx ? 'var(--brand-maroon)' : '#D4D4D4',
               }} />
             ))}
           </div>
@@ -255,7 +255,7 @@ export default function Tutorial({ type = 'browse', onClose }) {
             style={{
               padding: '7px 18px', border: 'none', borderRadius: 4, cursor: 'pointer',
               fontSize: '0.8125rem', fontWeight: 600,
-              backgroundColor: '#8B3A3A', color: '#FFFFFF',
+              backgroundColor: 'var(--brand-maroon)', color: '#FFFFFF',
             }}
           >
             {isLast ? 'Get Started \u2192' : 'Next \u2192'}

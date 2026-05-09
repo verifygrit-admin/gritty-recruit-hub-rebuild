@@ -84,19 +84,19 @@ export default function CoachActivitySummary({ allShortlistItems, studentCount }
         borderBottom: '1px solid #E8E8E8',
       }}>
         <div>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#8B3A3A' }}>{studentCount}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--brand-maroon)' }}>{studentCount}</div>
           <div style={{ fontSize: '0.75rem', color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.5 }}>
             Student{studentCount !== 1 ? 's' : ''}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#8B3A3A' }}>{allShortlistItems.length}</div>
+          <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--brand-maroon)' }}>{allShortlistItems.length}</div>
           <div style={{ fontSize: '0.75rem', color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.5 }}>
             Schools Tracked
           </div>
         </div>
         <div>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#8B3A3A' }}>{overallPct}%</div>
+          <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--brand-maroon)' }}>{overallPct}%</div>
           <div style={{ fontSize: '0.75rem', color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.5 }}>
             Avg Journey Progress
           </div>
@@ -144,7 +144,7 @@ export default function CoachActivitySummary({ allShortlistItems, studentCount }
                     <div style={{
                       height: '100%',
                       width: `${pct}%`,
-                      backgroundColor: '#D4AF37',
+                      backgroundColor: 'var(--brand-gold)',
                       borderRadius: 3,
                     }} />
                   </div>
@@ -193,7 +193,7 @@ export default function CoachActivitySummary({ allShortlistItems, studentCount }
                     <div style={{
                       height: '100%',
                       width: `${pct}%`,
-                      backgroundColor: '#8B3A3A',
+                      backgroundColor: 'var(--brand-maroon)',
                       borderRadius: 3,
                     }} />
                   </div>

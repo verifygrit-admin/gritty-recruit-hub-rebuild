@@ -108,7 +108,7 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
           flexWrap: 'wrap',
         }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#8B3A3A' }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--brand-maroon)' }}>
               {itemCount}
             </div>
             <div style={{ fontSize: '0.75rem', color: '#6B6B6B' }}>
@@ -116,7 +116,7 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
             </div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#8B3A3A' }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--brand-maroon)' }}>
               {journey.pct}%
             </div>
             <div style={{ fontSize: '0.75rem', color: '#6B6B6B' }}>
@@ -194,7 +194,7 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
                 style={{
                   height: '100%',
                   width: `${journey.pct}%`,
-                  background: 'linear-gradient(90deg, #8B3A3A, #6B2C2C)',
+                  background: 'linear-gradient(90deg, var(--brand-maroon), var(--brand-maroon-darker))',
                   borderRadius: 4,
                   transition: 'width 300ms ease-in-out',
                 }}
@@ -264,7 +264,7 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
                           </span>
                           {(item.recruiting_journey_steps || []).find(s => s.step_id === 14 && s.completed) && (
                             <span style={{
-                              background: '#D4AF37', color: '#2C2C2C', fontSize: '0.625rem',
+                              background: 'var(--brand-gold)', color: '#2C2C2C', fontSize: '0.625rem',
                               fontWeight: 600, padding: '2px 6px', borderRadius: 12,
                             }}>
                               Verbal
@@ -272,7 +272,7 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
                           )}
                           {(item.recruiting_journey_steps || []).find(s => s.step_id === 15 && s.completed) && (
                             <span style={{
-                              background: '#8B3A3A', color: '#FFFFFF', fontSize: '0.625rem',
+                              background: 'var(--brand-maroon)', color: '#FFFFFF', fontSize: '0.625rem',
                               fontWeight: 600, padding: '2px 6px', borderRadius: 12,
                             }}>
                               Written
@@ -310,7 +310,7 @@ export default function CoachStudentCard({ student, shortlistItems, expanded, on
                           <div style={{
                             height: '100%',
                             width: `${itemPct}%`,
-                            backgroundColor: '#8B3A3A',
+                            backgroundColor: 'var(--brand-maroon)',
                             borderRadius: 3,
                           }} />
                         </div>

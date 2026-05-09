@@ -140,10 +140,10 @@ export default function PreReadLibrary({
                       style={{
                         flex: 1,
                         padding: '6px 10px',
-                        border: '1px solid #8B3A3A',
+                        border: '1px solid var(--brand-maroon)',
                         borderRadius: 4,
                         backgroundColor: 'transparent',
-                        color: '#8B3A3A',
+                        color: 'var(--brand-maroon)',
                         fontSize: '0.75rem',
                         fontWeight: 500,
                         cursor: isUploading || isDeleting ? 'default' : 'pointer',
@@ -216,10 +216,10 @@ export default function PreReadLibrary({
                   onClick={() => handleUploadClick(dt.type, dt.slot_number)}
                   style={{
                     padding: '6px 12px',
-                    border: '2px dashed #8B3A3A',
+                    border: '2px dashed var(--brand-maroon)',
                     borderRadius: 4,
                     backgroundColor: 'transparent',
-                    color: '#8B3A3A',
+                    color: 'var(--brand-maroon)',
                     fontSize: '0.8125rem',
                     fontWeight: 500,
                     cursor: isUploading ? 'default' : 'pointer',

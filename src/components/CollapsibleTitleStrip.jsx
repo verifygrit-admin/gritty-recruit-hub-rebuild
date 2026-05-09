@@ -52,8 +52,8 @@ export default function CollapsibleTitleStrip({
   };
 
   const stripStyle = {
-    backgroundColor: '#8B3A3A', // var(--brand-maroon)
-    color: '#D4AF37',           // var(--brand-gold)
+    backgroundColor: 'var(--brand-maroon)',
+    color: 'var(--brand-on-maroon-text)',
     padding: `${v.paddingVertical}px ${v.paddingHorizontal}px`,
     fontSize: v.fontSize,
     fontWeight: 700,

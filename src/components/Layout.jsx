@@ -37,7 +37,7 @@ function AvatarBadge({ storagePath, hudlUrl, name, size = 32, avatarError, onErr
       overflow: 'hidden',
       border: '2px solid rgba(255,255,255,0.5)',
       flexShrink: 0,
-      backgroundColor: '#7A3232',
+      backgroundColor: 'var(--brand-mobile-menu-bg)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -273,7 +273,7 @@ export default function Layout({ children }) {
             style={{
               flexDirection: 'column',
               gap: 0,
-              backgroundColor: '#7A3232',
+              backgroundColor: 'var(--brand-mobile-menu-bg)',
               padding: '8px 0 16px',
               borderTop: '1px solid rgba(255,255,255,0.15)',
             }}
@@ -290,7 +290,7 @@ export default function Layout({ children }) {
                     fontSize: '0.9rem',
                     fontWeight: isActive ? 700 : 400,
                     padding: '12px 24px',
-                    borderLeft: isActive ? '3px solid #D4AF37' : '3px solid transparent',
+                    borderLeft: isActive ? '3px solid var(--brand-gold)' : '3px solid transparent',
                     backgroundColor: isActive ? 'rgba(212,175,55,0.1)' : 'transparent',
                   }}
                 >

@@ -124,7 +124,7 @@ export default function CoachReportsPage({ students, shortlistByStudent, allShor
         <div style={{
           flex: '1 1 240px',
           background: '#FFFFFF',
-          border: zeroMatchCount > 0 ? '2px solid #8B3A3A' : '1px solid #E8E8E8',
+          border: zeroMatchCount > 0 ? '2px solid var(--brand-maroon)' : '1px solid #E8E8E8',
           borderRadius: 8,
           padding: 20,
         }}>
@@ -140,7 +140,7 @@ export default function CoachReportsPage({ students, shortlistByStudent, allShor
           </div>
           {zeroMatchCount > 0 ? (
             <>
-              <div style={{ fontSize: '2rem', fontWeight: 700, color: '#D4AF37' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--brand-gold)' }}>
                 {zeroMatchCount}
               </div>
               <div style={{ fontSize: '0.75rem', color: '#6B6B6B', marginBottom: 12 }}>
@@ -152,9 +152,9 @@ export default function CoachReportsPage({ students, shortlistByStudent, allShor
                   style={{
                     display: 'inline-block',
                     padding: '6px 14px',
-                    border: '1px solid #8B3A3A',
+                    border: '1px solid var(--brand-maroon)',
                     borderRadius: 4,
-                    color: '#8B3A3A',
+                    color: 'var(--brand-maroon)',
                     backgroundColor: 'transparent',
                     fontSize: '0.75rem',
                     fontWeight: 600,
@@ -225,14 +225,14 @@ export default function CoachReportsPage({ students, shortlistByStudent, allShor
                       <div style={{
                         height: '100%',
                         width: `${step.blockageRate}%`,
-                        background: '#D4AF37',
+                        background: 'var(--brand-gold)',
                         borderRadius: 4,
                       }} />
                     </div>
                     <span style={{
                       fontSize: '0.875rem',
                       fontWeight: 700,
-                      color: '#8B3A3A',
+                      color: 'var(--brand-maroon)',
                       width: 40,
                       textAlign: 'right',
                     }}>
@@ -249,7 +249,7 @@ export default function CoachReportsPage({ students, shortlistByStudent, allShor
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#8B3A3A',
+                  color: 'var(--brand-maroon)',
                   textDecoration: 'underline',
                   cursor: 'pointer',
                   fontSize: '0.875rem',
@@ -267,7 +267,7 @@ export default function CoachReportsPage({ students, shortlistByStudent, allShor
               return (
               <div style={{
                 background: '#F5EFE0',
-                border: '1px solid #D4AF37',
+                border: '1px solid var(--brand-gold)',
                 borderRadius: 8,
                 padding: 16,
                 marginTop: 16,
@@ -290,7 +290,7 @@ export default function CoachReportsPage({ students, shortlistByStudent, allShor
                   This is the step your athletes most need help with right now.
                 </div>
                 {COACHING_TIPS[topStuck.step_id] && (
-                  <div style={{ fontSize: '0.875rem', color: '#8B3A3A', fontWeight: 500 }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--brand-maroon)', fontWeight: 500 }}>
                     {COACHING_TIPS[topStuck.step_id]}
                   </div>
                 )}
@@ -315,12 +315,12 @@ export default function CoachReportsPage({ students, shortlistByStudent, allShor
           top: 12,
           right: 12,
           background: '#F5EFE0',
-          border: '1px solid #D4AF37',
+          border: '1px solid var(--brand-gold)',
           borderRadius: 12,
           padding: '4px 10px',
           fontSize: '0.75rem',
           fontWeight: 600,
-          color: '#8B3A3A',
+          color: 'var(--brand-maroon)',
         }}>
           Coming Soon
         </span>

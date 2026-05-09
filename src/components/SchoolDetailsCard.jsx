@@ -72,7 +72,7 @@ const cardStyle = {
 
 const nameStyle = {
   margin: 0,
-  color: '#8B3A3A',
+  color: 'var(--brand-maroon)',
   fontSize: '1.5rem',
   fontWeight: 700,
   lineHeight: 1.2,
@@ -279,7 +279,7 @@ export default function SchoolDetailsCard({
           data-testid="sdc-match-rank"
           style={{ margin: '16px 0 0', fontSize: '0.875rem', color: '#6B6B6B' }}
         >
-          GRIT FIT Match Rank: <strong style={{ color: '#8B3A3A' }}>#{school.matchRank}</strong>
+          GRIT FIT Match Rank: <strong style={{ color: 'var(--brand-maroon)' }}>#{school.matchRank}</strong>
         </p>
       )}
     </div>

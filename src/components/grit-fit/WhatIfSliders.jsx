@@ -86,7 +86,7 @@ export default function WhatIfSliders({ trueProfile, overrides, onChange, onRese
           disabled={!isDirty}
           style={{
             padding: '8px 16px',
-            backgroundColor: isDirty ? '#8B3A3A' : '#E8E8E8',
+            backgroundColor: isDirty ? 'var(--brand-maroon)' : '#E8E8E8',
             color: isDirty ? '#FFFFFF' : '#6B6B6B',
             border: 'none',
             borderRadius: 4,
@@ -117,7 +117,7 @@ export default function WhatIfSliders({ trueProfile, overrides, onChange, onRese
             >
               <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#2C2C2C' }}>
                 <span style={{ fontWeight: 600 }}>{cfg.label}</span>
-                <span style={{ color: changed ? '#8B3A3A' : '#6B6B6B', fontWeight: changed ? 700 : 500 }}>
+                <span style={{ color: changed ? 'var(--brand-maroon)' : '#6B6B6B', fontWeight: changed ? 700 : 500 }}>
                   {displayVal}{unit}
                 </span>
               </span>
@@ -129,7 +129,7 @@ export default function WhatIfSliders({ trueProfile, overrides, onChange, onRese
                 value={current}
                 onChange={(e) => handleChange(cfg.key, parseNumeric(e.target.value))}
                 aria-label={`${cfg.label} what-if slider`}
-                style={{ width: '100%', accentColor: '#8B3A3A' }}
+                style={{ width: '100%', accentColor: 'var(--brand-maroon)' }}
               />
               <span style={{ fontSize: '0.7rem', color: '#9B9B9B' }}>
                 Your profile: {trueVal}{unit}
