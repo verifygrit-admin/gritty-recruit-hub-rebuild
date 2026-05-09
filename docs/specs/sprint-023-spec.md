@@ -150,7 +150,41 @@ Screenshots: capture before/after of `/profile` Personal Info section (test #7) 
 
 ## 10. Retro
 
-(To be filled at sprint close.)
+**Sprint close:** 2026-05-09
+
+### What shipped
+- Migration `0046_users_add_full_name.sql` — `public.users.full_name text NULL`, `users_update_own_full_name` UPDATE policy with WITH CHECK clause locking `user_type` / `account_status` / `email_verified` / `payment_status`, and a 6-row backfill (BC High + Belmont Hill staff from `school-staff.js`). Verified live via Supabase MCP after `npm run migrate`.
+- `src/lib/secondarySupabaseClient.js` — ephemeral client factory (`persistSession:false`, custom `storageKey`).
+- `src/components/PasswordResetModal.jsx` — shared centered modal: three-input flow, secondary-client re-auth, primary-client `updateUser`, secondary `signOut()` on every exit path. Inline errors only — never logs the user out on failure.
+- `src/pages/ProfilePage.jsx` — Password row inserted in Personal Info; staff redirect via `<Navigate to="/coach/profile" replace />` after all hooks.
+- `src/pages/StaffProfilePage.jsx` — role-aware coach/counselor My Profile (Name editable, HS/Email read-only, Password row).
+- `src/App.jsx` — `/coach/profile` route. `src/lib/navLinks.js` — `MY PROFILE` entry between DASHBOARD and GRIT GUIDES.
+- `docs/architecture/DATA_INVENTORY.md` — `public.users` updated (12 cols, migration + write/read paths, lookup precedence note).
+- `tests/unit/student-nav.test.js` — backfilled to current state (also caught Sprint 022's `MY GRIT GUIDES` which had been missed).
+- `tests/unit/password-reset-modal.test.jsx` — covers spec test #5 (mismatch short-circuit, zero network).
+
+### What surprised me
+- `tests/unit/student-nav.test.js` was already stale on master before Sprint 023 touched anything — it didn't reflect the Sprint 022 `MY GRIT GUIDES` addition. Tests that pin entire constant arrays decay silently; consider switching to `.toContain` checks for additive nav entries in future sprints.
+- `EnterWorktree` does not provision a `.env` into the new worktree, but `npm run migrate` requires `SUPABASE_PAT`. Subagent A had to copy `.env` from the main repo. Worth adding to a future "worktree onboarding" runbook or post-create hook.
+- The pre-existing `tests/unit/collapsible-title-strip.test.js` failure on master (asserts `#8B3A3A` literal but the component now renders `var(--brand-maroon)`) is unrelated but visible in every test run. Worth a one-line fix in Sprint 024.
+- The code-review subagent caught a real pattern issue in `ProfilePage.jsx` — Subagent C used `useEffect+navigate` based on a misread of rules-of-hooks. `<Navigate>` placed AFTER all hooks is the cleaner single-render pattern; same correctness properties, better UX. Worth noting that subagent self-review can miss these — third-party review caught it.
+
+### What carried forward (additions to §9)
+- `EnterWorktree` `.env` provisioning gap (operator workflow item).
+- `tests/unit/collapsible-title-strip.test.js` brand-token assertion drift (1-line fix).
+- Auto-coverage gap on the high-risk auth surface — spec test rows #1–#4, #6, #10, #11 are not yet automated. The reviewer recommended a Playwright e2e for the live re-auth flow + a vitest+supabase-js integration test for the RLS forgery (#11). Sprint 024 candidate.
+
+### Sprint 023 git footprint
+8 commits on `worktree-sprint-023`:
+- `15d0989` Phase 2B (modal + secondary client)
+- `05c9467` Phase 2A (0046 migration)
+- `9b8cb78` Phase 2C (student wiring + redirect — superseded in part by Phase 4 fix)
+- `0d5efce` Phase 2D (StaffProfilePage + route + nav + DATA_INVENTORY)
+- `b202289` Phase 1 (spec)
+- `9d891da` Phase 3 (nav test backfill)
+- `37d3037` Phase 4 (code-review fixes — Navigate component + role-neutral copy + PasswordResetModal unit test)
+
+Files changed: 10. Lines: ~1,100 added.
 
 ---
 
