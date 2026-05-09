@@ -96,13 +96,15 @@ describe('RecruitsHero — structure and copy', () => {
 // ── e) partner indicator is data-driven ──────────────────────────────────
 
 describe('RecruitsHero — partner indicator', () => {
-  it('mentions BC High (active) and Belmont Hill joining May 2026', () => {
+  // Sprint 020 drift fix: Belmont Hill was activated in Sprint 017
+  // (recruits-schools.js active: true). The "May 2026" coming-soon copy is
+  // gone. Indicator now lists both schools as active.
+  it('mentions BC High and Belmont Hill as active partners', () => {
     const el = RecruitsHero();
     const partners = findByTestId(el, 'recruits-hero-partners');
     const text = flattenText(partners);
     expect(text).toContain('BC High');
     expect(text).toContain('Belmont Hill');
-    expect(text).toContain('May 2026');
   });
 });
 

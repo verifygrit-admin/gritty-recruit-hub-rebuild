@@ -91,22 +91,34 @@ describe('SchoolToggle — active state', () => {
   });
 });
 
-// ── d, e) disabled state + coming-soon subtext ───────────────────────────
+// ── d, e) active partner schools (Sprint 020 drift fix) ──────────────────
+//
+// Sprint 011 shipped with Belmont Hill as `active: false` and rendered a
+// disabled pill with "(coming May 2026)" subtext. Sprint 017 onboarded
+// Belmont Hill (active: true). Both schools are now enabled buttons; the
+// coming-soon subtext path only fires for a school whose `active: false`
+// AND has a `comingMonth` value — neither current entry meets that.
 
-describe('SchoolToggle — disabled school', () => {
-  it('Belmont Hill button is disabled', () => {
+describe('SchoolToggle — active partner schools', () => {
+  it('every RECRUIT_SCHOOLS entry renders an enabled button (no disabled state today)', () => {
     const el = SchoolToggle({ activeSlug: 'bc-high', onChange: () => {} });
     const buttons = collect(el, (n) => n.type === 'button');
-    const belmont = buttons.find((b) => flattenText(b).includes('Belmont Hill'));
-    expect(belmont).toBeDefined();
-    expect(belmont.props.disabled).toBe(true);
+    for (const school of RECRUIT_SCHOOLS) {
+      const btn = buttons.find((b) => flattenText(b).includes(school.label));
+      expect(btn, `button for ${school.label}`).toBeDefined();
+      // `disabled` prop is true only when school.active === false
+      expect(btn.props.disabled).toBe(!school.active);
+    }
   });
 
-  it('Belmont Hill button shows "(coming May 2026)" inline subtext', () => {
+  it('renders no "(coming ...)" subtext for currently-active schools', () => {
     const el = SchoolToggle({ activeSlug: 'bc-high', onChange: () => {} });
     const buttons = collect(el, (n) => n.type === 'button');
-    const belmont = buttons.find((b) => flattenText(b).includes('Belmont Hill'));
-    expect(flattenText(belmont)).toContain('coming May 2026');
+    for (const school of RECRUIT_SCHOOLS) {
+      if (!school.active) continue;
+      const btn = buttons.find((b) => flattenText(b).includes(school.label));
+      expect(flattenText(btn)).not.toContain('coming');
+    }
   });
 });
 
@@ -126,12 +138,20 @@ describe('SchoolToggle — onChange', () => {
     expect(onChange).toHaveBeenCalledWith('bc-high');
   });
 
-  it('disabled Belmont Hill button has no onClick handler', () => {
+  // Sprint 020 drift fix: Belmont Hill is now active (Sprint 017). The
+  // generic invariant — every inactive school renders without an onClick
+  // handler — is preserved here; today no school is inactive, so the loop
+  // is a no-op-but-honest assertion that will catch a regression if a
+  // future school is added with active: false.
+  it('any inactive school button has no onClick handler', () => {
     const onChange = vi.fn();
     const el = SchoolToggle({ activeSlug: 'bc-high', onChange });
     const buttons = collect(el, (n) => n.type === 'button');
-    const belmont = buttons.find((b) => flattenText(b).includes('Belmont Hill'));
-    expect(belmont.props.onClick == null || belmont.props.disabled).toBe(true);
+    for (const school of RECRUIT_SCHOOLS) {
+      if (school.active) continue;
+      const btn = buttons.find((b) => flattenText(b).includes(school.label));
+      expect(btn.props.onClick == null || btn.props.disabled).toBe(true);
+    }
   });
 });
 
