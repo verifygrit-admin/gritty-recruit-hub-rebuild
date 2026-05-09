@@ -5,6 +5,7 @@ import { useSchoolIdentity } from '../hooks/useSchoolIdentity.js';
 import { supabase } from '../lib/supabaseClient.js';
 import { SCHOOL_STAFF, findStaffByUserId } from '../data/school-staff.js';
 import HudlLogo from '../components/HudlLogo.jsx';
+import PasswordResetModal from '../components/PasswordResetModal.jsx';
 
 const POSITIONS = [
   '', 'QB', 'RB', 'FB', 'TE', 'WR', 'OL', 'C', 'G', 'T',
@@ -38,7 +39,16 @@ const thirdCol = { flex: '1 1 30%', minWidth: 150 };
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { session, notifyProfileUpdate } = useAuth();
+  const { session, userType, notifyProfileUpdate } = useAuth();
+
+  // Sprint 023 §8 test #9 — staff role guard. Hooks run above this point
+  // (useSchoolIdentity, useState, useEffect), so an early <Navigate> return
+  // would violate rules of hooks. Use useEffect + imperative navigate instead;
+  // render null while staff users are being redirected to /coach/profile.
+  const isStaffUser = userType === 'hs_coach' || userType === 'hs_guidance_counselor';
+  useEffect(() => {
+    if (isStaffUser) navigate('/coach/profile', { replace: true });
+  }, [isStaffUser, navigate]);
 
   // Sprint 017 D5/3d — school-conditional staff lookup. schoolSlug is null for
   // anon or unresolvable users; staff is null for any school not yet onboarded
@@ -50,6 +60,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
@@ -303,6 +314,9 @@ export default function ProfilePage() {
     }
   };
 
+  // Staff role guard — return null while the useEffect-driven redirect fires.
+  if (isStaffUser) return null;
+
   if (loading) return <div style={{ padding: 48, textAlign: 'center', color: '#6B6B6B' }}>Loading profile...</div>;
 
   const renderInput = (field, label, testId, opts = {}) => (
@@ -464,6 +478,30 @@ export default function ProfilePage() {
           </div>
 
           {renderInput('email', 'Email', 'input-email-readonly', { disabled: true, help: '(From your account — cannot edit here)' })}
+
+          {/* Sprint 023 §1 Goal 1 — Password row opens shared PasswordResetModal. */}
+          <div style={fieldWrap} data-testid="form-field-password">
+            <label style={labelStyle}>Password</label>
+            <button
+              type="button"
+              data-testid="button-open-password-reset"
+              onClick={() => setShowPasswordModal(true)}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#FFFFFF',
+                color: 'var(--brand-maroon)',
+                border: '1px solid var(--brand-maroon)',
+                borderRadius: 4,
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                minHeight: 40,
+              }}
+            >
+              Change Password
+            </button>
+            <span style={helpStyle}>(Opens a secure dialog to update your account password)</span>
+          </div>
 
           <div style={rowStyle}>
             <div style={halfCol}>{renderInput('phone', 'Phone', 'input-phone', { placeholder: '(123) 456-7890' })}</div>
@@ -660,6 +698,12 @@ export default function ProfilePage() {
           </button>
         </div>
       </form>
+
+      <PasswordResetModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        email={form.email || session?.user?.email || ''}
+      />
     </div>
   );
 }
