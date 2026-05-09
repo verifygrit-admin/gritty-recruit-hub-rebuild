@@ -106,34 +106,41 @@ activity recency in `CoachActivitySummary`. Not a sprint blocker.
 
 ## 5. Carry-forward to Sprint 020+
 
-**1. GRIT FIT Map universe vs render filter (Finding A).** Carleton
-College does NOT appear on the GRIT FIT Map render despite the map being
-intended to display all schools in `public.schools`. Diagnostic SELECT
-result: Carleton **is** in `public.schools` (`unitid=173258`, `type='D3'`,
-`conference='MIAC'`, `state='MN'`). So the root cause is **not**
-universe-completeness — it's render-side filter logic. Likely culprit:
-`src/pages/GritFitPage.jsx` or its data hook applies a `type` /
-`ncaa_division` / state / region filter that excludes Carleton. Sprint
-020+ scope. Fix path is code-side, not data-side.
+**1. GRIT FIT Map universe vs render filter (Finding A). — RESOLVED in
+close window (2026-05-08).** Resolved by operator filter correction in
+GRIT FIT Map render path. Diagnostic confirmed Carleton present in
+`public.schools` (`unitid=173258`, `type='D3'`, `conference='MIAC'`,
+`state='MN'`); fix was filter-side, not data-side. Diagnostic trail
+preserved below.
 
-**2. Slide-out denorm display gap (Finding B).** Schools on a student's
-shortlist surface em-dashes for COA / Annual Net Cost / DROI / Fastest
-Payback on the slide-out detail card. This is the structural consequence
-of Sprint 019 decision (a) to leave GRIT-FIT-derived numerics null on
-`manual_add` source rows. Two paths to fix:
-  - **(a) Backfill numerics from `public.schools`** for the per-school
-    static fields where available (`coa_out_of_state`, `graduation_rate`,
-    `adltv` likely present in the universe; `droi` / `break_even` /
-    `net_cost` require GRIT FIT computation against the student's
-    profile and cannot be backfilled from the universe alone).
-  - **(b) Re-architect the slide-out** to fetch denorm at render time
-    from `public.schools` rather than reading from `short_list_items`
-    denorm columns. Structurally cleaner — `short_list_items` shouldn't
-    carry denorm that drifts from the universe — but a larger refactor
-    that touches the slide-out component, the Scoreboard data fetch,
-    and any other consumer of the denorm columns.
+  Original finding: Carleton College did not appear on the GRIT FIT Map
+  render despite the map being intended to display all schools in
+  `public.schools`. Diagnostic SELECT result: Carleton **is** in
+  `public.schools` (`unitid=173258`, `type='D3'`, `conference='MIAC'`,
+  `state='MN'`). Root cause was **not** universe-completeness — it was
+  render-side filter logic in `src/pages/GritFitPage.jsx` or its data
+  hook applying a `type` / `ncaa_division` / state / region filter that
+  excluded Carleton.
 
-  Path (a) is a one-shot backfill sprint. Path (b) is a refactor sprint.
+**2. Slide-out denorm display gap (Finding B). — RESOLVED in close window
+(2026-05-08).** Resolved by shortlist refresh — denorm fields surface
+correctly on slide-out detail cards once cache invalidates. Sprint 019
+design decision (a) to leave GRIT-FIT-derived numerics null on
+`manual_add` source rows holds; the em-dash display was a stale-cache
+artifact, not a structural gap. Diagnostic trail preserved below.
+
+  Original finding: Schools on a student's shortlist surfaced em-dashes
+  for COA / Annual Net Cost / DROI / Fastest Payback on the slide-out
+  detail card. Initially read as a structural consequence of Sprint 019
+  decision (a) to leave GRIT-FIT-derived numerics null on `manual_add`
+  source rows. Operator triage showed the em-dashes cleared on shortlist
+  refresh, confirming the display was a cache artifact and the seeded
+  data was rendering correctly once cache invalidated. Two follow-up
+  paths originally proposed (universe-backfill of static fields;
+  re-architect slide-out to read from `public.schools` at render time)
+  are no longer required for this finding. They remain valid as future
+  refactor options if the slide-out's data-source coupling becomes a
+  concern in another sprint.
 
 **3. BC High vs Belmont Hill denorm divergence.** Belmont Hill rows now
 carry richer denorm (CSV `school_name` + universe `div` / `conference` /
@@ -211,3 +218,25 @@ test of this design shipped today (zero conflicts because the table was
 empty for these `(user_id, unitid)` pairs); the value will surface the
 first time a partner school re-runs after a GRIT FIT pass has populated
 `coa` / `droi` / etc.
+
+---
+
+## 7. Same-session resolution of Findings A & B (process observation)
+
+Both production findings surfaced during operator UI verification were
+resolved by operator within the sprint close window — Finding A by a
+filter correction in the GRIT FIT Map render path, Finding B by a
+shortlist refresh that invalidated stale cache. Neither required a
+follow-up sprint.
+
+Surfacing this as a process observation: the verification pass
+functioning as both **gate** and **triage layer** is what the
+sprint-mode design intends. Operator-side fixes during verification are
+not failures; they're the production gate doing its job. Sprint 019
+thesis — that DB write + manual UI verification + immediate operator
+triage is a complete close path — is empirically supported.
+
+The active carry-forward list reduces from six items to four. Items 3,
+4, 5, and 6 remain open for Sprint 020+ scoping. Items 1 and 2 stay in
+the document with `RESOLVED` markers and full diagnostic trails for
+historical reference.
