@@ -19,5 +19,6 @@ export const STUDENT_NAV_LINKS = [
 export const COACH_NAV_LINKS = [
   { to: '/', label: 'HOME' },
   { to: '/coach', label: 'DASHBOARD' },
+  { to: '/coach/profile', label: 'MY PROFILE' },
   { to: '/grit-guides', label: 'GRIT GUIDES' },
 ];

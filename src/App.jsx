@@ -10,6 +10,7 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import GritFitPage from './pages/GritFitPage.jsx';
 import ShortlistPage from './pages/ShortlistPage.jsx';
 import CoachDashboardPage from './pages/CoachDashboardPage.jsx';
+import StaffProfilePage from './pages/StaffProfilePage.jsx';
 import AdminLoginPage from './pages/AdminLoginPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import StyleguidePage from './pages/StyleguidePage.jsx';
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/shortlist" element={<Layout><ProtectedRoute><ShortlistPage /></ProtectedRoute></Layout>} />
           <Route path="/grit-guides" element={<Layout><ProtectedRoute><GritGuidesPage /></ProtectedRoute></Layout>} />
           <Route path="/coach" element={<Layout><ProtectedRoute><CoachDashboardPage /></ProtectedRoute></Layout>} />
+          <Route path="/coach/profile" element={<Layout><ProtectedRoute><StaffProfilePage /></ProtectedRoute></Layout>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
