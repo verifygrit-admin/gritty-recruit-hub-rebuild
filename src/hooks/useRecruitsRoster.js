@@ -116,10 +116,16 @@ export default function useRecruitsRoster({ filter }) {
 
     (async () => {
       try {
+        // grad_year >= 2026: active recruiting class cutoff. Mirrors the
+        // RLS predicate in 0045 — the policy is the security boundary, this
+        // is the payload-shape optimization. Both must move together when
+        // the class advances. See migration 0045 header for the annual-bump
+        // note and dynamic-predicate follow-up candidate.
         const { data: profileRows, error: profileErr } = await supabase
           .from('profiles')
           .select(PROFILES_WHITELIST_SELECT)
-          .eq('high_school', filter);
+          .eq('high_school', filter)
+          .gte('grad_year', 2026);
 
         if (profileErr) throw profileErr;
         const rows = profileRows || [];
