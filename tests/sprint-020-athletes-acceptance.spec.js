@@ -75,17 +75,18 @@ test('Sprint 020 / Test 2 — anon Belmont Hill roster renders all active athlet
 test('Sprint 020 / Test 5 — no athlete with grad_year <= 2025 appears on either tab', async ({
   page,
 }) => {
-  // RecruitCard renders the class year visibly. Walk every card and assert
-  // none show "2025" or earlier as the class year. Belmont Hill tab.
+  // RecruitCard renders the class year visibly. For each tab, batch all card
+  // text reads into a single page.evaluate() — avoids per-locator auto-wait
+  // round-trips that flake on slow CI runners (29 separate .innerText() awaits
+  // can exceed the per-test timeout even when the DOM is fully settled).
   await gotoAthletes(page);
   for (const school of ['BC High', 'Belmont Hill']) {
     await pickSchool(page, school);
-    const cards = page.locator(GRID).locator('xpath=*');
-    const n = await cards.count();
-    for (let i = 0; i < n; i++) {
-      const text = await cards.nth(i).innerText();
-      // Match four-digit year occurrences and ensure none are 2025 or earlier
-      const years = (text.match(/\b(20\d{2})\b/g) || []).map(Number);
+    const cardTexts = await page.locator(GRID).evaluate((el) =>
+      Array.from(el.children).map((c) => c.innerText)
+    );
+    for (let i = 0; i < cardTexts.length; i++) {
+      const years = (cardTexts[i].match(/\b(20\d{2})\b/g) || []).map(Number);
       for (const y of years) {
         expect(
           y >= 2026,
