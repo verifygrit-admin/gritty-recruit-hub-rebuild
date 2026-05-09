@@ -1,22 +1,23 @@
 /**
- * student-nav.test.js — Sprint 003 D2b (Menu reordering)
+ * student-nav.test.js
  *
- * Asserts the Student View nav order and labels match the spec:
- *   HOME → MY PROFILE → MY GRIT FIT → MY SHORTLIST
- *
- * Coach nav unchanged.
+ * Sprint 003 D2b — original Student View nav order.
+ * Sprint 022 — adds MY GRIT GUIDES to student nav and GRIT GUIDES to coach nav.
+ * Sprint 023 — adds MY PROFILE to coach/counselor nav (between DASHBOARD and
+ *              GRIT GUIDES, mirroring the student journey position).
  */
 
 import { describe, it, expect } from 'vitest';
 import { STUDENT_NAV_LINKS, COACH_NAV_LINKS } from '../../src/lib/navLinks.js';
 
 describe('STUDENT_NAV_LINKS', () => {
-  it('has four items in journey order', () => {
+  it('has five items in journey order', () => {
     expect(STUDENT_NAV_LINKS.map(l => l.label)).toEqual([
       'HOME',
       'MY PROFILE',
       'MY GRIT FIT',
       'MY SHORTLIST',
+      'MY GRIT GUIDES',
     ]);
   });
 
@@ -26,6 +27,7 @@ describe('STUDENT_NAV_LINKS', () => {
     expect(byLabel['MY PROFILE']).toBe('/profile');
     expect(byLabel['MY GRIT FIT']).toBe('/gritfit');
     expect(byLabel['MY SHORTLIST']).toBe('/shortlist');
+    expect(byLabel['MY GRIT GUIDES']).toBe('/grit-guides');
   });
 
   it('does not include legacy labels', () => {
@@ -36,7 +38,17 @@ describe('STUDENT_NAV_LINKS', () => {
 });
 
 describe('COACH_NAV_LINKS', () => {
-  it('is unchanged: HOME + DASHBOARD', () => {
-    expect(COACH_NAV_LINKS.map(l => l.label)).toEqual(['HOME', 'DASHBOARD']);
+  it('is HOME + DASHBOARD + MY PROFILE + GRIT GUIDES (Sprint 022 + 023)', () => {
+    expect(COACH_NAV_LINKS.map(l => l.label)).toEqual([
+      'HOME',
+      'DASHBOARD',
+      'MY PROFILE',
+      'GRIT GUIDES',
+    ]);
+  });
+
+  it('routes MY PROFILE to /coach/profile', () => {
+    const byLabel = Object.fromEntries(COACH_NAV_LINKS.map(l => [l.label, l.to]));
+    expect(byLabel['MY PROFILE']).toBe('/coach/profile');
   });
 });

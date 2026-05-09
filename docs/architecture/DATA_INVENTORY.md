@@ -100,7 +100,7 @@ Tables, in dependency order:
 Class: A — Postgres table
 Purpose: Extended user metadata (user_type, account status, payment status). Mirrors `auth.users` 1:1 via `user_id` FK.
 
-Shape (11 cols, 40 rows):
+Shape (12 cols, 40 rows):
 - `id` uuid PK (gen_random_uuid)
 - `user_id` uuid UNIQUE → `auth.users.id`
 - `user_type` text — `student_athlete | hs_coach | hs_guidance_counselor | parent | college_coach | college_admissions_officer`
@@ -111,9 +111,11 @@ Shape (11 cols, 40 rows):
 - `payment_status` text DEFAULT `free` — `free | trial | paid | expired`
 - `trial_started_at` timestamptz
 - `created_at`, `last_login` timestamptz
+- `full_name` text — staff display name (Sprint 023, Option γ). Nullable. Backfilled for 6 known staff from `src/data/school-staff.js`; 2 coach UUIDs intentionally NULL pending Sprint 024 admin pass.
 
 Defining migrations:
 - `supabase/migrations/0002_users_extended.sql`
+- `supabase/migrations/0046_users_add_full_name.sql` — adds `full_name` column + UPDATE-own RLS policy + 6-row backfill
 
 Write paths:
 - `scripts/seed_users.js` — initial seed
@@ -121,12 +123,14 @@ Write paths:
 - `scripts/import_bc_high_counselors.py`, `scripts/import_paul_zukauskas.py`, `scripts/import_jesse_bargar.py` — operator imports
 - `supabase/functions/check-account-status/index.ts` — account status reads/writes
 - `supabase/functions/admin-read-users/index.ts` — admin lookups (read)
+- `src/pages/StaffProfilePage.jsx` — Name save (own row UPDATE under `users_update_own_full_name` policy)
 
 Read paths:
 - `src/hooks/useAuth.jsx` — session bootstrap reads `user_type`
 - `src/components/AdminUsersTab.jsx` (via `admin-read-users` EF)
 - `src/components/Layout.jsx` — role-based nav
 - `src/pages/CoachDashboardPage.jsx` and `src/pages/coach/*` — coach-side gating
+- `src/pages/StaffProfilePage.jsx` — display name
 - `tests/unit/schema.test.js` — schema fixtures
 
 Lifecycle: Runtime. Role and account state are JWT-anchored where possible (`app_metadata.role` for admin, per memory).
@@ -135,8 +139,9 @@ Notes:
 - `public.users` and `public.profiles` BOTH FK to `auth.users.id`, NOT to each other. Joining the two requires `user_id` on both sides.
 - Admin role is on JWT `app_metadata.role`, not in this table.
 - `name` is on `profiles`, not here. This table has no name columns.
+- Sprint 023 Option γ added `full_name`. Display name lookup precedence: `public.users.full_name` (own row) → `src/data/school-staff.js` `findStaffByUserId()` fallback. The fallback covers staff rows where `full_name` is NULL. Sprint 018 carry-forward C-9 should consolidate `full_name` into the eventual staff identity table.
 
-Last verified: 2026-05-08
+Last verified: 2026-05-09
 
 ---
 
