@@ -15,6 +15,7 @@ import AdminPage from './pages/AdminPage.jsx';
 import StyleguidePage from './pages/StyleguidePage.jsx';
 import AthletesPage from './pages/AthletesPage.jsx';
 import CoachLoginPlaceholderPage from './pages/CoachLoginPlaceholderPage.jsx';
+import GritGuidesPage from './pages/GritGuidesPage.jsx';
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/profile" element={<Layout><ProtectedRoute><ProfilePage /></ProtectedRoute></Layout>} />
           <Route path="/gritfit" element={<Layout><ProtectedRoute><GritFitPage /></ProtectedRoute></Layout>} />
           <Route path="/shortlist" element={<Layout><ProtectedRoute><ShortlistPage /></ProtectedRoute></Layout>} />
+          <Route path="/grit-guides" element={<Layout><ProtectedRoute><GritGuidesPage /></ProtectedRoute></Layout>} />
           <Route path="/coach" element={<Layout><ProtectedRoute><CoachDashboardPage /></ProtectedRoute></Layout>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
