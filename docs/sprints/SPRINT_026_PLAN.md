@@ -364,7 +364,7 @@ Three trigger points:
 
 Resolved during Phase 1a (Task 5 — Coach UI). A dedicated UI-tuning subagent A/B tests overlay opacity against `src/assets/GrittyFB - Coach Bulk PDS Page Background Image.png` using the BC High token palette as the canonical test case. Final α is documented inline here in §7 and in a comment block at the top of `src/components/bulk-pds/BulkPdsBackground.jsx`.
 
-**Locked α (post Phase 1a):** _pending — Phase 1a Coach UI task will fill this value._
+**Locked α (post Phase 1a):** **0.70** — UI-tuning analysis A/B-tested 0.65 / 0.70 / 0.75 / 0.80 against the supplied background image with the BC High maroon token. 0.65 left the bright sky and stadium highlights bleeding through the white card surfaces; 0.75–0.80 collapsed the image into a near-flat maroon page that wasted the design asset. 0.70 keeps helmet/jersey structure visible while pulling the brightness down enough that the white cards anchor cleanly against the school-token wash. Locked at the top of `src/components/bulk-pds/BulkPdsBackground.jsx` (`OVERLAY_ALPHA = 0.70`).
 
 ### Q6 — `last_bulk_pds_approved_at` on profiles: **YES, confirmed locked**
 

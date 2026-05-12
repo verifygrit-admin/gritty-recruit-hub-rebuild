@@ -18,6 +18,7 @@ import AthletesPage from './pages/AthletesPage.jsx';
 import CoachLoginPlaceholderPage from './pages/CoachLoginPlaceholderPage.jsx';
 import GritGuidesPage from './pages/GritGuidesPage.jsx';
 import CoachMessageGeneratorPage from './pages/CoachMessageGeneratorPage.jsx';
+import CoachPlayerUpdatesPage from './pages/coach/CoachPlayerUpdatesPage.jsx';
 
 export default function App() {
   return (
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="/coach-messages" element={<Layout><ProtectedRoute><CoachMessageGeneratorPage /></ProtectedRoute></Layout>} />
           <Route path="/coach" element={<Layout><ProtectedRoute><CoachDashboardPage /></ProtectedRoute></Layout>} />
           <Route path="/coach/profile" element={<Layout><ProtectedRoute><StaffProfilePage /></ProtectedRoute></Layout>} />
+          <Route path="/coach/player-updates" element={<Layout><ProtectedRoute><CoachPlayerUpdatesPage /></ProtectedRoute></Layout>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
