@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coach Message Generator — GrittyOS Recruit Hub Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     COACH MESSAGE GENERATOR — PROTOTYPE
+     Visual ground truth for Sprint 025.
+
+     Theming: this prototype uses the Student View design-token system.
+     Colors are NOT hardcoded by school. Each partner school resolves to
+     its own palette via the data-school-theme attribute on .app-shell.
+     The prototype mounts with data-school-theme="bc-high" as the worked
+     example; swap to "belmont-hill" to preview that school's theme.
+     ============================================================ */
+
+  /* ============================================================
+     SEMANTIC ROLE TOKENS
+     Resolved at runtime by the partner-school design token system
+     (keyed off the student's HS slug; see useSchoolIdentity.js).
+     The :root block holds neutral defaults so the prototype renders
+     standalone; the [data-school-theme="..."] blocks below override
+     per partner school. In production, the theme is set on a
+     wrapper element when the student authenticates.
+     ============================================================ */
+  :root {
+    /* Brand surface tokens (semantic, NOT color-named) */
+    --brand-primary:        #2A2A2A;   /* primary brand color (page header, primary button) */
+    --brand-primary-deep:   #1A1A1A;   /* darker variant (nav drawer, hover) */
+    --brand-primary-soft:   #3F3F3F;   /* lighter variant (left rule on cards) */
+    --brand-primary-faded:  rgba(42, 42, 42, 0.12);
+
+    --surface-base:         #F5F5F5;   /* page background */
+    --surface-warm:         #EEEEEE;   /* secondary surface (warm-tinted hover) */
+    --surface-edge:         #D5D5D5;   /* dividers, borders */
+
+    --ink:                  #1A1A1A;   /* primary text */
+    --ink-soft:             #4A4A4A;   /* secondary text */
+    --ink-muted:            #7A7A7A;   /* tertiary text, hints */
+
+    /* Channel & state tokens — semantic, not theme-overridable */
+    --autofill-bg:          #E8DFC4;   /* marks auto-filled form fields */
+    --autofill-edge:        #C7B98D;
+    --autofill-text:        #5C4B2A;
+    --token-unfilled:       #B85C2A;   /* burnt orange — unfilled placeholder */
+    --success:              #4A6B3A;   /* muted olive-green */
+    --twitter-accent:       #3A5A8C;   /* dusty navy for Twitter channel */
+
+    /* Typography — display vs. body. Partner schools may override
+       --font-display if their identity prefers a different serif. */
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-body:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  /* ----- BC High theme (burgundy + parchment cream) -----
+     Worked example in the prototype: Thomas Girmay @ BC High.
+     Mounted by setting data-school-theme="bc-high" on .app-shell. */
+  [data-school-theme="bc-high"] {
+    --brand-primary:        #5C1620;
+    --brand-primary-deep:   #3F0F17;
+    --brand-primary-soft:   #7A2230;
+    --brand-primary-faded:  rgba(92, 22, 32, 0.12);
+    --surface-base:         #F4ECD8;
+    --surface-warm:         #EDE3CA;
+    --surface-edge:         #D9CDB0;
+    --ink:                  #2A1A0F;
+    --ink-soft:             #5C4B3A;
+    --ink-muted:            #8A7860;
+  }
+
+  /* ----- Belmont Hill theme (navy + cream) -----
+     Mounted by setting data-school-theme="belmont-hill" on .app-shell.
+     Toggle the data-school-theme attribute on .app-shell to preview. */
+  [data-school-theme="belmont-hill"] {
+    --brand-primary:        #1F3A5F;
+    --brand-primary-deep:   #142844;
+    --brand-primary-soft:   #2E4F7A;
+    --brand-primary-faded:  rgba(31, 58, 95, 0.12);
+    --surface-base:         #F1ECDD;
+    --surface-warm:         #E7DFC8;
+    --surface-edge:         #CFC4A8;
+    --ink:                  #142844;
+    --ink-soft:             #3A4A5E;
+    --ink-muted:            #7A7E89;
+  }
+
+  /* ============================================================
+     PROTOTYPE NOTE — design tokens
+     The prototype mounts <div class="app-shell" data-school-theme="bc-high">
+     to demonstrate BC High as the worked example. The data attribute is the
+     single integration point: the production app reads the student's HS
+     slug via useSchoolIdentity and writes it onto the wrapper. Onboarding a
+     new partner school adds a new [data-school-theme="..."] block here
+     (or in the equivalent design-token module) and a row in the partner-
+     school registry. NO references to specific color names (burgundy,
+     parchment, navy) below this line — only semantic tokens.
+     ============================================================ */
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--surface-base);
+    line-height: 1.55;
+    font-size: 15px;
+    min-height: 100vh;
+  }
+
+  /* ----- App frame (Student View shell) ----- */
+  .app-shell {
+    max-width: 1280px;
+    margin: 0 auto;
+    background: var(--surface-base);
+    min-height: 100vh;
+    position: relative;
+  }
+
+  .app-topbar {
+    background: var(--brand-primary);
+    color: var(--surface-base);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-bottom: 3px solid var(--brand-primary-deep);
+  }
+
+  .sandwich-icon {
+    width: 28px; height: 28px;
+    display: flex; flex-direction: column; justify-content: center; gap: 5px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 3px;
+    transition: background 0.15s;
+  }
+  .sandwich-icon:hover { background: rgba(255,255,255,0.08); }
+  .sandwich-icon span {
+    display: block;
+    height: 2.5px;
+    width: 20px;
+    background: var(--surface-base);
+    border-radius: 1px;
+  }
+
+  .app-brand {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+  }
+
+  .app-tagline {
+    font-size: 12px;
+    opacity: 0.7;
+    font-weight: 400;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-left: auto;
+  }
+
+  /* ----- Nav drawer (sandwich menu — open state shown inline for prototype) ----- */
+  .nav-drawer {
+    background: var(--brand-primary-deep);
+    color: var(--surface-base);
+    padding: 18px 32px;
+    display: flex;
+    gap: 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-wrap: wrap;
+    font-size: 14px;
+  }
+  .nav-drawer a {
+    color: var(--surface-base);
+    text-decoration: none;
+    opacity: 0.7;
+    padding: 4px 0;
+    border-bottom: 2px solid transparent;
+    transition: opacity 0.15s, border-color 0.15s;
+    font-weight: 500;
+  }
+  .nav-drawer a:hover { opacity: 1; }
+  .nav-drawer a.active {
+    opacity: 1;
+    border-bottom-color: var(--surface-base);
+  }
+
+  .nav-prototype-note {
+    background: rgba(255, 255, 255, 0.06);
+    padding: 6px 14px;
+    border-radius: 3px;
+    font-size: 11px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-left: auto;
+    align-self: center;
+  }
+
+  /* ----- Page header ----- */
+  .page-header {
+    padding: 36px 32px 18px 32px;
+    border-bottom: 1px solid var(--surface-edge);
+  }
+
+  .page-header h1 {
+    font-family: var(--font-display);
+    font-size: 38px;
+    font-weight: 600;
+    color: var(--brand-primary);
+    letter-spacing: 0.3px;
+    line-height: 1.1;
+  }
+
+  .page-header .subtitle {
+    color: var(--ink-soft);
+    font-size: 15px;
+    margin-top: 6px;
+    max-width: 720px;
+  }
+
+  .page-header .student-context {
+    display: flex;
+    gap: 18px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--ink-muted);
+    flex-wrap: wrap;
+  }
+  .student-context span strong {
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  /* ----- Section dividers ----- */
+  .section {
+    padding: 28px 32px;
+  }
+
+  .section-header {
+    margin-bottom: 16px;
+  }
+
+  .section-header h2 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--brand-primary);
+    letter-spacing: 0.3px;
+  }
+
+  .section-header .section-sub {
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin-top: 3px;
+  }
+
+  /* ----- Scenario card gallery ----- */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .gallery.public-posts {
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 22px;
+  }
+
+  .scenario-card {
+    background: white;
+    border: 1px solid var(--surface-edge);
+    border-left: 3px solid var(--brand-primary-soft);
+    border-radius: 4px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    position: relative;
+  }
+  .scenario-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(92, 22, 32, 0.14);
+    border-left-color: var(--brand-primary);
+  }
+  .scenario-card.selected {
+    border-left-color: var(--brand-primary-deep);
+    background: var(--surface-warm);
+    box-shadow: 0 4px 14px rgba(92, 22, 32, 0.18);
+  }
+  .scenario-card .scenario-number {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--brand-primary);
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+  .scenario-card .scenario-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .scenario-card .scenario-situation {
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-style: italic;
+    line-height: 1.4;
+  }
+  .scenario-card .scenario-channel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 10px;
+    color: var(--ink-muted);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* Public post card variant */
+  .scenario-card.public-post {
+    border-left-color: var(--twitter-accent);
+  }
+  .scenario-card.public-post .scenario-number {
+    color: var(--twitter-accent);
+  }
+  .scenario-card.public-post:hover { border-left-color: var(--twitter-accent); }
+  .scenario-card.public-post.selected {
+    border-left-color: var(--twitter-accent);
+    background: #EFF0F4;
+  }
+
+  /* No Response sequence cards — visual cluster */
+  .scenario-card.no-response {
+    background: #FAF6EC;
+  }
+
+  /* ----- Builder section (revealed after scenario selected) ----- */
+  .builder {
+    background: white;
+    border: 1px solid var(--surface-edge);
+    border-radius: 5px;
+    margin-top: 8px;
+    overflow: hidden;
+    opacity: 0;
+    max-height: 0;
+    transition: opacity 0.4s ease, max-height 0.4s ease;
+  }
+  .builder.active {
+    opacity: 1;
+    max-height: 5000px;
+  }
+
+  .builder-header {
+    background: var(--brand-primary);
+    color: var(--surface-base);
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .builder-header .builder-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .builder-header .builder-sub {
+    font-size: 12px;
+    opacity: 0.75;
+    margin-top: 2px;
+  }
+  .builder-header-close {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: var(--surface-base);
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .builder-header-close:hover { background: rgba(255,255,255,0.1); }
+
+  /* ----- Two-column builder layout ----- */
+  .builder-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    min-height: 480px;
+  }
+
+  .form-pane {
+    padding: 22px 24px;
+    border-right: 1px solid var(--surface-edge);
+    background: #FCFAF3;
+  }
+  .preview-pane {
+    padding: 22px 24px;
+    background: #FFFEFA;
+  }
+
+  /* ----- Phase steps with fade-up animation ----- */
+  .phase {
+    margin-bottom: 22px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+  }
+  .phase.revealed {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .phase.complete .phase-label::after {
+    content: '✓';
+    color: var(--success);
+    margin-left: 8px;
+    font-size: 14px;
+  }
+
+  .phase-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brand-primary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+  }
+
+  .phase-prompt {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  /* ----- Form controls ----- */
+  .field-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .field {
+    flex: 1;
+    min-width: 0;
+  }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 8px 11px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+    background: white;
+    border: 1px solid var(--surface-edge);
+    border-radius: 3px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--brand-primary-soft);
+    box-shadow: 0 0 0 2px rgba(92, 22, 32, 0.08);
+  }
+  .field textarea {
+    resize: vertical;
+    min-height: 70px;
+    line-height: 1.4;
+  }
+
+  /* Auto-filled field styling */
+  .field.autofilled input,
+  .field.autofilled select,
+  .field.autofilled textarea {
+    background: var(--autofill-bg);
+    border-color: var(--autofill-edge);
+    color: var(--autofill-text);
+    font-weight: 500;
+  }
+  .field.autofilled label::after {
+    content: 'auto-filled';
+    background: var(--autofill-edge);
+    color: var(--autofill-text);
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 8px;
+    letter-spacing: 0.3px;
+    text-transform: none;
+    font-weight: 600;
+  }
+
+  /* Required-field hint */
+  .field.required label::after {
+    content: '•';
+    color: var(--token-unfilled);
+    margin-left: 4px;
+    font-size: 14px;
+  }
+
+  .field-help {
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-top: 3px;
+    font-style: italic;
+  }
+
+  /* ----- Channel toggle (Email / Twitter) ----- */
+  .channel-toggle {
+    display: inline-flex;
+    background: var(--surface-warm);
+    border: 1px solid var(--surface-edge);
+    border-radius: 4px;
+    padding: 3px;
+    gap: 0;
+  }
+  .channel-toggle button {
+    background: transparent;
+    border: none;
+    padding: 7px 16px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-radius: 3px;
+    letter-spacing: 0.3px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .channel-toggle button.active {
+    background: var(--brand-primary);
+    color: var(--surface-base);
+  }
+  .channel-toggle button.active.twitter-active {
+    background: var(--twitter-accent);
+  }
+
+  /* ----- Recipient tabs (Position Coach / Recruiting Area Coach) ----- */
+  .recipient-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--surface-edge);
+  }
+  .recipient-tab {
+    background: transparent;
+    border: none;
+    padding: 10px 16px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .recipient-tab.active {
+    color: var(--brand-primary);
+    border-bottom-color: var(--brand-primary);
+  }
+  .recipient-tab:hover:not(.active) { color: var(--ink-soft); }
+
+  /* ----- Message preview ----- */
+  .preview-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--surface-edge);
+  }
+  .preview-header h3 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--brand-primary);
+  }
+  .preview-format-badge {
+    font-size: 10px;
+    padding: 3px 9px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    background: var(--brand-primary);
+    color: var(--surface-base);
+  }
+  .preview-format-badge.twitter {
+    background: var(--twitter-accent);
+  }
+
+  .preview-coach-note {
+    background: var(--surface-warm);
+    border-left: 3px solid var(--ink-muted);
+    padding: 10px 14px;
+    border-radius: 3px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .preview-coach-note strong { color: var(--brand-primary); }
+
+  .preview-subject {
+    background: var(--surface-warm);
+    border-radius: 3px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    font-size: 13px;
+  }
+  .preview-subject .subject-label {
+    font-size: 10px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  .preview-subject .subject-text {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .preview-body {
+    background: white;
+    border: 1px solid var(--surface-edge);
+    border-radius: 3px;
+    padding: 16px 18px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--ink);
+    white-space: pre-wrap;
+    min-height: 200px;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Placeholder highlight in the preview output */
+  .placeholder-token {
+    background: rgba(184, 92, 42, 0.12);
+    color: var(--token-unfilled);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .placeholder-token.filled {
+    background: transparent;
+    color: var(--ink);
+    padding: 0;
+    font-weight: 400;
+  }
+  .placeholder-token.autofilled {
+    background: var(--autofill-bg);
+    color: var(--autofill-text);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+
+  /* ----- Action row (Copy / Email to me) ----- */
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 10px 18px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: background 0.15s, transform 0.1s;
+    border: 1px solid transparent;
+  }
+  .btn:active { transform: translateY(1px); }
+
+  .btn-primary {
+    background: var(--brand-primary);
+    color: var(--surface-base);
+  }
+  .btn-primary:hover { background: var(--brand-primary-soft); }
+
+  .btn-secondary {
+    background: white;
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
+  }
+  .btn-secondary:hover { background: var(--surface-warm); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-soft);
+    border-color: var(--surface-edge);
+  }
+  .btn-ghost:hover { background: var(--surface-warm); }
+
+  /* ----- Empty state (before scenario selected) ----- */
+  .empty-state {
+    background: white;
+    border: 1px dashed var(--surface-edge);
+    border-radius: 5px;
+    padding: 38px 28px;
+    text-align: center;
+    color: var(--ink-muted);
+    margin-top: 14px;
+  }
+  .empty-state .empty-icon {
+    font-family: var(--font-display);
+    font-size: 38px;
+    color: var(--brand-primary-faded);
+    margin-bottom: 8px;
+  }
+  .empty-state .empty-title {
+    font-family: var(--font-display);
+    font-size: 19px;
+    color: var(--brand-primary);
+    margin-bottom: 4px;
+  }
+  .empty-state .empty-sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  /* ----- Sent log section ----- */
+  .sent-log {
+    background: white;
+    border: 1px solid var(--surface-edge);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .sent-log table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .sent-log th {
+    background: var(--brand-primary);
+    color: var(--surface-base);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .sent-log td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--surface-edge);
+    color: var(--ink);
+  }
+  .sent-log tr:last-child td { border-bottom: none; }
+  .sent-log tr:hover td { background: #FCFAF3; }
+
+  .channel-pill {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .channel-pill.email { background: var(--brand-primary); color: var(--surface-base); }
+  .channel-pill.twitter { background: var(--twitter-accent); color: white; }
+
+  .scenario-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: var(--surface-warm);
+    color: var(--ink-soft);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .sent-to-self-icon {
+    color: var(--success);
+    font-weight: 700;
+  }
+  .sent-to-self-icon.no {
+    color: var(--surface-edge);
+  }
+
+  /* ----- Data note callouts (prototype-only annotations) ----- */
+  .data-note {
+    background: rgba(74, 107, 58, 0.08);
+    border-left: 3px solid var(--success);
+    padding: 10px 14px;
+    margin: 14px 0;
+    font-size: 12px;
+    color: var(--ink-soft);
+    border-radius: 3px;
+    line-height: 1.55;
+  }
+  .data-note strong { color: var(--success); }
+
+  .prototype-banner {
+    background: var(--brand-primary-deep);
+    color: var(--surface-base);
+    padding: 10px 32px;
+    font-size: 12px;
+    text-align: center;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    font-weight: 600;
+    border-bottom: 1px solid var(--brand-primary);
+  }
+  .prototype-banner span {
+    opacity: 0.7;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 8px;
+  }
+
+  /* ----- Mobile responsive ----- */
+  @media (max-width: 900px) {
+    .gallery, .gallery.public-posts {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .builder-body {
+      grid-template-columns: 1fr;
+    }
+    .form-pane {
+      border-right: none;
+      border-bottom: 1px solid var(--surface-edge);
+    }
+    .page-header h1 { font-size: 30px; }
+  }
+  @media (max-width: 560px) {
+    .gallery, .gallery.public-posts {
+      grid-template-columns: 1fr;
+    }
+    .section { padding: 22px 18px; }
+    .page-header { padding: 28px 18px 16px 18px; }
+    .nav-drawer { gap: 16px; padding: 14px 18px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- data-school-theme is set per the authenticated student's HS slug.
+     In production: useSchoolIdentity() resolves the slug; the wrapper writes
+     it onto the root element. Prototype uses "bc-high" because the worked
+     example is Thomas Girmay @ BC High. Change to "belmont-hill" to preview
+     that school's theme without touching anything else. -->
+<div class="app-shell" data-school-theme="bc-high">
+
+  <!-- ============================================================
+       APP TOPBAR — Sandwich menu trigger + brand
+       ============================================================ -->
+  <div class="app-topbar">
+    <div class="sandwich-icon" title="Toggle navigation">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="app-brand">GrittyOS · Recruit Hub</div>
+    <div class="app-tagline">Student View</div>
+  </div>
+
+  <!-- ============================================================
+       NAV DRAWER — shown expanded in prototype to illustrate
+       sandwich-menu open state. In production, this opens/closes.
+       ============================================================ -->
+  <nav class="nav-drawer">
+    <a href="#">Home</a>
+    <a href="#">My Profile</a>
+    <a href="#">My Grit Fit</a>
+    <a href="#">My Shortlist</a>
+    <a href="#">My Grit Guides</a>
+    <a href="#" class="active">Coach Message Generator</a>
+    <span class="nav-prototype-note">Prototype — drawer shown open for review</span>
+    <!-- Production drawer renders CLOSED by default; sandwich icon toggles open via SlideOutShell pattern. -->
+  </nav>
+
+  <!-- ============================================================
+       PROTOTYPE BANNER
+       ============================================================ -->
+  <div class="prototype-banner">
+    Sprint 025 Prototype — Phase 1
+    <span>Student-filled coach data; Phase 2 unlocks Position / Recruiting Area Coach picker once <code>public.college_coaches</code> is populated.</span>
+  </div>
+
+  <!-- ============================================================
+       PAGE HEADER
+       ============================================================ -->
+  <header class="page-header">
+    <h1>Coach Message Generator</h1>
+    <p class="subtitle">
+      Build templated messages to college coaches. Pick the situation that fits, fill the blanks, and copy your message or email it to yourself to send from your own account.
+    </p>
+    <div class="student-context">
+      <span><strong>Student:</strong> Thomas Girmay</span>
+      <span><strong>Class of:</strong> 2027</span>
+      <span><strong>Position:</strong> LB</span>
+      <span><strong>HS:</strong> Boston College High School</span>
+      <span><strong>CGPA:</strong> 3.6</span>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       PUBLIC POSTS SECTION (Scenario #1 only)
+       Separated above Coach Messages per design decision D1.2
+       ============================================================ -->
+  <section class="section" id="public-posts-section">
+    <div class="section-header">
+      <h2>Public Posts</h2>
+      <div class="section-sub">Broadcast posts on X/Twitter — visible to coaches and the public.</div>
+    </div>
+
+    <div class="gallery public-posts">
+      <div class="scenario-card public-post" data-scenario="1" data-channel="twitter-public">
+        <span class="scenario-channel">X/Twitter post</span>
+        <div class="scenario-number">Scenario 1</div>
+        <div class="scenario-title">Post-Camp Highlights</div>
+        <div class="scenario-situation">I attended a camp and want to share my highlights with the coaches I worked with.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       COACH MESSAGES SECTION (Scenarios #2–#11)
+       Card gallery — student picks one to open the builder below.
+       ============================================================ -->
+  <section class="section" id="coach-messages-section">
+    <div class="section-header">
+      <h2>Coach Messages</h2>
+      <div class="section-sub">Direct messages to coaches — email or Twitter DM.</div>
+    </div>
+
+    <div class="gallery coach-messages">
+      <!-- Scenario 2 — selected by default in prototype to demonstrate builder -->
+      <div class="scenario-card selected" data-scenario="2" data-channel="dm-first">
+        <span class="scenario-channel">DM → Email</span>
+        <div class="scenario-number">Scenario 2</div>
+        <div class="scenario-title">Camp Follow-Up</div>
+        <div class="scenario-situation">I just attended a camp and want to follow up with a coach I met.</div>
+      </div>
+
+      <div class="scenario-card" data-scenario="3" data-channel="dm-first">
+        <span class="scenario-channel">DM → Email</span>
+        <div class="scenario-number">Scenario 3</div>
+        <div class="scenario-title">Coach Followed Me on X</div>
+        <div class="scenario-situation">A coach just followed me on X/Twitter — I want to thank them and introduce myself.</div>
+      </div>
+
+      <div class="scenario-card" data-scenario="4" data-channel="email-first">
+        <span class="scenario-channel">Email → DM</span>
+        <div class="scenario-number">Scenario 4</div>
+        <div class="scenario-title">Introducing Myself</div>
+        <div class="scenario-situation">A shortlist school hasn't contacted me yet — I want to introduce myself first.</div>
+      </div>
+
+      <div class="scenario-card" data-scenario="5" data-channel="email-first">
+        <span class="scenario-channel">Email → DM</span>
+        <div class="scenario-number">Scenario 5</div>
+        <div class="scenario-title">Reply to Email Blast</div>
+        <div class="scenario-situation">A school sent an unpersonalized email blast — I want to reply and start a real conversation.</div>
+      </div>
+
+      <div class="scenario-card" data-scenario="6" data-channel="email-first">
+        <span class="scenario-channel">Email → DM</span>
+        <div class="scenario-number">Scenario 6</div>
+        <div class="scenario-title">No Response from AC/RC</div>
+        <div class="scenario-situation">I messaged an assistant coach or recruiting coordinator and never heard back. Time to reach the head coach.</div>
+      </div>
+
+      <div class="scenario-card" data-scenario="7" data-channel="email-first">
+        <span class="scenario-channel">Email → DM</span>
+        <div class="scenario-number">Scenario 7</div>
+        <div class="scenario-title">Pre-Camp Notice</div>
+        <div class="scenario-situation">I'm about to attend a camp where this coach will also be — heads-up so they can find me there.</div>
+      </div>
+
+      <div class="scenario-card" data-scenario="8" data-channel="dm-first">
+        <span class="scenario-channel">DM → Email</span>
+        <div class="scenario-number">Scenario 8</div>
+        <div class="scenario-title">Post-Visit Thank You</div>
+        <div class="scenario-situation">I just attended a Junior Day, prospect camp, or visit at a target school.</div>
+      </div>
+
+      <!-- No Response Sequence — three independent cards, visually clustered -->
+      <div class="scenario-card no-response" data-scenario="9" data-channel="dm-first">
+        <span class="scenario-channel">DM → Email</span>
+        <div class="scenario-number">Scenario 9 · No Response 1 of 3</div>
+        <div class="scenario-title">No Reply — First Nudge</div>
+        <div class="scenario-situation">No reply after my last message. Quick re-introduction with the basics.</div>
+      </div>
+
+      <div class="scenario-card no-response" data-scenario="10" data-channel="dm-first">
+        <span class="scenario-channel">DM → Email</span>
+        <div class="scenario-number">Scenario 10 · No Response 2 of 3</div>
+        <div class="scenario-title">Bump to the Top</div>
+        <div class="scenario-situation">Still no reply 5–7 days after Scenario 9. Short bump.</div>
+      </div>
+
+      <div class="scenario-card no-response" data-scenario="11" data-channel="dm-first">
+        <span class="scenario-channel">DM → Email</span>
+        <div class="scenario-number">Scenario 11 · No Response 3 of 3</div>
+        <div class="scenario-title">Respectful Close</div>
+        <div class="scenario-situation">Final message — graceful, leaves the door open. Wait 5–7 days after Scenario 10.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MESSAGE BUILDER
+       Activated when a scenario card is selected.
+       Shown active in prototype with Scenario 2 (Camp Follow-Up) loaded.
+       ============================================================ -->
+  <section class="section">
+    <div class="section-header">
+      <h2>Build Your Message</h2>
+      <div class="section-sub">Fields appear as you complete each step. Auto-filled fields pull from your profile; you can edit anything.</div>
+    </div>
+
+    <div class="builder active" id="builder">
+
+      <div class="builder-header">
+        <div>
+          <div class="builder-title">Scenario 2 · Camp Follow-Up</div>
+          <div class="builder-sub">DM the coach first; email if no reply within 24 hours.</div>
+        </div>
+        <button class="builder-header-close" type="button">← Change Scenario</button>
+      </div>
+
+      <div class="builder-body">
+
+        <!-- ====================== FORM PANE ====================== -->
+        <div class="form-pane">
+
+          <!-- PHASE 1 — Channel + School -->
+          <div class="phase revealed complete" data-phase="1">
+            <div class="phase-label">Phase 1 — Channel & School</div>
+            <div class="phase-prompt">How are you sending this, and to which school?</div>
+
+            <div class="field-row">
+              <div class="field">
+                <label>Send as</label>
+                <div class="channel-toggle" role="tablist">
+                  <button type="button" class="active" data-channel="email">Email</button>
+                  <button type="button" data-channel="twitter">Twitter DM</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field required">
+                <label>School</label>
+                <select>
+                  <option>Boston College (Power 4)</option>
+                  <option selected>UConn (G6)</option>
+                  <option>Holy Cross (FCS)</option>
+                  <option>Stonehill (D2)</option>
+                  <option>Williams (D3)</option>
+                  <option>— Other school not in my shortlist —</option>
+                </select>
+                <div class="field-help">Defaults to schools currently in your shortlist.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PHASE 2 — Camp/Event Context -->
+          <div class="phase revealed complete" data-phase="2">
+            <div class="phase-label">Phase 2 — Event Context</div>
+            <div class="phase-prompt">Tell us about the camp you attended.</div>
+
+            <div class="field-row">
+              <div class="field required">
+                <label>Camp Name</label>
+                <input type="text" value="Boston College Elite Camp" />
+              </div>
+              <div class="field required">
+                <label>Camp Location</label>
+                <input type="text" value="Chestnut Hill, MA" />
+              </div>
+            </div>
+          </div>
+
+          <!-- PHASE 3 — Coach Recipients -->
+          <div class="phase revealed" data-phase="3">
+            <div class="phase-label">Phase 3 — Coach Recipients</div>
+            <div class="phase-prompt">Address your message to both your Position Coach and the Recruiting Area Coach for your region.</div>
+
+            <div class="data-note">
+              <strong>Phase 1 build:</strong> Coach contact info isn't yet in the database. Enter the Last Name yourself for each recipient. <strong>Phase 2:</strong> these fields will auto-populate from a coach contact picker once we've scraped staff pages.
+            </div>
+
+            <div class="field-row">
+              <div class="field required">
+                <label>Position Coach — Last Name</label>
+                <input type="text" placeholder="e.g., Reagan" value="" />
+                <div class="field-help">Look up on the school's football staff page.</div>
+              </div>
+              <div class="field">
+                <label>Position Coach — Twitter handle <em>(optional)</em></label>
+                <input type="text" placeholder="@coachreagan" value="" />
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field required">
+                <label>Recruiting Area Coach — Last Name</label>
+                <input type="text" placeholder="e.g., Mendoza" value="" />
+                <div class="field-help">Usually labeled "Northeast Recruiter" or by region.</div>
+              </div>
+              <div class="field">
+                <label>Recruiting Area Coach — Twitter handle <em>(optional)</em></label>
+                <input type="text" placeholder="@coachmendoza" value="" />
+              </div>
+            </div>
+
+            <div class="data-note">
+              Recruiting Coordinator callout is unconditional — always rendered regardless of whether position-coach or area-coach fields are filled. (Static in prototype.)
+            </div>
+          </div>
+
+          <!-- PHASE 4 — Your Profile (auto-filled, editable) -->
+          <div class="phase revealed complete" data-phase="4">
+            <div class="phase-label">Phase 4 — Your Profile</div>
+            <div class="phase-prompt">Auto-filled from your profile. Edit any field if needed for this message.</div>
+
+            <div class="data-note">
+              <strong>Build note — column mapping (per <code>public.profiles</code>):</strong>
+              Full Name → <code>profiles.name</code>;
+              Grad Year → <code>profiles.grad_year</code>;
+              Position → <code>profiles.position</code>;
+              HS Name → <code>profiles.high_school</code>;
+              State → <code>profiles.state</code>;
+              CGPA → <code>profiles.gpa</code>;
+              Hudl Link → <code>profiles.hudl_url</code>;
+              Twitter Profile → <code>profiles.twitter</code>.
+              Profile keyed by <code>user_id</code> = <code>auth.users.id</code>. Display labels above are user-facing copy, not column names.
+            </div>
+
+            <div class="field-row">
+              <div class="field autofilled">
+                <label>Full Name</label>
+                <input type="text" value="Thomas Girmay" />
+              </div>
+              <div class="field autofilled">
+                <label>Grad Year</label>
+                <input type="text" value="2027" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field autofilled">
+                <label>Position</label>
+                <input type="text" value="LB" />
+              </div>
+              <div class="field autofilled">
+                <label>HS Name</label>
+                <input type="text" value="Boston College High School" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field autofilled">
+                <label>State</label>
+                <input type="text" value="MA" />
+              </div>
+              <div class="field autofilled">
+                <label>CGPA</label>
+                <input type="text" value="3.6" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field autofilled">
+                <label>Hudl Link</label>
+                <input type="text" value="https://www.hudl.com/v/2TYDys" />
+              </div>
+              <div class="field autofilled">
+                <label>Twitter Profile</label>
+                <input type="text" value="https://x.com/ThomasGirmay27" />
+              </div>
+            </div>
+          </div>
+
+          <!-- PHASE 5 — Optional questions (Junior Day, Camp) -->
+          <div class="phase revealed" data-phase="5">
+            <div class="phase-label">Phase 5 — Closing Questions</div>
+            <div class="phase-prompt">Include closing questions to invite a response.</div>
+
+            <div class="field-row">
+              <div class="field">
+                <label><input type="checkbox" checked /> Ask about Junior Days or spring visit days</label>
+              </div>
+              <div class="field">
+                <label><input type="checkbox" checked /> Ask which camps to attend for evaluation</label>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ====================== PREVIEW PANE ====================== -->
+        <div class="preview-pane">
+
+          <div class="preview-header">
+            <h3>Message Preview</h3>
+            <span class="preview-format-badge">Email</span>
+          </div>
+
+          <!-- Recipient tabs -->
+          <div class="recipient-tabs">
+            <button type="button" class="recipient-tab active">Position Coach</button>
+            <button type="button" class="recipient-tab">Recruiting Area Coach</button>
+          </div>
+
+          <div class="preview-coach-note">
+            <strong>Can't find this coach?</strong> Address your message to the team's Recruiting Coordinator instead. Find the staff directory at the school's football website.
+          </div>
+
+          <!-- Subject (email only) -->
+          <div class="preview-subject">
+            <span class="subject-label">Subject:</span>
+            <span class="subject-text">Nice to meet you at <span class="placeholder-token filled">Boston College Elite Camp</span> | <span class="placeholder-token autofilled">'27</span> <span class="placeholder-token autofilled">LB</span> | BC High</span>
+          </div>
+
+          <!-- Body -->
+          <div class="preview-body">Hi Coach <span class="placeholder-token">[Last Name]</span>,
+
+It was great to see <span class="placeholder-token filled">UConn</span> at the <span class="placeholder-token filled">Boston College Elite Camp</span> at <span class="placeholder-token filled">Chestnut Hill, MA</span> last week. I wanted to let you know that I recently submitted the recruiting questionnaire for <span class="placeholder-token filled">UConn</span>.
+
+My school counselor, coaches, parents, and I have been discussing my college plans for next year. <span class="placeholder-token filled">UConn</span> is at the top of my college list. I'd love to learn more about what it would take for me to play for you all.
+
+I'm a Class of <span class="placeholder-token autofilled">2027</span> <span class="placeholder-token autofilled">LB</span> at <span class="placeholder-token autofilled">Boston College High School</span> in <span class="placeholder-token autofilled">MA</span> with a <span class="placeholder-token autofilled">3.6</span> CGPA and rising.
+
+You can see my film on my Hudl link: <span class="placeholder-token autofilled">https://www.hudl.com/v/2TYDys</span>
+
+You can also see some of my latest camp highlights on Twitter/X: <span class="placeholder-token autofilled">https://x.com/ThomasGirmay27</span>
+
+Will your school be having Junior Days or visit days in the spring? Would you recommend that I attend any camps where your coaching staff could evaluate me?
+
+Thank you for your consideration.
+
+Sincerely,
+
+<span class="placeholder-token autofilled">Thomas Girmay</span>
+Class of <span class="placeholder-token autofilled">2027</span>, <span class="placeholder-token autofilled">LB</span>
+<span class="placeholder-token autofilled">Boston College High School</span>
+<span class="placeholder-token autofilled">https://x.com/ThomasGirmay27</span></div>
+
+          <div class="data-note">
+            <strong>Orange tokens</strong> = student needs to fill (Coach Last Name).
+            <strong>Sand-colored tokens</strong> = auto-filled from profile, editable.
+            <strong>Plain text</strong> = manually entered in the form.
+          </div>
+
+          <div class="action-row">
+            <button class="btn btn-primary" type="button">📋 Copy Message</button>
+            <button class="btn btn-secondary" type="button">✉ Email to Myself</button>
+            <button class="btn btn-ghost" type="button">↻ Reset Form</button>
+          </div>
+
+          <div class="data-note" style="margin-top: 14px;">
+            <strong>On Copy or Email-to-Self:</strong> the message is logged to <code>public.profiles.cmg_message_log</code> (JSONB) with school name, scenario number, channel, recipient role, timestamp, and email-to-self flag. Phase 1 logging is fire-and-forget; no relationship-state inference is drawn from this log.
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SENT LOG — JSON-backed tracking table
+       ============================================================ -->
+  <section class="section">
+    <div class="section-header">
+      <h2>My Message History</h2>
+      <div class="section-sub">Messages you've constructed using the generator. Stored in your profile so you can pick up across devices.</div>
+    </div>
+
+    <div class="sent-log">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>School</th>
+            <th>Scenario</th>
+            <th>Channel</th>
+            <th>Recipient</th>
+            <th>Emailed to Self?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>May 10, 2026</td>
+            <td>Holy Cross</td>
+            <td><span class="scenario-tag">#4 Introducing Myself</span></td>
+            <td><span class="channel-pill email">Email</span></td>
+            <td>Position Coach + RAC</td>
+            <td class="sent-to-self-icon">✓</td>
+          </tr>
+          <tr>
+            <td>May 8, 2026</td>
+            <td>Williams</td>
+            <td><span class="scenario-tag">#2 Camp Follow-Up</span></td>
+            <td><span class="channel-pill twitter">Twitter</span></td>
+            <td>Position Coach + RAC</td>
+            <td class="sent-to-self-icon no">—</td>
+          </tr>
+          <tr>
+            <td>May 6, 2026</td>
+            <td>UConn</td>
+            <td><span class="scenario-tag">#3 Coach Followed Me on X</span></td>
+            <td><span class="channel-pill twitter">Twitter</span></td>
+            <td>Position Coach</td>
+            <td class="sent-to-self-icon no">—</td>
+          </tr>
+          <tr>
+            <td>May 3, 2026</td>
+            <td>Stonehill</td>
+            <td><span class="scenario-tag">#4 Introducing Myself</span></td>
+            <td><span class="channel-pill email">Email</span></td>
+            <td>Position Coach + RAC</td>
+            <td class="sent-to-self-icon">✓</td>
+          </tr>
+          <tr>
+            <td>Apr 28, 2026</td>
+            <td>Boston College</td>
+            <td><span class="scenario-tag">#9 No Reply — First Nudge</span></td>
+            <td><span class="channel-pill twitter">Twitter</span></td>
+            <td>Position Coach</td>
+            <td class="sent-to-self-icon no">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="data-note" style="margin-top: 14px;">
+      <strong>JSON shape (Phase 1):</strong>
+      <code style="display:block; margin-top:6px; padding:10px; background:#FCFAF3; border:1px solid var(--surface-edge); border-radius:3px; font-family:Menlo,monospace; font-size:11px; line-height:1.5; color:var(--ink); white-space:pre;">// public.profiles.cmg_message_log is a JSONB array
+// (one cmg_message_log per profile row, keyed by user_id).
+// The array itself is the value; no outer envelope object.
+[
+  {
+    "id": "uuid",
+    "unitid": 12345,                            // FK target: public.schools.unitid
+    "school_name": "Holy Cross",                // denormalized for read-fast display
+    "scenario_number": 4,
+    "scenario_title": "Introducing Myself",
+    "channel": "email",                         // "email" | "twitter"
+    "recipients": ["position_coach", "recruiting_area_coach"],
+    "emailed_to_self": true,
+    "constructed_at": "2026-05-10T14:23:00Z"
+  }
+]</code>
+      Stored on <code>public.profiles.cmg_message_log</code> (JSONB column added by Sprint 025 migration). Queryable via Postgres JSON operators for the Phase 1 reporting questions only:
+      has-the-student-messaged-this-school, when, channel, emailed-to-self. Intentionally NOT a relationship-state ledger — see DESIGN_NOTES D3.8 for the distinction from <code>public.coach_contacts</code>.
+    </div>
+  </section>
+
+  <div style="padding: 28px 32px 48px 32px; color: var(--ink-muted); font-size: 12px; text-align: center; border-top: 1px solid var(--surface-edge); margin-top: 18px;">
+    GrittyOS · Recruit Hub · Coach Message Generator Prototype · Sprint 025 ground truth
+  </div>
+
+</div>
+
+<script>
+  /* ============================================================
+     PROTOTYPE INTERACTIONS
+     This is illustrative-only behavior to demonstrate the
+     phase-by-phase reveal pattern and channel/recipient toggles.
+     The production build will wire these to real state.
+     ============================================================ */
+
+  // Scenario card selection
+  document.querySelectorAll('.scenario-card').forEach(card => {
+    card.addEventListener('click', () => {
+      // Deselect public-post cards if a coach-message card is clicked, and vice versa
+      const isPublicPost = card.classList.contains('public-post');
+      document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+
+      const scenarioNum = card.dataset.scenario;
+      const title = card.querySelector('.scenario-title').textContent;
+      const sub   = card.querySelector('.scenario-situation').textContent;
+
+      const builderTitle = document.querySelector('.builder-title');
+      const builderSub   = document.querySelector('.builder-sub');
+      if (builderTitle) builderTitle.textContent = `Scenario ${scenarioNum} · ${title}`;
+      if (builderSub)   builderSub.textContent = sub;
+
+      // Smooth scroll to builder
+      document.getElementById('builder').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Channel toggle (Email / Twitter)
+  document.querySelectorAll('.channel-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const parent = btn.parentElement;
+      parent.querySelectorAll('button').forEach(b => {
+        b.classList.remove('active');
+        b.classList.remove('twitter-active');
+      });
+      btn.classList.add('active');
+      if (btn.dataset.channel === 'twitter') {
+        btn.classList.add('twitter-active');
+      }
+
+      // Update preview format badge
+      const badge = document.querySelector('.preview-format-badge');
+      if (badge) {
+        if (btn.dataset.channel === 'twitter') {
+          badge.textContent = 'Twitter DM';
+          badge.classList.add('twitter');
+          // Hide subject for Twitter
+          document.querySelector('.preview-subject').style.display = 'none';
+        } else {
+          badge.textContent = 'Email';
+          badge.classList.remove('twitter');
+          document.querySelector('.preview-subject').style.display = 'block';
+        }
+      }
+    });
+  });
+
+  // Recipient tab toggle
+  document.querySelectorAll('.recipient-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.recipient-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
+
+  // Builder header close
+  const closeBtn = document.querySelector('.builder-header-close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById('coach-messages-section').scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+
+  /* ============================================================
+     ANIMATED PHASE REVEAL (illustrative)
+     In production: each phase reveals when the prior phase
+     meets its completion criteria. For the prototype, phases
+     are pre-revealed to show the full form on first view.
+     ============================================================ */
+  // Stagger initial reveal for visual demonstration
+  document.querySelectorAll('.phase').forEach((phase, idx) => {
+    phase.style.transitionDelay = `${idx * 80}ms`;
+  });
+</script>
+
+</body>
+</html>
