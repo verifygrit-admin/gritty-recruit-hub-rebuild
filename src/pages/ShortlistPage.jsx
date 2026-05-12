@@ -395,7 +395,54 @@ export default function ShortlistPage() {
         return;
       }
 
-      setItems(itemsRes.data || []);
+      // Sprint 025 hotfix — Belmont Hill shortlist rows were imported via
+      // scripts/import_shortlist_belmont_hill.py which omits q_link / coach_link
+      // from the upsert payload (see that script, header comment lines 47-48).
+      // Those columns therefore remain null on the 54 Belmont Hill rows, which
+      // breaks both primary-action buttons in the School Details slide-out
+      // (ShortlistSlideOut renders item.q_link / item.coach_link directly).
+      // The canonical source for both URLs is public.schools.recruiting_q_link
+      // and public.schools.coach_link — already populated for the Belmont Hill
+      // schools (verified 2026-05-12, sample of 6 unitids). Rather than depend
+      // on every import path remembering to denormalize these onto
+      // short_list_items, fall back to the schools table at load time. BC High
+      // rows already have the URLs denormalized so the fallback is a no-op for
+      // them. The fallback only fills when sli.q_link / sli.coach_link are
+      // null-ish (covers null, undefined, ''). 'NEEDS_REVIEW' sentinel values
+      // are preserved as-is (they signal a data-quality flag, not absence).
+      const loadedItemsRaw = itemsRes.data || [];
+      const itemUnitids = Array.from(new Set(
+        loadedItemsRaw.map(i => i.unitid).filter(u => u != null)
+      ));
+      let schoolUrlByUnitid = {};
+      if (itemUnitids.length > 0) {
+        const { data: schoolUrlRows, error: schoolUrlErr } = await supabase
+          .from('schools')
+          .select('unitid,recruiting_q_link,coach_link')
+          .in('unitid', itemUnitids);
+        if (!schoolUrlErr && schoolUrlRows) {
+          for (const row of schoolUrlRows) {
+            schoolUrlByUnitid[row.unitid] = {
+              q_link: row.recruiting_q_link ?? null,
+              coach_link: row.coach_link ?? null,
+            };
+          }
+        }
+      }
+      const loadedItems = loadedItemsRaw.map(item => {
+        const fb = schoolUrlByUnitid[item.unitid];
+        if (!fb) return item;
+        const needsQ = item.q_link == null || item.q_link === '';
+        const needsCoach = item.coach_link == null || item.coach_link === '';
+        if (!needsQ && !needsCoach) return item;
+        return {
+          ...item,
+          q_link:     needsQ     ? fb.q_link     : item.q_link,
+          coach_link: needsCoach ? fb.coach_link : item.coach_link,
+        };
+      });
+
+      setItems(loadedItems);
 
       // Group files by unitid
       const grouped = {};
@@ -411,7 +458,6 @@ export default function ShortlistPage() {
 
       // Auto-refresh: if profile was updated after the most recent shortlist scoring,
       // re-run scoring in the background to keep labels and metrics current.
-      const loadedItems = itemsRes.data || [];
       if (loadedItems.length > 0) {
         try {
           const profileRes = await supabase.from('profiles').select('updated_at').eq('user_id', userId).single();
@@ -432,7 +478,24 @@ export default function ShortlistPage() {
                     .select('*')
                     .eq('user_id', userId)
                     .order('added_at', { ascending: false });
-                  if (freshItems) setItems(freshItems);
+                  if (freshItems) {
+                    // Re-apply the q_link / coach_link fallback from schools so
+                    // the post-rescore refresh does not regress Belmont Hill
+                    // primary-action buttons back to null.
+                    const merged = freshItems.map(item => {
+                      const fb = schoolUrlByUnitid[item.unitid];
+                      if (!fb) return item;
+                      const needsQ = item.q_link == null || item.q_link === '';
+                      const needsCoach = item.coach_link == null || item.coach_link === '';
+                      if (!needsQ && !needsCoach) return item;
+                      return {
+                        ...item,
+                        q_link:     needsQ     ? fb.q_link     : item.q_link,
+                        coach_link: needsCoach ? fb.coach_link : item.coach_link,
+                      };
+                    });
+                    setItems(merged);
+                  }
                   setToast({ msg: `Scores updated for ${updated} school${updated !== 1 ? 's' : ''} based on your latest profile`, type: 'success' });
                   setTimeout(() => setToast(null), 4000);
                 }
