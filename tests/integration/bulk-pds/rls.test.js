@@ -88,7 +88,9 @@ async function signInAs(email) {
 function sampleStagingRow(coachUserId, studentUserId) {
   // Minimum-viable insert payload. Snapshot columns are nullable per §1.1
   // shape; we set the FK-bound fields plus a couple measurables.
+  // batch_id is NOT NULL per migration 0048 — generate a fresh uuid per row.
   return {
+    batch_id:        globalThis.crypto.randomUUID(),
     coach_user_id:   coachUserId,
     student_user_id: studentUserId,
     height:          '6-2',
