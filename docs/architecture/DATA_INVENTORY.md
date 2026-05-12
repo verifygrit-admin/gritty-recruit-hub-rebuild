@@ -155,6 +155,7 @@ Shape (31 cols, 34 rows):
 - Identity: `name`, `email`, `phone`, `twitter`, `parent_guardian_email`
 - HS: `high_school`, `grad_year`, `state`, `hs_lat`, `hs_lng`
 - Athletic: `position`, `height` (text, e.g. `"6-2"`), `weight`, `speed_40`, `gpa`, `sat`
+- Bulk PDS measurables (Sprint 026, 0049): `time_5_10_5` (numeric, 5-10-5 drill seconds), `time_l_drill` (numeric, L-drill seconds), `bench_press` (numeric, lbs), `squat` (numeric, lbs), `clean` (numeric, lbs), `last_bulk_pds_approved_at` (timestamptz, distinct from `updated_at`)
 - Badges: `expected_starter`, `captain`, `all_conference`, `all_state` (bool)
 - Financial: `agi`, `dependents`
 - Status: `status` DEFAULT `'active'`
@@ -167,12 +168,14 @@ Defining migrations:
 - `0016_profiles_add_hudl_url.sql`
 - `0021_profiles_zero_match_tracking.sql`
 - `0022_profiles_add_avatar_url.sql`
+- `0049_profiles_add_bulk_pds_measurables.sql` — Sprint 026 (5 measurables + last_bulk_pds_approved_at)
 - `0012`, `0015`, `0025`, `0026`, `0027`, `0043` — RLS
 
 Write paths:
 - `src/pages/ProfilePage.jsx:271` — `upsert(payload, { onConflict: 'user_id' })`
 - `src/pages/GritFitPage.jsx` — writes `last_grit_fit_run_at`, `last_grit_fit_zero_match` after every score run
 - `supabase/functions/fetch-hudl-avatar/index.ts` — writes `avatar_storage_path`
+- `supabase/functions/admin-approve-bulk-pds/index.ts` — Sprint 026; on admin approval, writes the 5 Bulk PDS measurables + `last_bulk_pds_approved_at` (also bumps `updated_at`). Source rows come from `public.bulk_pds_submissions`.
 - `scripts/backfill-hudl-avatars.js` — backfill `avatar_storage_path`
 - `scripts/bulk_import_students.js` — bulk insert (service role)
 - `scripts/repair_shortlist_fields.py` — operator backfill
@@ -192,8 +195,9 @@ Notes:
 - Coaches and counselors do **NOT** have rows here. Seed scripts populate `auth.users` + `public.users` only. Any feature that needs a staff name must use `src/data/school-staff.js` (Section 7) or query through an EF; broadening RLS to allow students to read staff `profiles` rows is explicitly NOT done.
 - `height` is text (`"6-2"`), not numeric. Parsed by `parseHeight` in `src/components/RecruitingScoreboard.jsx:127`.
 - Badges + measurables feed `calcAthleticFit` / `calcAthleticBoost` in `src/lib/scoring.js`.
+- The 5 Bulk PDS measurables (`time_5_10_5`, `time_l_drill`, `bench_press`, `squat`, `clean`) are NOT exposed in the Student "My Profile" page in Sprint 026 (Note 1 lock). They write only via the admin-approve-bulk-pds EF. `last_bulk_pds_approved_at` is intentionally distinct from `updated_at` — the latter tracks the broader profile lifecycle.
 
-Last verified: 2026-05-08
+Last verified: 2026-05-12
 
 ---
 
@@ -324,6 +328,53 @@ Notes:
 - `confirmed_at` on coach link, `linked_at` on counselor link — column naming is inconsistent between the two tables.
 
 Last verified: 2026-05-08
+
+---
+
+### `public.bulk_pds_submissions`
+
+Class: A — Postgres table
+Purpose: Staging table for HS coach Bulk Player Data Submission (Sprint 026). One row per (coach submission, student). Admin verifies and approves rows; approval writes through to `public.profiles`. Rejection sets `approval_status='rejected'` with no profiles write.
+
+Shape (22 cols, 3 rows after P2-4 fixture seed):
+- `id` uuid PK
+- `batch_id` uuid (NOT NULL, indexed) — groups all Player Update Cards from a single coach submit click
+- `coach_user_id` uuid → `auth.users.id` (ON DELETE CASCADE)
+- `student_user_id` uuid → `auth.users.id` (ON DELETE CASCADE)
+- Identity snapshot (immutable record of identity at submit time): `student_name_snapshot`, `student_email_snapshot`, `student_grad_year_snapshot`, `student_high_school_snapshot`, `student_avatar_storage_path_snap`
+- Performance (write-thru candidates): `height` (text), `weight`, `speed_40`, `time_5_10_5`, `time_l_drill`, `bench_press`, `squat`, `clean` (all numeric)
+- Lifecycle: `submitted_at` (timestamptz NOT NULL DEFAULT now()), `approval_status` (text NOT NULL DEFAULT `'pending'`, check `IN ('pending','approved','rejected')`), `approved_by` uuid → `auth.users.id` (ON DELETE SET NULL), `approved_at` timestamptz, `rejection_reason` text
+
+Defining migrations:
+- `0048_bulk_pds_submissions.sql` — table + 5 indexes + 3 FKs + CHECK
+- `0050_bulk_pds_submissions_rls.sql` — 3 policies
+
+RLS (live):
+- `bulk_pds_coach_select_own` (SELECT): `coach_user_id = auth.uid()`
+- `bulk_pds_coach_insert_own_linked_students` (INSERT WITH CHECK): coach must own the row AND have a matching row in `public.hs_coach_students` for `student_user_id`
+- `bulk_pds_admin_select_all` (SELECT): JWT `app_metadata.role = 'admin'` — admin EFs use service_role so this is consistency-only
+
+No coach UPDATE or DELETE policy. No browser-side admin write — all lifecycle UPDATEs happen via service_role EFs.
+
+Write paths:
+- `src/lib/bulkPds/submitBulkPdsBatch.js` — Coach UI bulk INSERT path, RLS-gated
+- `supabase/functions/admin-approve-bulk-pds/index.ts` — service_role; sets `approval_status='approved'`, `approved_by`, `approved_at`; paired write to `public.profiles`
+- `supabase/functions/admin-reject-bulk-pds/index.ts` — service_role; sets `approval_status='rejected'`, `approved_by`, `approved_at`, `rejection_reason`. No profiles write.
+- `scripts/seed_bulk_pds_fixture.js` — idempotent E2E fixture seed (Sprint 026 P2-4, fixed batch_id `00000026-…`)
+
+Read paths:
+- `supabase/functions/admin-read-bulk-pds/index.ts` — GET grouped pending batches list and per-batch detail (LEFT JOIN `profiles` on `student_user_id`)
+- `src/lib/bulkPds/admin/adminBulkPdsClient.js` — Admin UI fans out list → per-batch detail in parallel
+- Direct coach reads via PostgREST allowed by the SELECT policy (not currently used in the Coach UI; coach gets toast feedback after the INSERT, not a read-back)
+
+Lifecycle: Runtime. Submissions retained indefinitely after approval or rejection (Q8 lock — no purge cadence).
+
+Notes:
+- Snapshot columns capture identity at submit time so the admin compare panel is stable even if the student's profile changes between submission and approval.
+- `notify-bulk-pds-event` EF (Sprint 026) emits emails on submission / approval / rejection. When `RESEND_API_KEY` is absent from Supabase EF secrets, the helper degrades to logging `EMAIL_DISABLED:` lines and returns `{ disabled: true }` — lifecycle does NOT block on email.
+- Q1 contract: approve/reject EFs accept EITHER `{ batch_id }` OR `{ submission_id }` (mutually exclusive); the Admin UI exposes both whole-batch and per-row controls.
+
+Last verified: 2026-05-12
 
 ---
 
