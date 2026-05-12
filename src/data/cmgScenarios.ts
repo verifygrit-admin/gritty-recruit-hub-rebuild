@@ -345,17 +345,20 @@ for (const [groupKey, variants] of Object.entries(TOKEN_VARIANT_GROUPS)) {
 //   [Twitter profile link]    <-- email only; redundant cross-platform handoff
 //
 // Per DESIGN_NOTES D3.4 the redundant Twitter link is email-only. The Twitter
-// signature variant drops that last line because the recipient is already on
-// the platform.
+// signature variant is suppressed entirely — Twitter DMs do not need a
+// multi-line signature because the recipient is already on the platform and
+// can see the sender's handle natively. Sprint 025 hotfix (2026-05-12): the
+// email-style multi-line signature was previously rendering on Twitter when
+// the channel toggle switched; setting TWITTER_SIGNATURE to an empty string
+// ensures the renderer suppresses the signature block when channel === 'twitter'
+// (see PreviewPane.jsx empty-template guard).
 
 const EMAIL_SIGNATURE = `[Your Full Name]
 Class of [Grad Year], [Position]
 [HS Name]
 [Twitter profile link]`;
 
-const TWITTER_SIGNATURE = `[Your Full Name]
-Class of [Grad Year], [Position]
-[HS Name]`;
+const TWITTER_SIGNATURE = '';
 
 // ---------------------------------------------------------------------------
 // Scenarios (id 1..11)
@@ -718,7 +721,9 @@ Sincerely,`,
    *   client preserves the prior subject line on reply, which is the intended
    *   behavior. The mailto handler emits an empty subject param accordingly.
    * Signature: docx does not show a signature for #9/#10/#11; the standard
-   *   EMAIL_SIGNATURE / TWITTER_SIGNATURE pair is applied for consistency.
+   *   EMAIL_SIGNATURE is applied for the email channel. TWITTER_SIGNATURE is
+   *   an empty string for all 11 scenarios — Twitter DMs do not need a
+   *   multi-line signature (sender's handle is visible on-platform).
    */
   {
     id: 9,

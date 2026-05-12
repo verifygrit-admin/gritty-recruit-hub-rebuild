@@ -141,7 +141,16 @@ export default function PreviewPane({
     () => (subjectSegments ? renderSegmentsToPlainText(subjectSegments) : ''),
     [subjectSegments],
   );
-  const plainText = useMemo(() => `${plainBody}\n\n${plainSignature}`, [plainBody, plainSignature]);
+  // Empty/whitespace-only signature → suppress the `\n\n` join so Copy output
+  // does not have trailing blank lines after the body. Mirrors buildMailto's
+  // existing empty-signature guard. Sprint 025 hotfix (2026-05-12): Twitter
+  // channel signature is empty per cmgScenarios.ts → Copy must not append a
+  // trailing blank pair.
+  const hasSignature = plainSignature.trim().length > 0;
+  const plainText = useMemo(
+    () => (hasSignature ? `${plainBody}\n\n${plainSignature}` : plainBody),
+    [plainBody, plainSignature, hasSignature],
+  );
 
   // Per SPEC_FOR_CODE Step 7 — fire-and-forget log write. Failure is non-blocking;
   // we log to console and continue so the user's primary Copy/Email action is
@@ -362,12 +371,14 @@ export default function PreviewPane({
         <pre className="cmg-preview-pre" data-testid="cmg-preview-body">
           {renderSegmentsToReact(bodySegments, 'body')}
         </pre>
-        <pre
-          className="cmg-preview-pre cmg-preview-signature"
-          data-testid="cmg-preview-signature"
-        >
-          {renderSegmentsToReact(signatureSegments, 'sig')}
-        </pre>
+        {hasSignature && (
+          <pre
+            className="cmg-preview-pre cmg-preview-signature"
+            data-testid="cmg-preview-signature"
+          >
+            {renderSegmentsToReact(signatureSegments, 'sig')}
+          </pre>
+        )}
       </article>
 
       {scenario.kind === 'coach_message' && (
