@@ -42,6 +42,7 @@
  */
 
 import { SUBSTITUTION_TOKENS } from '../../data/cmgScenarios.ts';
+import { normalizeTwitterUrl } from './twitter.js';
 
 // ---------------------------------------------------------------------------
 // Token list — sorted by length descending so longer multi-word tokens match
@@ -70,7 +71,15 @@ export function resolveToken(token, ctx) {
 
   if (spec.source === 'profile') {
     const value = ctx?.profile?.[spec.field];
-    return value === undefined || value === null || value === '' ? null : String(value);
+    if (value === undefined || value === null || value === '') return null;
+    // Sprint 025 hotfix (2026-05-12): the twitter field is stored as a bare
+    // handle in 7/8 sampled profiles. Render-time normalization to the full
+    // https://x.com/{handle} URL is required across body / signature /
+    // mailto / copy / cmg_message_log surfaces. See src/lib/cmg/twitter.js.
+    if (spec.field === 'twitter') {
+      return normalizeTwitterUrl(value);
+    }
+    return String(value);
   }
   if (spec.source === 'derived') {
     if (spec.field === 'grad_year') {

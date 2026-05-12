@@ -27,6 +27,7 @@
  */
 
 import { Link } from 'react-router-dom';
+import { normalizeTwitterUrl } from '../../../lib/cmg/twitter.js';
 
 const FIELDS = [
   { key: 'name', label: 'Name' },
@@ -54,7 +55,22 @@ function renderValue(field, raw) {
     return <span className="cmg-p4-value cmg-p4-value--empty" aria-label="Not set">{EMPTY}</span>;
   }
   if (field.isLink) {
-    const href = String(raw).trim();
+    // Sprint 025 hotfix (2026-05-12): the twitter column is stored as a bare
+    // handle in 7/8 sampled profiles, which the browser previously resolved
+    // as a relative path. Normalize to https://x.com/{handle} for both href
+    // and visible link text. hudl_url is already a full URL — pass through.
+    let href = String(raw).trim();
+    if (field.key === 'twitter') {
+      const normalized = normalizeTwitterUrl(raw);
+      if (!normalized) {
+        return (
+          <span className="cmg-p4-value cmg-p4-value--empty" aria-label="Not set">
+            {EMPTY}
+          </span>
+        );
+      }
+      href = normalized;
+    }
     return (
       <a
         className="cmg-p4-value cmg-p4-value--link"
