@@ -83,7 +83,7 @@ export default function MessageHistory({ log }) {
                       : '—'}
                   </td>
                   <td>{recipientLabel(row)}</td>
-                  <td>{bodyPreview(row?.body_rendered)}</td>
+                  <td className="cmg-history-preview">{bodyPreview(row?.body_rendered)}</td>
                 </tr>
               );
             })}
