@@ -313,12 +313,19 @@ export const handler = async (req: Request): Promise<Response> => {
       const studentIds = Array.from(
         new Set((stagingRows ?? []).map((r) => r.student_user_id as string)),
       );
-      const { data: profiles } = await svc
+      const { data: profiles, error: profilesError } = await svc
         .from("profiles")
         .select("user_id, name, email, " + WRITETHRU_FIELDS.join(", "))
         .in("user_id", studentIds);
+      if (profilesError) {
+        console.error("notify-bulk-pds-event: profiles read failed", profilesError);
+      }
       const profileById = new Map<string, Record<string, unknown>>();
-      for (const p of profiles ?? []) profileById.set(p.user_id as string, p);
+      // Cast via unknown — supabase-js union includes GenericStringError; the
+      // explicit error guard above is enough at runtime, but TS narrowing
+      // doesn't follow through the destructured-error pattern.
+      const profilesArr = (profiles ?? []) as unknown as Array<Record<string, unknown>>;
+      for (const p of profilesArr) profileById.set(p.user_id as string, p);
 
       // Group by coach.
       const byCoach = new Map<

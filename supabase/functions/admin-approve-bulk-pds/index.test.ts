@@ -7,6 +7,14 @@ Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key");
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { installSupabaseFetchMock, bearer } from "../_shared/testHelpers.ts";
 
+// supabase-js's auth + realtime clients install module-level setInterval handles
+// (token auto-refresh, socket heartbeat) that the fetch mock cannot dismantle.
+// Disable Deno's per-test op/resource sanitizer so those leaks don't fail tests.
+// Production runtime (Supabase hosted Deno) does not run the sanitizer.
+function test(name: string, fn: () => Promise<void>): void {
+  Deno.test({ name, fn, sanitizeOps: false, sanitizeResources: false });
+}
+
 const ADMIN_TOKEN = "admin-token";
 const COACH_TOKEN = "coach-token";
 const BATCH_A = "22222222-2222-2222-2222-222222222222";
@@ -62,7 +70,7 @@ const state = installSupabaseFetchMock({
 
 const { handler } = await import("./index.ts");
 
-Deno.test("admin-approve-bulk-pds — 401 without bearer", async () => {
+test("admin-approve-bulk-pds — 401 without bearer", async () => {
   const req = new Request("http://x/functions/v1/admin-approve-bulk-pds", {
     method: "POST",
     body: JSON.stringify({ batch_id: BATCH_A }),
@@ -71,7 +79,7 @@ Deno.test("admin-approve-bulk-pds — 401 without bearer", async () => {
   assertEquals(res.status, 401);
 });
 
-Deno.test("admin-approve-bulk-pds — 403 when not admin", async () => {
+test("admin-approve-bulk-pds — 403 when not admin", async () => {
   const req = new Request("http://x/functions/v1/admin-approve-bulk-pds", {
     method: "POST",
     headers: { ...bearer(COACH_TOKEN), "Content-Type": "application/json" },
@@ -81,7 +89,7 @@ Deno.test("admin-approve-bulk-pds — 403 when not admin", async () => {
   assertEquals(res.status, 403);
 });
 
-Deno.test("admin-approve-bulk-pds — 400 when both batch_id and submission_id provided", async () => {
+test("admin-approve-bulk-pds — 400 when both batch_id and submission_id provided", async () => {
   const req = new Request("http://x/functions/v1/admin-approve-bulk-pds", {
     method: "POST",
     headers: { ...bearer(ADMIN_TOKEN), "Content-Type": "application/json" },
@@ -91,7 +99,7 @@ Deno.test("admin-approve-bulk-pds — 400 when both batch_id and submission_id p
   assertEquals(res.status, 400);
 });
 
-Deno.test("admin-approve-bulk-pds — 200 happy path approves and writes audit log", async () => {
+test("admin-approve-bulk-pds — 200 happy path approves and writes audit log", async () => {
   const req = new Request("http://x/functions/v1/admin-approve-bulk-pds", {
     method: "POST",
     headers: { ...bearer(ADMIN_TOKEN), "Content-Type": "application/json" },

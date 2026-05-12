@@ -8,6 +8,14 @@ Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key");
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { installSupabaseFetchMock, bearer } from "../_shared/testHelpers.ts";
 
+// supabase-js's auth + realtime clients install module-level setInterval handles
+// (token auto-refresh, socket heartbeat) that the fetch mock cannot dismantle.
+// Disable Deno's per-test op/resource sanitizer so those leaks don't fail tests.
+// Production runtime (Supabase hosted Deno) does not run the sanitizer.
+function test(name: string, fn: () => Promise<void>): void {
+  Deno.test({ name, fn, sanitizeOps: false, sanitizeResources: false });
+}
+
 const ADMIN_TOKEN = "admin-token";
 const COACH_TOKEN = "coach-token";
 const SERVICE_TOKEN = "test-service-role-key"; // matches SUPABASE_SERVICE_ROLE_KEY
@@ -52,7 +60,7 @@ installSupabaseFetchMock({
 
 const { handler } = await import("./index.ts");
 
-Deno.test("notify-bulk-pds-event — 401 without bearer", async () => {
+test("notify-bulk-pds-event — 401 without bearer", async () => {
   const req = new Request("http://x/functions/v1/notify-bulk-pds-event", {
     method: "POST",
     body: JSON.stringify({ event_type: "submission" }),
@@ -61,7 +69,7 @@ Deno.test("notify-bulk-pds-event — 401 without bearer", async () => {
   assertEquals(res.status, 401);
 });
 
-Deno.test("notify-bulk-pds-event — 400 on invalid event_type", async () => {
+test("notify-bulk-pds-event — 400 on invalid event_type", async () => {
   const req = new Request("http://x/functions/v1/notify-bulk-pds-event", {
     method: "POST",
     headers: { ...bearer(ADMIN_TOKEN), "Content-Type": "application/json" },
@@ -71,7 +79,7 @@ Deno.test("notify-bulk-pds-event — 400 on invalid event_type", async () => {
   assertEquals(res.status, 400);
 });
 
-Deno.test("notify-bulk-pds-event — 403 when admin tries to fire submission", async () => {
+test("notify-bulk-pds-event — 403 when admin tries to fire submission", async () => {
   const req = new Request("http://x/functions/v1/notify-bulk-pds-event", {
     method: "POST",
     headers: { ...bearer(ADMIN_TOKEN), "Content-Type": "application/json" },
@@ -85,7 +93,7 @@ Deno.test("notify-bulk-pds-event — 403 when admin tries to fire submission", a
   assertEquals(res.status, 403);
 });
 
-Deno.test("notify-bulk-pds-event — 403 when coach tries to fire approval", async () => {
+test("notify-bulk-pds-event — 403 when coach tries to fire approval", async () => {
   const req = new Request("http://x/functions/v1/notify-bulk-pds-event", {
     method: "POST",
     headers: { ...bearer(COACH_TOKEN), "Content-Type": "application/json" },
@@ -95,7 +103,7 @@ Deno.test("notify-bulk-pds-event — 403 when coach tries to fire approval", asy
   assertEquals(res.status, 403);
 });
 
-Deno.test("notify-bulk-pds-event — 200 coach submission, EMAIL_DISABLED fallback", async () => {
+test("notify-bulk-pds-event — 200 coach submission, EMAIL_DISABLED fallback", async () => {
   const req = new Request("http://x/functions/v1/notify-bulk-pds-event", {
     method: "POST",
     headers: { ...bearer(COACH_TOKEN), "Content-Type": "application/json" },
@@ -116,7 +124,7 @@ Deno.test("notify-bulk-pds-event — 200 coach submission, EMAIL_DISABLED fallba
   assertEquals(body.emails_disabled, true);
 });
 
-Deno.test("notify-bulk-pds-event — 200 service-role approval composes coach + student emails", async () => {
+test("notify-bulk-pds-event — 200 service-role approval composes coach + student emails", async () => {
   const req = new Request("http://x/functions/v1/notify-bulk-pds-event", {
     method: "POST",
     headers: { ...bearer(SERVICE_TOKEN), "Content-Type": "application/json" },

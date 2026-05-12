@@ -8,6 +8,14 @@ Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key");
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { installSupabaseFetchMock, bearer } from "../_shared/testHelpers.ts";
 
+// supabase-js's auth + realtime clients install module-level setInterval handles
+// (token auto-refresh, socket heartbeat) that the fetch mock cannot dismantle.
+// Disable Deno's per-test op/resource sanitizer so those leaks don't fail tests.
+// Production runtime (Supabase hosted Deno) does not run the sanitizer.
+function test(name: string, fn: () => Promise<void>): void {
+  Deno.test({ name, fn, sanitizeOps: false, sanitizeResources: false });
+}
+
 // Install fetch mock BEFORE importing handler — handler closure captures fetch
 // at call time so timing here is fine, but install once for the whole file.
 const ADMIN_TOKEN = "admin-token";
@@ -56,13 +64,13 @@ installSupabaseFetchMock({
 
 const { handler } = await import("./index.ts");
 
-Deno.test("admin-read-bulk-pds — 401 when no bearer token", async () => {
+test("admin-read-bulk-pds — 401 when no bearer token", async () => {
   const req = new Request("http://x/functions/v1/admin-read-bulk-pds", { method: "GET" });
   const res = await handler(req);
   assertEquals(res.status, 401);
 });
 
-Deno.test("admin-read-bulk-pds — 403 when caller is not admin", async () => {
+test("admin-read-bulk-pds — 403 when caller is not admin", async () => {
   const req = new Request("http://x/functions/v1/admin-read-bulk-pds", {
     method: "GET",
     headers: bearer(COACH_TOKEN),
@@ -71,7 +79,7 @@ Deno.test("admin-read-bulk-pds — 403 when caller is not admin", async () => {
   assertEquals(res.status, 403);
 });
 
-Deno.test("admin-read-bulk-pds — 200 returns pending batch list", async () => {
+test("admin-read-bulk-pds — 200 returns pending batch list", async () => {
   const req = new Request("http://x/functions/v1/admin-read-bulk-pds", {
     method: "GET",
     headers: bearer(ADMIN_TOKEN),
@@ -86,7 +94,7 @@ Deno.test("admin-read-bulk-pds — 200 returns pending batch list", async () => 
   assertEquals(body.batches[0].row_count, 1);
 });
 
-Deno.test("admin-read-bulk-pds — 200 returns batch detail with profile join", async () => {
+test("admin-read-bulk-pds — 200 returns batch detail with profile join", async () => {
   const req = new Request(
     `http://x/functions/v1/admin-read-bulk-pds?batch_id=${BATCH_A}`,
     { method: "GET", headers: bearer(ADMIN_TOKEN) },
@@ -101,7 +109,7 @@ Deno.test("admin-read-bulk-pds — 200 returns batch detail with profile join", 
   assert(body.rows[0].profile !== null, "profile should be joined");
 });
 
-Deno.test("admin-read-bulk-pds — 400 on malformed batch_id", async () => {
+test("admin-read-bulk-pds — 400 on malformed batch_id", async () => {
   const req = new Request(
     "http://x/functions/v1/admin-read-bulk-pds?batch_id=not-a-uuid",
     { method: "GET", headers: bearer(ADMIN_TOKEN) },

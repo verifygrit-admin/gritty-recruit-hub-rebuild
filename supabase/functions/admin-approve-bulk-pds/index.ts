@@ -184,7 +184,11 @@ export const handler = async (req: Request): Promise<Response> => {
         continue;
       }
 
-      const oldValue = pickWritethru(profileRow as Record<string, unknown>);
+      // Cast through unknown — at this point profileRow is guaranteed non-null
+      // (lines 170-185 guard profileError + !profileRow), but supabase-js's
+      // return-type union still includes GenericStringError; TS narrowing
+      // doesn't carry through the explicit error/null guards.
+      const oldValue = pickWritethru(profileRow as unknown as Record<string, unknown>);
       const newValue = pickWritethru(staging);
 
       // 2. UPDATE profiles.
