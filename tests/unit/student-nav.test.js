@@ -5,19 +5,22 @@
  * Sprint 022 — adds MY GRIT GUIDES to student nav and GRIT GUIDES to coach nav.
  * Sprint 023 — adds MY PROFILE to coach/counselor nav (between DASHBOARD and
  *              GRIT GUIDES, mirroring the student journey position).
+ * Sprint 025 Phase 3 — adds Coach Messages as the sixth student nav entry,
+ *              appended after MY GRIT GUIDES.
  */
 
 import { describe, it, expect } from 'vitest';
 import { STUDENT_NAV_LINKS, COACH_NAV_LINKS } from '../../src/lib/navLinks.js';
 
 describe('STUDENT_NAV_LINKS', () => {
-  it('has five items in journey order', () => {
+  it('has six items in journey order (Sprint 025 Phase 3)', () => {
     expect(STUDENT_NAV_LINKS.map(l => l.label)).toEqual([
       'HOME',
       'MY PROFILE',
       'MY GRIT FIT',
       'MY SHORTLIST',
       'MY GRIT GUIDES',
+      'Coach Messages',
     ]);
   });
 
@@ -28,6 +31,7 @@ describe('STUDENT_NAV_LINKS', () => {
     expect(byLabel['MY GRIT FIT']).toBe('/gritfit');
     expect(byLabel['MY SHORTLIST']).toBe('/shortlist');
     expect(byLabel['MY GRIT GUIDES']).toBe('/grit-guides');
+    expect(byLabel['Coach Messages']).toBe('/coach-messages');
   });
 
   it('does not include legacy labels', () => {

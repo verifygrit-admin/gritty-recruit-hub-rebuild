@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import HudlLogo from './HudlLogo.jsx';
 import { useSchoolIdentity } from '../hooks/useSchoolIdentity.js';
 import { STUDENT_NAV_LINKS, COACH_NAV_LINKS } from '../lib/navLinks.js';
+import SlideOutShell from './SlideOutShell.jsx';
 // Sprint 017 HF-B — JS-imported background assets (bypasses CSS-relative
 // asset resolution; restored to the proven pre-3b pattern, generalized for
 // two schools). See C-12 carry-forward: spaces in production asset filenames
@@ -87,6 +88,7 @@ export default function Layout({ children }) {
   // school) falls back to bcHighBg matching prior anon visual default.
   const bgUrl = (schoolSlug && SCHOOL_BACKGROUNDS[schoolSlug]) || bcHighBg;
 
+  // Sprint 025 Phase 3 — sandwich/drawer nav. Default closed at all viewports.
   const [menuOpen, setMenuOpen] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [avatarStoragePath, setAvatarStoragePath] = useState(null);
@@ -119,12 +121,13 @@ export default function Layout({ children }) {
     if (schoolSlug) document.body.classList.add(`school-${schoolSlug}`);
   }, [schoolSlug]);
 
-  // Close menu on route change
+  // Close drawer on route change
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
 
   const handleSignOut = async () => {
+    setMenuOpen(false);
     await signOut();
     navigate('/login');
   };
@@ -132,23 +135,13 @@ export default function Layout({ children }) {
   const navLinks = userType === 'hs_coach' || userType === 'hs_guidance_counselor'
     ? coachNavLinks : studentNavLinks;
 
+  const isStudent = userType !== 'hs_coach' && userType !== 'hs_guidance_counselor';
+  const displayName = studentName || session?.user.email;
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Mobile menu styles */}
-      <style>{`
-        .layout-nav-desktop { display: flex; }
-        .layout-user-desktop { display: flex; }
-        .layout-hamburger { display: none; }
-        .layout-mobile-menu { display: none; }
-        @media (max-width: 768px) {
-          .layout-nav-desktop { display: none !important; }
-          .layout-user-desktop { display: none !important; }
-          .layout-hamburger { display: flex !important; }
-          .layout-mobile-menu { display: flex !important; }
-        }
-      `}</style>
-
-      {/* Header */}
+      {/* Topbar — single <header> at all viewports. Sandwich icon (left) +
+          wordmark. User strip lives inside the drawer. Sprint 025 Phase 3. */}
       <header style={{
         backgroundColor: 'var(--brand-maroon)',
         padding: '0 24px',
@@ -158,187 +151,112 @@ export default function Layout({ children }) {
           height: 64,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: 12,
         }}>
+          <button
+            type="button"
+            className="layout-sandwich-btn"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={menuOpen ? 'true' : 'false'}
+            data-testid="layout-sandwich-btn"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+
           <Link to="/" style={{ textDecoration: 'none' }}>
             <span style={{
               color: '#FFFFFF',
               fontWeight: 700,
               fontSize: '1.25rem',
-              fontFamily: "var(--font-heading)",
+              fontFamily: 'var(--font-heading)',
             }}>
               {schoolName} RECRUIT HUB
             </span>
           </Link>
+        </div>
+      </header>
 
-          {/* Desktop nav */}
-          <nav className="layout-nav-desktop" data-testid="authenticated-nav" style={{ gap: 24, alignItems: 'center' }}>
-            {navLinks.map(({ to, label }) => {
-              const isActive = location.pathname === to;
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  style={{
-                    color: '#FFFFFF',
-                    textDecoration: 'none',
-                    fontSize: '0.875rem',
-                    fontWeight: isActive ? 600 : 400,
-                    paddingBottom: 4,
-                    borderBottom: isActive ? '3px solid var(--brand-gold)' : '3px solid transparent',
-                  }}
-                >
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Desktop user/sign-out */}
-          <div className="layout-user-desktop" style={{ alignItems: 'center', gap: 12 }}>
-            {session ? (
-              <>
-                {/* Avatar — students only */}
-                {(userType !== 'hs_coach' && userType !== 'hs_guidance_counselor') && (
-                  <AvatarBadge
-                    storagePath={avatarStoragePath}
-                    hudlUrl={hudlUrl}
-                    name={studentName || session.user.email}
-                    size={32}
-                    avatarError={avatarError}
-                    onError={() => setAvatarError(true)}
-                  />
-                )}
-                <span style={{ color: '#FFFFFF', fontSize: '0.75rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {studentName || session.user.email}
-                </span>
-                <button
-                  data-testid="signout-btn"
-                  onClick={handleSignOut}
-                  style={{
-                    background: 'none',
-                    border: '1px solid #FFFFFF',
-                    borderRadius: 4,
-                    color: '#FFFFFF',
-                    fontSize: '0.75rem',
-                    padding: '4px 12px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <Link to="/login" data-testid="unauthenticated-nav" style={{ color: '#FFFFFF', textDecoration: 'none', fontSize: '0.875rem' }}>
-                Sign In
-              </Link>
-            )}
+      {/* Drawer — slides from left on desktop, from bottom on mobile (the
+          SlideOutShell mobile bottom-slide kicks in below 768px automatically). */}
+      <SlideOutShell
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        side="left"
+        widthDesktop="min(80vw, 320px)"
+        ariaLabel="Main menu"
+        closeButtonLabel="Close menu"
+      >
+        <div className="layout-drawer-body">
+          {/* Drawer header — wordmark inside the panel for identity */}
+          <div className="layout-drawer-wordmark">
+            <span style={{ fontFamily: 'var(--font-heading)' }}>{schoolName}</span>
+            <span style={{ fontFamily: 'var(--font-heading)' }}>RECRUIT HUB</span>
           </div>
 
-          {/* Hamburger button (mobile only) */}
-          <button
-            className="layout-hamburger"
-            onClick={() => setMenuOpen(prev => !prev)}
-            aria-label="Toggle menu"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 8,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round">
-              {menuOpen ? (
-                <>
-                  <line x1="4" y1="6" x2="20" y2="18" />
-                  <line x1="4" y1="18" x2="20" y2="6" />
-                </>
-              ) : (
-                <>
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <line x1="3" y1="18" x2="21" y2="18" />
-                </>
-              )}
-            </svg>
-          </button>
-        </div>
-
-        {/* Mobile dropdown menu */}
-        {menuOpen && (
-          <div
-            className="layout-mobile-menu"
-            style={{
-              flexDirection: 'column',
-              gap: 0,
-              backgroundColor: 'var(--brand-mobile-menu-bg)',
-              padding: '8px 0 16px',
-              borderTop: '1px solid rgba(255,255,255,0.15)',
-            }}
-          >
-            {navLinks.map(({ to, label }) => {
-              const isActive = location.pathname === to;
-              return (
-                <Link
+          {/* Nav list — the panel root for the auth nav testid. NavLink applies
+              aria-current="page" automatically when its route matches. */}
+          {session && (
+            <nav
+              className="layout-drawer-nav"
+              data-testid="authenticated-nav"
+              aria-label="Primary navigation"
+            >
+              {navLinks.map(({ to, label }) => (
+                <NavLink
                   key={to}
                   to={to}
-                  style={{
-                    color: '#FFFFFF',
-                    textDecoration: 'none',
-                    fontSize: '0.9rem',
-                    fontWeight: isActive ? 700 : 400,
-                    padding: '12px 24px',
-                    borderLeft: isActive ? '3px solid var(--brand-gold)' : '3px solid transparent',
-                    backgroundColor: isActive ? 'rgba(212,175,55,0.1)' : 'transparent',
-                  }}
+                  end={to === '/'}
+                  className="layout-drawer-link"
                 >
                   {label}
-                </Link>
-              );
-            })}
+                </NavLink>
+              ))}
+            </nav>
+          )}
+
+          {/* User strip — avatar + email + sign out, OR sign-in link */}
+          <div className="layout-drawer-user">
             {session ? (
-              <div style={{ padding: '12px 24px', borderTop: '1px solid rgba(255,255,255,0.15)', marginTop: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  {(userType !== 'hs_coach' && userType !== 'hs_guidance_counselor') && (
+              <>
+                <div className="layout-drawer-user-row">
+                  {isStudent && (
                     <AvatarBadge
                       storagePath={avatarStoragePath}
                       hudlUrl={hudlUrl}
-                      name={studentName || session.user.email}
+                      name={displayName}
                       size={36}
                       avatarError={avatarError}
                       onError={() => setAvatarError(true)}
                     />
                   )}
-                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem' }}>
-                    {studentName || session.user.email}
-                  </span>
+                  <span className="layout-drawer-user-email">{displayName}</span>
                 </div>
                 <button
+                  type="button"
+                  data-testid="signout-btn"
                   onClick={handleSignOut}
-                  style={{
-                    background: 'none',
-                    border: '1px solid #FFFFFF',
-                    borderRadius: 4,
-                    color: '#FFFFFF',
-                    fontSize: '0.8rem',
-                    padding: '6px 16px',
-                    cursor: 'pointer',
-                    width: '100%',
-                  }}
+                  className="layout-drawer-signout"
                 >
                   Sign Out
                 </button>
-              </div>
+              </>
             ) : (
-              <Link to="/login" style={{ color: '#FFFFFF', textDecoration: 'none', fontSize: '0.9rem', padding: '12px 24px' }}>
+              <Link
+                to="/login"
+                data-testid="unauthenticated-nav"
+                className="layout-drawer-link layout-drawer-link--signin"
+              >
                 Sign In
               </Link>
             )}
           </div>
-        )}
-      </header>
+        </div>
+      </SlideOutShell>
 
       {/* Main content. Sprint 017 HF-B: background-image driven by JS-imported
           asset URL (bgUrl) keyed on schoolSlug. The CSS-relative resolution

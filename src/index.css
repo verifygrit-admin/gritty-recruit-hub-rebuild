@@ -364,3 +364,133 @@ input, select, button, textarea {
     background: #A0A0A0;
   }
 }
+
+/* ── Sprint 025 Phase 3 — Sandwich Nav ─────────────────────────────────────
+   Replaces the prior horizontal-on-desktop / dropdown-on-mobile layout in
+   Layout.jsx with a single sandwich icon + slide-out drawer at all viewports.
+   The drawer is rendered via SlideOutShell (side="left" desktop, bottom on
+   mobile via SlideOutShell's internal viewport detection). Active-route
+   styling is driven by NavLink's automatic aria-current="page" attribute.
+   Brand tokens reused: --brand-mobile-menu-bg (panel), --brand-gold
+   (active accent), --brand-on-maroon-text (drawer text), --font-heading.    */
+
+.layout-sandwich-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 8px;
+  margin-left: -8px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 120ms ease;
+}
+.layout-sandwich-btn:hover,
+.layout-sandwich-btn:focus-visible {
+  background-color: rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+.layout-sandwich-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--brand-gold);
+}
+
+/* The SlideOutShell renders a white panel by default; we paint the drawer
+   body to the school-themed mobile-menu background. Min-height fills mobile
+   bottom-anchored 90vh sheet; flex column for layout. */
+.layout-drawer-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background-color: var(--brand-mobile-menu-bg);
+  color: #FFFFFF;
+  padding: 8px 0 24px;
+  margin: -12px 0 0;        /* swallow SlideOutShell's sticky close padding so
+                               the maroon paints edge-to-edge from the top    */
+}
+
+.layout-drawer-wordmark {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 24px 16px;
+  color: #FFFFFF;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.layout-drawer-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.layout-drawer-link {
+  display: block;
+  color: #FFFFFF;
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 400;
+  padding: 12px 24px;
+  border-left: 3px solid transparent;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.layout-drawer-link:hover,
+.layout-drawer-link:focus-visible {
+  background-color: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+/* Active-route highlight — NavLink applies aria-current="page" automatically. */
+.layout-drawer-nav .layout-drawer-link[aria-current="page"] {
+  font-weight: 700;
+  border-left-color: var(--brand-gold);
+  background-color: rgba(212, 175, 55, 0.12);
+}
+
+.layout-drawer-user {
+  margin-top: auto;
+  padding: 16px 24px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+.layout-drawer-user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.layout-drawer-user-email {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-body);
+}
+.layout-drawer-signout {
+  background: transparent;
+  border: 1px solid #FFFFFF;
+  border-radius: 4px;
+  color: #FFFFFF;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  padding: 8px 16px;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 120ms ease;
+}
+.layout-drawer-signout:hover,
+.layout-drawer-signout:focus-visible {
+  background-color: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+/* Sign-in entry uses the same drawer-link shape so the panel reads
+   uniformly when the user is logged out. */
+.layout-drawer-link--signin {
+  border-left-color: transparent;
+  font-weight: 600;
+  padding: 12px 24px;
+}

@@ -30,11 +30,21 @@ test.describe('Sprint 003 — Home restructure', () => {
     await expect(masthead).not.toContainText('BOSTON COLLEGE HIGH SCHOOL');
   });
 
-  test('D2b — nav order: HOME, MY PROFILE, MY GRIT FIT, MY SHORTLIST', async ({ page }) => {
+  test('D2b — nav order: HOME, MY PROFILE, MY GRIT FIT, MY SHORTLIST, MY GRIT GUIDES, Coach Messages', async ({ page }) => {
     await signInAsStudent(page);
+    // Sprint 025 Phase 3 — nav lives in the sandwich drawer; open it first.
+    await page.click('[data-testid="layout-sandwich-btn"]');
+    await page.waitForSelector('[data-testid="slide-out-shell-panel"]', { timeout: 5000 });
     const nav = page.getByTestId('authenticated-nav');
     const labels = await nav.locator('a').allTextContents();
-    expect(labels.map(s => s.trim())).toEqual(['HOME', 'MY PROFILE', 'MY GRIT FIT', 'MY SHORTLIST']);
+    expect(labels.map(s => s.trim())).toEqual([
+      'HOME',
+      'MY PROFILE',
+      'MY GRIT FIT',
+      'MY SHORTLIST',
+      'MY GRIT GUIDES',
+      'Coach Messages',
+    ]);
   });
 
   test('D2a — three journey cards mounted in order', async ({ page }) => {

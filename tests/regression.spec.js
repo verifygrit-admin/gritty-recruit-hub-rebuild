@@ -88,18 +88,31 @@ async function signIn(page, email, password) {
   await page.fill('[data-testid="login-email"]', email);
   await page.fill('[data-testid="login-password"]', password);
   await page.click('[data-testid="login-submit"]');
-  // Wait for authenticated state — profile or dashboard visible
-  // [STUB] Update to match authenticated landing selector
-  await page.waitForSelector('[data-testid="authenticated-nav"]', { timeout: 15000 });
+  // Sprint 025 Phase 3 — drawer is closed by default. Wait on the sandwich
+  // button as the auth-state marker, then open the drawer to expose the
+  // authenticated-nav element for downstream assertions.
+  await page.waitForSelector('[data-testid="layout-sandwich-btn"]', { timeout: 15000 });
 }
 
 /**
- * Sign out of the current session.
+ * Open the sandwich drawer so the authenticated-nav / unauthenticated-nav
+ * testids are mounted and visible. No-op if already open.
+ */
+async function openDrawer(page) {
+  await page.click('[data-testid="layout-sandwich-btn"]');
+  await page.waitForSelector('[data-testid="slide-out-shell-panel"]', { timeout: 5000 });
+}
+
+/**
+ * Sign out of the current session. Opens the drawer first because the
+ * sign-out button lives inside it (Sprint 025 Phase 3).
  */
 async function signOut(page) {
-  // [STUB] Update to match sign-out mechanism
+  await openDrawer(page);
   await page.click('[data-testid="signout-btn"]');
-  await page.waitForSelector('[data-testid="unauthenticated-nav"]', { timeout: 10000 });
+  // After sign-out the sandwich button itself disappears in unauthenticated
+  // routes that don't render Layout (e.g., /login). Wait for the login form.
+  await page.waitForSelector('[data-testid="login-email"]', { timeout: 10000 });
 }
 
 /**
@@ -138,14 +151,20 @@ test('TC-AUTH-001: Student login and session restore', async ({ page }) => {
 
   await gotoApp(page);
 
-  // Assert: app loads in unauthenticated state
+  // Assert: app loads in unauthenticated state — sandwich button is present,
+  // open the drawer to reveal the Sign In link (testid: unauthenticated-nav).
+  await openDrawer(page);
   await expect(page.locator('[data-testid="unauthenticated-nav"]')).toBeVisible();
+  // Close drawer before signing in to avoid intercepting login form clicks.
+  await page.keyboard.press('Escape');
 
   // Sign in as student
   await signIn(page, STUDENT_EMAIL, STUDENT_PASSWORD);
 
-  // Assert: authenticated nav is visible
+  // Assert: authenticated nav is visible inside the drawer
+  await openDrawer(page);
   await expect(page.locator('[data-testid="authenticated-nav"]')).toBeVisible();
+  await page.keyboard.press('Escape');
 
   // Assert: student-specific UI is present (not coach dashboard)
   await expect(page.locator('[data-testid="coach-dashboard"]')).not.toBeVisible();
@@ -155,6 +174,7 @@ test('TC-AUTH-001: Student login and session restore', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   // Assert: session is still active after reload (getSession() behavior)
+  await openDrawer(page);
   await expect(page.locator('[data-testid="authenticated-nav"]')).toBeVisible();
 });
 
@@ -169,16 +189,19 @@ test('TC-AUTH-002: Coach login and session restore', async ({ page }) => {
 
   await signIn(page, COACH_EMAIL, COACH_PASSWORD);
 
-  // Assert: authenticated nav visible
+  // Assert: authenticated nav visible inside the sandwich drawer
+  await openDrawer(page);
   await expect(page.locator('[data-testid="authenticated-nav"]')).toBeVisible();
 
   // Assert: coach lands on coach dashboard (or coach nav item is present)
   // [STUB] Update to match coach landing route
   await expect(page.locator('[data-testid="coach-dashboard-nav"]')).toBeVisible();
+  await page.keyboard.press('Escape');
 
   // Session restore
   await page.reload();
   await page.waitForLoadState('networkidle');
+  await openDrawer(page);
   await expect(page.locator('[data-testid="authenticated-nav"]')).toBeVisible();
 });
 
@@ -191,17 +214,25 @@ test('TC-AUTH-003: Sign out clears session state', async ({ page }) => {
 
   await gotoApp(page);
   await signIn(page, STUDENT_EMAIL, STUDENT_PASSWORD);
+  await openDrawer(page);
   await expect(page.locator('[data-testid="authenticated-nav"]')).toBeVisible();
+  await page.keyboard.press('Escape');
 
   await signOut(page);
 
-  // Assert: UI is unauthenticated
+  // After signOut Layout navigates to /login, which is rendered WITHOUT the
+  // Layout wrapper — no sandwich button or drawer. Visit "/" to confirm the
+  // unauthenticated drawer state.
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await openDrawer(page);
   await expect(page.locator('[data-testid="unauthenticated-nav"]')).toBeVisible();
   await expect(page.locator('[data-testid="authenticated-nav"]')).not.toBeVisible();
 
   // Assert: reload does not restore session
   await page.reload();
   await page.waitForLoadState('networkidle');
+  await openDrawer(page);
   await expect(page.locator('[data-testid="unauthenticated-nav"]')).toBeVisible();
 });
 
@@ -222,7 +253,9 @@ test('TC-MAP-001: Anonymous browse — map loads without login', async ({ page }
   const markerCount = await page.locator('.leaflet-marker-icon, .marker-cluster').count();
   expect(markerCount).toBeGreaterThan(0);
 
-  // Assert: login is NOT required to see the map
+  // Assert: login is NOT required to see the map — drawer-mounted Sign In
+  // link is reachable via the sandwich button (Sprint 025 Phase 3).
+  await openDrawer(page);
   await expect(page.locator('[data-testid="unauthenticated-nav"]')).toBeVisible();
 });
 

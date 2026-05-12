@@ -48,7 +48,10 @@ async function signIn(page, email, password) {
   await page.fill('[data-testid="login-email"]', email);
   await page.fill('[data-testid="login-password"]', password);
   await page.click('[data-testid="login-submit"]');
-  await page.waitForSelector('[data-testid="authenticated-nav"]', { timeout: 15000 });
+  // Sprint 025 Phase 3 — auth nav now lives inside the sandwich drawer.
+  // Wait on the sandwich button (always present when authenticated) instead
+  // of the drawer-internal nav, which only mounts when the drawer is open.
+  await page.waitForSelector('[data-testid="layout-sandwich-btn"]', { timeout: 15000 });
 }
 
 async function gotoCoachDashboard(page) {
