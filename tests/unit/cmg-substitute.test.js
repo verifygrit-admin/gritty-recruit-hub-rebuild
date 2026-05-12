@@ -17,6 +17,7 @@ import {
   substituteToSegments,
   getRequiredFieldsFilled,
 } from '../../src/lib/cmg/substitute.js';
+import { CMG_SCENARIOS } from '../../src/data/cmgScenarios.ts';
 
 const profile = {
   name: 'Ayden Watkins',
@@ -90,5 +91,40 @@ describe('getRequiredFieldsFilled — phase-advance gate', () => {
 
   it('returns true for an empty required_form_fields list', () => {
     expect(getRequiredFieldsFilled({ required_form_fields: [] }, { form: {} })).toBe(true);
+  });
+});
+
+describe('substitute — Scenario 1 end-to-end', () => {
+  it('Scenario 1 substitution renders all three required fields filled', () => {
+    const scenario1 = CMG_SCENARIOS.find((s) => s.id === 1);
+    expect(scenario1).toBeDefined();
+
+    const ctx = {
+      profile: {
+        ...profile,
+        grad_year: 2027,
+        position: 'LB',
+      },
+      form: {
+        camp_name: 'Boston College Elite Camp',
+        position_coach_handle: 'CoachJones',
+        head_coach_handle: 'CoachSmith',
+      },
+    };
+
+    const rendered = substitute(scenario1.body_template, ctx);
+
+    // All three form fields substituted into their token slots.
+    expect(rendered).toContain('Boston College Elite Camp');
+    expect(rendered).toContain('@CoachJones');
+    expect(rendered).toContain('@CoachSmith');
+    // Profile token [Position] resolved from profile.position.
+    expect(rendered).toContain('LB');
+
+    // The only remaining bracketed sequence should be the static instructional
+    // placeholder [Attach Twitter Video Highlights from Camp]. Its source
+    // field (attach_video_note) is intentionally unfilled in v1 — accepted.
+    const bracketed = rendered.match(/\[[^\]]+\]/g) ?? [];
+    expect(bracketed).toEqual(['[Attach Twitter Video Highlights from Camp]']);
   });
 });

@@ -17,33 +17,62 @@ import Phase5Closing from './phases/Phase5Closing.jsx';
  * Layout: vertical stack of phase sections inside the left-pane container.
  */
 
-const EVENT_FIELDS = [
+// Phase 2 owns event-context fields AND coach-handle fields (Sprint 025
+// Phase 6a). The union below is what FormPane routes to Phase 2 — any other
+// required_form_fields entries belong to Phase 3 (last_name), Phase 1
+// (school_name), or Phase 5 (junior_day/camp_question_text).
+const PHASE_2_FIELDS = [
+  // event-context fields
   'camp_name',
   'camp_location',
   'camp_date',
   'event_name',
   'event_day_of_week',
   'thank_you_sentence',
+  // coach-handle fields (Scenario 1, public twitter post)
+  'position_coach_handle',
+  'head_coach_handle',
 ];
 
 /**
  * Compute which phases should be visible AND which should be revealed.
+ *
  * Visibility (`show*`) is a function of the scenario alone — visible phases
  * mount unconditionally once a scenario is selected. Reveal (`reveal*`) is a
  * function of the current form state — reveal flips true when the prior
  * phase's required fields are filled, triggering the CSS transition.
  *
+ * Scenario 1 carve-out (Sprint 025 Phase 6a): Scenario 1's channel_pattern is
+ * "twitter-public", which causes Phase 1 to hide the channel toggle entirely
+ * (see Phase1Channel.showChannelToggle). For that scenario, `channel` stays
+ * null forever, so the standard `channel && selectedSchool` gate would block
+ * Phase 2 from ever revealing — leaving its three required form fields
+ * (camp_name, position_coach_handle, head_coach_handle) with no UI home.
+ * The phase1Filled check treats twitter-public scenarios as channel-satisfied
+ * the moment selectedSchool is set. All other scenarios retain the original
+ * channel-required behavior.
+ *
+ * Reveal sequence for Scenario 1: 1 → 2 → 4.
+ *   - Phase 1 renders to surface the school picker; channel toggle hidden.
+ *   - Phase 2 renders the three handle/camp fields under "Coach Handles" /
+ *     "Event Context" depending on the visible set.
+ *   - Phase 3 is hidden (kind === "public_post", not "coach_message").
+ *   - Phase 4 (Profile) reveals once Phase 2 is filled.
+ *   - Phase 5 is hidden (closing_questions === "neither").
+ *
  * @param {object} scenario - The active CMG scenario.
  * @param {object} state - Current form state: { channel, selectedSchool, form,
  *   activeRecipient }.
- * @returns {object} - { showEvent, showRecipients, showClosing,
+ * @returns {object} - { showContext, showRecipients, showClosing,
  *   revealPhase1..5 }.
  */
 function computeReveal(scenario, state) {
   const { channel, selectedSchool, form, activeRecipient } = state;
 
-  const showEvent =
-    scenario.required_form_fields?.some(f => EVENT_FIELDS.includes(f)) ?? false;
+  // showContext: Phase 2 visible iff the scenario requires any field in the
+  // PHASE_2_FIELDS union (event-context OR coach-handle).
+  const showContext =
+    scenario.required_form_fields?.some(f => PHASE_2_FIELDS.includes(f)) ?? false;
   const showRecipients = scenario.kind === 'coach_message';
   const showClosing =
     !!scenario.closing_questions && scenario.closing_questions !== 'neither';
@@ -52,19 +81,23 @@ function computeReveal(scenario, state) {
   const revealPhase1 = true;
 
   // Phase 1 prerequisites: a channel selection and a school selection.
-  const phase1Filled = !!channel && !!selectedSchool;
+  // Carve-out: twitter-public scenarios hide the channel toggle, so we treat
+  // "channel chosen" as auto-satisfied for those.
+  const channelSatisfied =
+    !!channel || scenario.channel_pattern === 'twitter-public';
+  const phase1Filled = channelSatisfied && !!selectedSchool;
 
-  // Phase 2: revealed when Phase 1 is filled. (Only renders when showEvent.)
+  // Phase 2: revealed when Phase 1 is filled. (Only renders when showContext.)
   const revealPhase2 = phase1Filled;
 
-  // Phase 2 prerequisites: every event-related required field on the scenario
-  // is non-empty in `form`. If Phase 2 doesn't apply, this collapses to
-  // phase1Filled.
-  const phase2Filled = !showEvent
+  // Phase 2 prerequisites: every Phase-2-owned required field on the
+  // scenario is non-empty in `form`. If Phase 2 doesn't apply, this collapses
+  // to phase1Filled.
+  const phase2Filled = !showContext
     ? phase1Filled
     : phase1Filled &&
       (scenario.required_form_fields ?? [])
-        .filter(f => EVENT_FIELDS.includes(f))
+        .filter(f => PHASE_2_FIELDS.includes(f))
         .every(f => {
           const v = form?.[f];
           return v !== undefined && v !== null && String(v).trim() !== '';
@@ -85,7 +118,7 @@ function computeReveal(scenario, state) {
   const revealPhase5 = revealPhase4;
 
   return {
-    showEvent,
+    showContext,
     showRecipients,
     showClosing,
     revealPhase1,
@@ -132,7 +165,7 @@ export default function FormPane({
           shortlist={shortlist}
         />
       </div>
-      {reveal.showEvent && (
+      {reveal.showContext && (
         <div className="cmg-phase-reveal" data-revealed={String(reveal.revealPhase2)}>
           <Phase2Event scenario={scenario} form={form} onFormChange={onFormChange} />
         </div>

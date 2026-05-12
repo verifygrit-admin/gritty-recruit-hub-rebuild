@@ -1,18 +1,28 @@
 /**
- * Phase 2: Event Context — Sprint 025 Phase 5 implementation.
+ * Phase 2: Event Context & Coach Handles — Sprint 025 Phase 6a.
  *
- * Renders ONLY for scenarios that include event/camp tokens in their
- * required_form_fields. The field set is self-derived per scenario:
+ * Renders one input per entry in scenario.required_form_fields that has a
+ * known mapping in PHASE_2_FIELD_MAP below. The component derives its field
+ * set directly from required_form_fields (not from a hardcoded list), so
+ * scenarios with non-event Phase-2 fields (Scenario 1: camp_name +
+ * position_coach_handle + head_coach_handle) get a UI home here.
  *
- *   Scenario 1  — camp_name
+ * Field set per scenario (post-6a):
+ *   Scenario 1  — camp_name, position_coach_handle, head_coach_handle
  *   Scenario 2  — camp_name, camp_location
  *   Scenario 7  — camp_name, camp_date
  *   Scenario 8  — event_name, event_day_of_week, thank_you_sentence
  *
- * Visibility gating lives in FormPane (it does not render Phase 2 when the
- * scenario has no event fields). This component still degrades gracefully
- * if it ever receives an unexpected scenario — it returns a small note
- * rather than crashing.
+ * Fields outside PHASE_2_FIELD_MAP are skipped — last_name belongs to
+ * Phase 3, school_name to Phase 1, junior_day/camp_question_text to Phase 5.
+ *
+ * Section heading is dynamic:
+ *   - "Coach Handles" if the visible field set is exclusively handle fields
+ *   - "Event Context" otherwise (camp/event fields, or mixed)
+ *
+ * Visibility gating lives in FormPane (PHASE_2_FIELDS intersection check).
+ * This component still degrades gracefully if it receives an unexpected
+ * scenario — returns a small note rather than crashing.
  *
  * Form state shape: flat object on the parent. onFormChange accepts a
  * functional updater (prev => next), matching the Phase 4 contract.
@@ -28,18 +38,27 @@ const DAY_OPTIONS = [
   'Sunday',
 ];
 
-const EVENT_FIELDS = [
+// Union of event-context fields and coach-handle fields routed to Phase 2.
+// Order here is the render order in the UI.
+const PHASE_2_FIELD_ORDER = [
   'camp_name',
   'camp_location',
   'camp_date',
   'event_name',
   'event_day_of_week',
   'thank_you_sentence',
+  'position_coach_handle',
+  'head_coach_handle',
 ];
+
+const HANDLE_FIELDS = new Set(['position_coach_handle', 'head_coach_handle']);
+
+const HANDLE_HELP_TEXT =
+  'Phase 2 will replace this with a picker once college coach data is loaded.';
 
 export default function Phase2Event({ scenario, form, onFormChange }) {
   const required = scenario?.required_form_fields ?? [];
-  const visible = EVENT_FIELDS.filter((f) => required.includes(f));
+  const visible = PHASE_2_FIELD_ORDER.filter((f) => required.includes(f));
 
   const setField = (field) => (event) => {
     const value = event?.target?.value ?? '';
@@ -57,10 +76,18 @@ export default function Phase2Event({ scenario, form, onFormChange }) {
     );
   }
 
+  // Heading derivation: handle-only set => "Coach Handles", otherwise
+  // "Event Context" (covers camp/event-only and mixed sets).
+  const allHandles = visible.every((f) => HANDLE_FIELDS.has(f));
+  const heading = allHandles ? 'Coach Handles' : 'Event Context';
+  const prompt = allHandles
+    ? 'Tag the coaches you want to mention in this post.'
+    : 'Tell us about the camp or visit.';
+
   return (
-    <section className="cmg-phase" data-phase="2" aria-label="Event context">
-      <h3 className="cmg-phase-heading">Event Context</h3>
-      <p className="cmg-p2-prompt">Tell us about the camp or visit.</p>
+    <section className="cmg-phase" data-phase="2" aria-label={heading}>
+      <h3 className="cmg-phase-heading">{heading}</h3>
+      <p className="cmg-p2-prompt">{prompt}</p>
 
       <div className="cmg-p2-fields">
         {visible.includes('camp_name') && (
@@ -164,6 +191,46 @@ export default function Phase2Event({ scenario, form, onFormChange }) {
               Share one specific moment that stood out — a drill, a conversation, the campus
               feel. The coach reads dozens of these; specifics make yours memorable.
             </p>
+          </div>
+        )}
+
+        {visible.includes('position_coach_handle') && (
+          <div className="cmg-p2-field">
+            <label className="cmg-p2-label" htmlFor="cmg-p2-position-coach">
+              Position Coach Twitter Handle
+            </label>
+            <div className="cmg-p2-input-with-prefix">
+              <span className="cmg-p2-input-prefix" aria-hidden="true">@</span>
+              <input
+                id="cmg-p2-position-coach"
+                className="cmg-p2-input cmg-p2-input--prefixed"
+                type="text"
+                value={form?.position_coach_handle ?? ''}
+                onChange={setField('position_coach_handle')}
+                placeholder="CoachLastName"
+              />
+            </div>
+            <p className="cmg-p2-help">{HANDLE_HELP_TEXT}</p>
+          </div>
+        )}
+
+        {visible.includes('head_coach_handle') && (
+          <div className="cmg-p2-field">
+            <label className="cmg-p2-label" htmlFor="cmg-p2-head-coach">
+              Head Coach Twitter Handle
+            </label>
+            <div className="cmg-p2-input-with-prefix">
+              <span className="cmg-p2-input-prefix" aria-hidden="true">@</span>
+              <input
+                id="cmg-p2-head-coach"
+                className="cmg-p2-input cmg-p2-input--prefixed"
+                type="text"
+                value={form?.head_coach_handle ?? ''}
+                onChange={setField('head_coach_handle')}
+                placeholder="HeadCoachLastName"
+              />
+            </div>
+            <p className="cmg-p2-help">{HANDLE_HELP_TEXT}</p>
           </div>
         )}
       </div>
