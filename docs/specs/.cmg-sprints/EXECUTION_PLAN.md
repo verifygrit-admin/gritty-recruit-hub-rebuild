@@ -94,7 +94,15 @@ This section is the durable record of decisions made during prototype developmen
 
 This section captures mid-execution discoveries that forced changes to the plan. Empty at sprint kickoff; populated during execution.
 
-*(none yet)*
+**Sprint 025:**
+
+1. **Scenario 1 coach handles are college coaches, not HS coaches.** Build-time clarification confirmed the two @-handle fields are at the target college, not on the student's high-school staff. This forced Scenario 1's Phase 2 to be student-entered `camp_name` plus two college coach handle fields, distinct from every other scenario's event-context Phase 2. Resolved in commit `039818c`.
+
+2. **Phase 2 field set must self-derive from `scenario.required_form_fields`.** Phase 6A surfaced that a hardcoded `EVENT_FIELDS` list was incompatible with Scenario 1's shape. Refactored to a `PHASE_2_FIELDS` union derived per-scenario from the data module. Resolved in commit `039818c`.
+
+3. **Docx Closing Questions defaults pre-empted student input.** The docx scenario bodies included default Closing Questions prompt sentences that conflicted with Phase 5's student-authored questions. The defaults had to be stripped from the substituted body to let the student's questions land. Caught in Hotfix Round 2 (`877b64c`).
+
+4. **Twitter handle column stores bare handles, not URLs.** The `public.profiles.twitter` column stores `username`, not `https://x.com/username`. Required a normalizer (`src/lib/cmg/twitter.js`) to render the full URL in every surface (preview body, mailto body, Scenario 1 public post). Caught in Hotfix Round 3 (`8d20ab9`).
 
 ---
 
@@ -102,20 +110,37 @@ This section captures mid-execution discoveries that forced changes to the plan.
 
 Items surfaced during prototype development that don't fit Sprint 025 scope but need to be tracked.
 
+**Shipped in Sprint 025 (closed):**
+
+| Item | Resolution |
+|---|---|
+| Toast notification primitive | Shipped inline in Phase 4 at `src/components/Toast.jsx` |
+| Sandwich nav refactor | Shipped as Phase 3 (`6cf1ab7`) |
+| JSONB message log + append RPC | Migration `0047` applied to live; column + RPC verified |
+
+**Deferred (still carry-forward):**
+
 | Item | Category | Target |
 |---|---|---|
 | Phase 2 coach contact picker (blocked on `public.college_coaches` population) | Feature | Phase 2 sprint |
+| "Emailed to Self" badge column on the history table (data recorded but not surfaced) | Polish | v2 |
+| Mobile-specific layout polish beyond responsive collapse | Polish | v2, contingent on mobile usage share |
+| Inline editing of past messages in history table | Feature | v2 or v3 |
+| Bulk message generation across multiple shortlisted schools | Feature | v2+ (needs UX safeguards) |
+| Localization / Spanish templates | Feature | Separate workstream, not yet scoped |
+| `short_list_items.unitid → schools.unitid` FK migration | Schema | Surfaced as root cause of Sprint 025 Hotfix Round 1 (`dd0522f`); requires migration + `ON DELETE` decision; right sprint TBD |
 | Backend SMTP email-to-self path | Feature | v2 or later, contingent on usage data |
 | Auto-add "Other school" to shortlist | Feature | v2 |
-| Bulk message generation across multiple shortlisted schools | Feature | v2+ (needs UX safeguards) |
-| Inline editing of past messages in history table | Feature | v2 or v3 |
 | Twitter character counter for Scenario 1 | Feature | Only if real usage shows trimming |
-| Mobile-specific layout polish (touch targets, keyboard handling) | Polish | v2, contingent on mobile usage share |
-| Localization / Spanish templates | Feature | Separate workstream, not yet scoped |
-| Toast notification primitive (if not already present in Student View) | Infra | Sprint 025 inline if absent |
 | Coach role taxonomy lock for Phase 2 picker | Schema | Phase 2 prerequisite |
 | Partner-school theme coverage audit | Design tokens | Add to new-school onboarding checklist |
 | `public.coach_contacts` consumer (the relationship-state ledger) | Product | Separate product decision, not CMG scope |
+
+**New from Sprint 025:**
+
+| Item | Category | Target |
+|---|---|---|
+| Live Playwright auth-gated test execution (suite at `tests/cmg.spec.js` is structurally valid but un-runnable without `TEST_STUDENT_EMAIL` credentials) | Infra | Operator post-deploy verification step in an authenticated environment |
 
 ---
 
@@ -151,3 +176,4 @@ These are questions that don't block Sprint 025 kickoff but need answers at some
 | 2026-05-12 | Initial draft. Prototype locked. Sprint 025 not yet kicked off. |
 | 2026-05-12 | Revision pass against operator notes: (a) refactored CMG to consume Student View design tokens via `data-school-theme` (D1.6 added); (b) corrected schema references throughout to match DATA_INVENTORY.md (`public.profiles` not `student_profile`; `name` not `full_name`; `gpa` not `cgpa`; `twitter` not `twitter_url`; `high_school` not `hs_name`); (c) added D3.9 explicitly distinguishing the CMG log from `public.coach_contacts`; (d) added Decision 5 (design tokens) and Decision 14 (coach_contacts non-collision) to the on-record table. |
 | 2026-05-12 | Scope revision: sandwich nav refactor folded into Sprint 025 rather than decoupled as a separate prep sprint. D3.5 rewritten (rationale reversed); EXECUTION_PLAN forward arc collapsed from three sprints to two; sandwich refactor removed from carry-forward register; all "Sprint 024 = sandwich nav" references removed (Sprint 024 has already shipped other work in `gritty-recruit-hub-rebuild`). Sandwich refactor now appears as Phase 3 in the Sprint 025 session spec, gating the CMG component build. |
+| 2026-05-12 | Sprint 025 CLOSED. CMG Phase 1 + Sandwich Nav Refactor shipped. See SPRINT_025_RETRO.md for full close report. Final commit: 1a0c9c9. 883 unit tests passing. |
