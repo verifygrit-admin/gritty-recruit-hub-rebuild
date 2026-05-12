@@ -1,5 +1,11 @@
-import { useMemo } from 'react';
-import { substituteToSegments } from '../../lib/cmg/substitute.js';
+import { useCallback, useMemo } from 'react';
+import {
+  substituteToSegments,
+  renderSegmentsToPlainText,
+} from '../../lib/cmg/substitute.js';
+import { buildMailto, openMailto } from '../../lib/cmg/mailto.js';
+import { useToast } from '../Toast.jsx';
+import { supabase } from '../../lib/supabaseClient.js';
 
 /**
  * PreviewPane — right pane of MessageBuilder. Renders the substituted
@@ -84,7 +90,11 @@ export default function PreviewPane({
   formByRecipient,
   activeRecipient,
   onActiveRecipientChange,
+  onLogAppend,
+  onReset,
+  userId,
 }) {
+  const { showToast } = useToast();
   // Substitution context — recipient slice flips with activeRecipient so the
   // body re-substitutes [Last Name] (and any other recipient-sourced token)
   // against the currently-selected coach.
@@ -119,6 +129,163 @@ export default function PreviewPane({
         : scenario.email_signature_template;
     return substituteToSegments(template, ctx);
   }, [scenario, ctx, channel]);
+
+  // Plain-text projections for Copy / Email-to-Self. Memoized so re-renders
+  // not touching segments skip the join.
+  const plainBody = useMemo(() => renderSegmentsToPlainText(bodySegments), [bodySegments]);
+  const plainSignature = useMemo(
+    () => renderSegmentsToPlainText(signatureSegments),
+    [signatureSegments],
+  );
+  const plainSubject = useMemo(
+    () => (subjectSegments ? renderSegmentsToPlainText(subjectSegments) : ''),
+    [subjectSegments],
+  );
+  const plainText = useMemo(() => `${plainBody}\n\n${plainSignature}`, [plainBody, plainSignature]);
+
+  // Per SPEC_FOR_CODE Step 7 — fire-and-forget log write. Failure is non-blocking;
+  // we log to console and continue so the user's primary Copy/Email action is
+  // never gated on a write to cmg_message_log.
+  const appendLogRecord = useCallback(
+    async (record) => {
+      if (!userId) {
+        onLogAppend?.(record);
+        return;
+      }
+      try {
+        const { error } = await supabase.rpc('append_cmg_message_log', {
+          p_user_id: userId,
+          p_record: record,
+        });
+        if (error) {
+          console.error('cmg_message_log append failed:', error);
+          return;
+        }
+        onLogAppend?.(record);
+      } catch (e) {
+        console.error('cmg_message_log append exception:', e);
+      }
+    },
+    [userId, onLogAppend],
+  );
+
+  // Build the per-event log record from current selection / form state.
+  const buildLogRecord = useCallback(() => {
+    if (!scenario) return null;
+    return {
+      id: typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      scenario_id: scenario.id,
+      scenario_title: scenario.title,
+      unitid: selectedSchool?.unitid ?? null,
+      school_name: selectedSchool?.school_name ?? null,
+      channel,
+      recipient: activeRecipient ?? null,
+      recipient_last_name:
+        formByRecipient?.[activeRecipient]?.last_name ?? null,
+      body_rendered: plainBody,
+      subject_rendered: plainSubject || null,
+      signature_rendered: plainSignature,
+      emailed_to_self: false,
+      constructed_at: new Date().toISOString(),
+    };
+  }, [
+    scenario,
+    selectedSchool,
+    channel,
+    activeRecipient,
+    formByRecipient,
+    plainBody,
+    plainSubject,
+    plainSignature,
+  ]);
+
+  const handleCopy = useCallback(async () => {
+    let ok = false;
+    // Primary path — async Clipboard API.
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(plainText);
+        ok = true;
+      }
+    } catch (_e) {
+      ok = false;
+    }
+    // Fallback — temporary <textarea> + execCommand('copy').
+    if (!ok && typeof document !== 'undefined') {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = plainText;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        const cmdOk = document.execCommand('copy');
+        document.body.removeChild(ta);
+        ok = cmdOk;
+      } catch (_e) {
+        ok = false;
+      }
+    }
+    if (!ok) {
+      showToast({
+        message: 'Copy failed — select and copy manually.',
+        variant: 'error',
+      });
+      return;
+    }
+    showToast({ message: 'Copied to clipboard', variant: 'success' });
+    const record = buildLogRecord();
+    if (record) appendLogRecord(record);
+  }, [plainText, showToast, buildLogRecord, appendLogRecord]);
+
+  const handleEmailToSelf = useCallback(() => {
+    if (!profile?.email) return;
+    let url;
+    let isLong = false;
+    try {
+      const built = buildMailto({
+        email: profile.email,
+        subject: plainSubject || null,
+        body: plainBody,
+        signature: plainSignature,
+      });
+      url = built.url;
+      isLong = built.isLong;
+    } catch (e) {
+      showToast({
+        message: 'Could not open mail — add an email to your profile.',
+        variant: 'error',
+      });
+      console.error('buildMailto failed:', e);
+      return;
+    }
+    if (isLong) {
+      showToast({
+        message:
+          "Long message — if your mail client doesn't open, use Copy instead.",
+        variant: 'success',
+      });
+    }
+    openMailto(url);
+    showToast({ message: 'Opened in mail app', variant: 'success' });
+    const record = buildLogRecord();
+    if (record) appendLogRecord({ ...record, emailed_to_self: true });
+  }, [
+    profile,
+    plainSubject,
+    plainBody,
+    plainSignature,
+    showToast,
+    buildLogRecord,
+    appendLogRecord,
+  ]);
+
+  const handleReset = useCallback(() => {
+    onReset?.();
+  }, [onReset]);
 
   if (!scenario) return null;
 
@@ -215,16 +382,35 @@ export default function PreviewPane({
       )}
 
       <footer className="cmg-preview-actions">
-        <button type="button" className="cmg-preview-action" disabled>
+        <button
+          type="button"
+          className="cmg-preview-action"
+          onClick={handleCopy}
+          data-testid="cmg-copy-btn"
+        >
           📋 Copy Message
         </button>
-        <button type="button" className="cmg-preview-action" disabled>
-          ✉ Email to Myself
-        </button>
+        {channel === 'email' && (
+          <button
+            type="button"
+            className="cmg-preview-action"
+            onClick={handleEmailToSelf}
+            disabled={!profile?.email}
+            title={
+              !profile?.email
+                ? 'Add an email to your profile to enable Email to Myself'
+                : undefined
+            }
+            data-testid="cmg-email-btn"
+          >
+            ✉ Email to Myself
+          </button>
+        )}
         <button
           type="button"
           className="cmg-preview-action cmg-preview-action--reset"
-          disabled
+          onClick={handleReset}
+          data-testid="cmg-reset-btn"
         >
           ↻ Reset Form
         </button>

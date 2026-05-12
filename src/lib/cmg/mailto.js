@@ -1,8 +1,10 @@
 /**
- * mailto: URL builder (skeleton — Phase 7 will wire to the Email-to-Self action).
+ * mailto: URL builder — Sprint 025 Phase 7.
  *
- * Sprint 025 Phase 4 — scaffold only. Phase 7 wires this to PreviewPane's
- * "Email to Myself" button.
+ * Wired by PreviewPane's "Email to Myself" action. Builds a `mailto:` URL
+ * with subject + body (body and signature joined by `\n\n`) and exposes a
+ * `isLong` flag so the caller can surface the advisory toast for messages
+ * that may exceed mail-client URL limits.
  *
  * Per SPEC_FOR_CODE Step 7:
  *   const params = new URLSearchParams();
@@ -13,7 +15,8 @@
  * Twitter channel does NOT use mailto — copy-only.
  *
  * Disable handling: button must be disabled if profiles.email is empty;
- *   the caller is responsible for that check.
+ *   the caller is responsible for that check. The empty/whitespace email
+ *   throw here is a safety net for direct callers.
  * Long-body advisory: if body length > 2000 chars, surface a non-blocking
  *   note via Toast — "Long message — if your mail client doesn't open, use
  *   Copy instead."
@@ -31,10 +34,14 @@ const LONG_BODY_THRESHOLD = 2000;
  * @returns {{ url: string, isLong: boolean }} - The mailto URL and a long-body flag.
  */
 export function buildMailto({ email, subject, body, signature }) {
-  if (!email) throw new Error('buildMailto: email is required');
+  if (email === null || email === undefined || String(email).trim() === '') {
+    throw new Error('buildMailto: email is required');
+  }
   const params = new URLSearchParams();
   params.set('subject', subject ?? '');
-  const bodyWithSig = signature ? `${body}\n\n${signature}` : body;
+  const bodyStr = body ?? '';
+  const sigStr = signature ?? '';
+  const bodyWithSig = sigStr ? `${bodyStr}\n\n${sigStr}` : bodyStr;
   params.set('body', bodyWithSig);
   return {
     url: `mailto:${encodeURIComponent(email)}?${params.toString()}`,
@@ -47,7 +54,10 @@ export function buildMailto({ email, subject, body, signature }) {
  * @param {string} url - The mailto: URL built by buildMailto.
  */
 export function openMailto(url) {
-  // TODO Phase 7: real navigation happens here. Stub assigns to window.location.href.
+  // Real navigation. Wrapper exists so unit tests can stub navigation without
+  // jumping the test runner's location. Set `window.location.href` directly —
+  // browsers route `mailto:` URLs to the registered mail-client handler
+  // without changing page navigation state.
   if (typeof window !== 'undefined') {
     window.location.href = url;
   }

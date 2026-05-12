@@ -250,6 +250,21 @@ export function renderSegments(segments) {
   return out;
 }
 
+/**
+ * Plain-text renderer used by Copy / Email-to-Self for the to-clipboard /
+ * to-mailto plain-text body. Strips token-span semantics — joins every
+ * segment's `value` regardless of kind. Unfilled tokens keep their bracketed
+ * form ("[Last Name]"); autofilled values render as their resolved string
+ * with no markup. Same behavior as `renderSegments`; named explicitly so the
+ * Phase 7 action handlers express intent clearly at the call site.
+ *
+ * @param {Array<{kind: string, value: string}>} segments
+ * @returns {string}
+ */
+export function renderSegmentsToPlainText(segments) {
+  return renderSegments(segments);
+}
+
 // ---------------------------------------------------------------------------
 // getRequiredFieldsFilled — phase-advance gate
 // ---------------------------------------------------------------------------

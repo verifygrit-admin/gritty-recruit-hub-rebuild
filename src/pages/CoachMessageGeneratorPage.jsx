@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import ScenarioGallery from '../components/cmg/ScenarioGallery.jsx';
@@ -39,6 +39,7 @@ export default function CoachMessageGeneratorPage() {
     position_coach: {},
     recruiting_area_coach: {},
   });
+  const [logRows, setLogRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,6 +62,9 @@ export default function CoachMessageGeneratorPage() {
       ]);
       if (cancelled) return;
       setProfile(profileRes.data ?? null);
+      // Mirror the persisted log into local state so Phase 7 Copy / Email
+      // events can append optimistically without a refetch.
+      setLogRows(profileRes.data?.cmg_message_log ?? []);
       // Normalize shortlist into a flat array of school records.
       const flatShortlist = (shortlistRes.data ?? [])
         .map(row => row.schools)
@@ -85,6 +89,21 @@ export default function CoachMessageGeneratorPage() {
       document.getElementById('builder')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   };
+
+  const handleLogAppend = useCallback((record) => {
+    setLogRows(prev => [...prev, record]);
+  }, []);
+
+  // Reset clears form + per-recipient form state. Per Phase 7 spec, the
+  // scenario stays selected and channel + school + active recipient tab
+  // persist so the student doesn't lose their context after a send.
+  const handleReset = useCallback(() => {
+    setForm({});
+    setFormByRecipient({
+      position_coach: {},
+      recruiting_area_coach: {},
+    });
+  }, []);
 
   return (
     <div className="cmg-page" data-testid="cmg-page">
@@ -115,9 +134,12 @@ export default function CoachMessageGeneratorPage() {
               onActiveRecipientChange={setActiveRecipient}
               formByRecipient={formByRecipient}
               onRecipientFormChange={setFormByRecipient}
+              userId={userId}
+              onLogAppend={handleLogAppend}
+              onReset={handleReset}
             />
           )}
-          <MessageHistory log={profile?.cmg_message_log ?? []} />
+          <MessageHistory log={logRows} />
         </>
       )}
     </div>
