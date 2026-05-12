@@ -1498,3 +1498,11 @@ input, select, button, textarea {
   margin-top: 4px;
 }
 
+/* Phase 9 — History Preview column ellipsis ---------------------------- */
+.cmg-history-preview {
+  max-width: 24ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
