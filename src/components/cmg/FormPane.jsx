@@ -103,6 +103,7 @@ export default function FormPane({
   onChannelChange,
   selectedSchool,
   onSchoolChange,
+  shortlist,
   form,
   onFormChange,
   activeRecipient,
@@ -128,6 +129,7 @@ export default function FormPane({
           onChannelChange={onChannelChange}
           school={selectedSchool}
           onSchoolChange={onSchoolChange}
+          shortlist={shortlist}
         />
       </div>
       {reveal.showEvent && (
