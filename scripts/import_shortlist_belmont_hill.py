@@ -10,8 +10,9 @@ Forked from scripts/import_shortlist_bc_high.py with the following deltas:
   - Journey steps come from 14 CSV boolean columns (added_to_shortlist plus 13
     progression flags). Step 10 (Coach contacted student via text) has no CSV
     column and remains False.
-  - Denorm fields (school_name from CSV, div/conference/state from a single
-    bulk lookup against public.schools).
+  - Denorm fields (school_name from CSV, div/conference/state plus
+    recruiting_q_link/coach_link from a single bulk lookup against
+    public.schools, populating short_list_items.q_link and coach_link).
   - Upsert (Prefer: resolution=merge-duplicates) on the (user_id, unitid)
     unique constraint. Columns not in the payload are untouched on conflict,
     preserving any GRIT-FIT-derived values populated by a future GRIT FIT run.
@@ -41,11 +42,11 @@ xyudnajzhuwdauwkwsbh, 2026-05-08):
 
 UPSERT BEHAVIOR
   Payload columns (sent on every write):
-    user_id, unitid, school_name, div, conference, state, source,
-    recruiting_journey_steps, updated_at
+    user_id, unitid, school_name, div, conference, state, q_link, coach_link,
+    source, recruiting_journey_steps, updated_at
   Omitted on payload (DEFAULT on insert, UNTOUCHED on conflict):
     id, match_rank, match_tier, net_cost, droi, break_even, adltv, grad_rate,
-    coa, dist, q_link, coach_link, grit_fit_status, added_at
+    coa, dist, grit_fit_status, added_at
 
 EXPECTED ROW COUNTS (verified against CSV, 2026-05-08):
   Ky-Mani Monteiro : 15
@@ -186,8 +187,8 @@ def build_journey_steps(row: dict) -> list[dict]:
 def fetch_schools_index(unitids: list[int]) -> dict[int, dict]:
     """
     GET public.schools rows for the given unitids in a single call. Returns a
-    dict keyed by unitid with keys (div, conference, state). Missing unitids
-    are simply absent from the dict.
+    dict keyed by unitid with keys (div, conference, state, q_link, coach_link).
+    Missing unitids are simply absent from the dict.
     """
     if not unitids:
         return {}
@@ -195,7 +196,7 @@ def fetch_schools_index(unitids: list[int]) -> dict[int, dict]:
     url = (
         f"{SUPABASE_URL}/rest/v1/schools"
         f"?unitid=in.({unitid_csv})"
-        f"&select=unitid,ncaa_division,conference,state"
+        f"&select=unitid,ncaa_division,conference,state,recruiting_q_link,coach_link"
     )
     headers = {
         "apikey":        SERVICE_ROLE_KEY,
@@ -215,6 +216,8 @@ def fetch_schools_index(unitids: list[int]) -> dict[int, dict]:
             "div":        r.get("ncaa_division"),
             "conference": r.get("conference"),
             "state":      r.get("state"),
+            "q_link":     r.get("recruiting_q_link"),
+            "coach_link": r.get("coach_link"),
         }
         for r in rows
     }
@@ -250,7 +253,10 @@ def build_row(csv_row: dict, schools_index: dict[int, dict]) -> dict | None:
             f"  [WARN] unitid {unitid} ({school_name}) not found in public.schools "
             f"-- denorm fields left null"
         )
-        denorm = {"div": None, "conference": None, "state": None}
+        denorm = {
+            "div": None, "conference": None, "state": None,
+            "q_link": None, "coach_link": None,
+        }
 
     return {
         "user_id":                  user_id,
@@ -259,6 +265,8 @@ def build_row(csv_row: dict, schools_index: dict[int, dict]) -> dict | None:
         "div":                      denorm["div"],
         "conference":               denorm["conference"],
         "state":                    denorm["state"],
+        "q_link":                   denorm["q_link"],
+        "coach_link":               denorm["coach_link"],
         "source":                   "manual_add",
         "recruiting_journey_steps": build_journey_steps(csv_row),
         "updated_at":               datetime.now(timezone.utc).isoformat(),
@@ -390,6 +398,8 @@ def print_dry_run_detail(row: dict, schools_index: dict[int, dict]):
     print(f"    div:        {row['div']!r}")
     print(f"    conference: {row['conference']!r}")
     print(f"    state:      {row['state']!r}")
+    print(f"    q_link:     {row['q_link']!r}")
+    print(f"    coach_link: {row['coach_link']!r}")
     print(f"    source:     {row['source']!r}")
     print(f"    updated_at: {row['updated_at']}")
     print(f"    recruiting_journey_steps:")

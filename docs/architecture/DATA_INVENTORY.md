@@ -409,6 +409,9 @@ Notes:
 - `unitid` carries no FK to `schools.unitid`. This is by design — it lets a manual-add row reference a school not in the universe.
 - `_pre_0037_short_list_items_snapshot` (108 rows) is a frozen backup taken before the 0037 relabel.
 
+Data fixes:
+- 2026-05-12 — Backfilled q_link + coach_link on short_list_items from schools where null (54 rows affected, Belmont Hill import gap). Ref: commit 9191d3a + this hotfix.
+
 Last verified: 2026-05-08
 
 ---
