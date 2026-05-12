@@ -119,7 +119,7 @@ export default function CoachMessageGeneratorPage() {
       <header className="cmg-page-header">
         <h1 className="cmg-page-title">Coach Messages</h1>
         <p className="cmg-page-intro">
-          Pick a scenario, fill in the gaps, and send your coach a clean, well-formatted message.
+          Pick a scenario, fill in the gaps, and send your recruiting coach a clean, well-formatted message.
         </p>
       </header>
 
