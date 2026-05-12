@@ -427,7 +427,7 @@ You can see my film on my Hudl link:  [Hudl film link]
 
 You can also see some of my latest camp highlights on Twitter/X: [Twitter profile link]
 
-Will your school be having Junior Days or visit days in the spring?[Junior Day Question] Would you recommend that I attend any camps where your coaching staff could evaluate me? [Camp Question]
+[Junior Day Question] [Camp Question]
 
 Thank you for your consideration.
 Sincerely,`,
@@ -475,7 +475,7 @@ You can see my film on my Hudl link: [Hudl film link]
 
 You can also see some of my latest camp highlights on Twitter/X: [Twitter profile link]
 
-Will your school be having Junior Days or visit days in the spring?[Junior Day Question] Would you recommend that I attend any camps where your coaching staff could evaluate me? [Camp Question]
+[Junior Day Question] [Camp Question]
 
 Thank you for your consideration.
 Sincerely,`,
@@ -518,7 +518,7 @@ My school counselor, coaches, parents, and I have been discussing my college pla
 
 You can see my film on my Hudl link: [Hudl film link]
 
-Will your school be having Junior Days or visit days in the spring?[Junior Day Question] Would you recommend that I attend any camps where your coaching staff could evaluate me? [Camp Question]
+[Junior Day Question] [Camp Question]
 
 Thank you for your consideration.
 Sincerely,`,
@@ -564,7 +564,7 @@ You can see my film on my Hudl link: [Hudl film link]
 
 You can also see some of my latest camp highlights on Twitter/X: [Twitter profile link]
 
-Will your school be having Junior Days or visit days in the spring?[Junior Day Question] Would you recommend that I attend any camps where your coaching staff could evaluate me? [Camp Question]
+[Junior Day Question] [Camp Question]
 
 Thank you for your consideration.
 Sincerely,`,
@@ -611,9 +611,9 @@ You can see my film on my Hudl link: [Hudl film link]
 
 You can also see some of my latest camp highlights on Twitter/X: [Twitter profile link]
 
-Will your school be having Junior Days or visit days in the spring? [Junior Day Question]
+[Junior Day Question]
 
-Would you recommend that I attend any camps where your coaching staff could evaluate me? [Camp Question]
+[Camp Question]
 
 Thank you for your consideration.
 Sincerely,`,
