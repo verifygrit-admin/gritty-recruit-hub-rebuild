@@ -20,7 +20,7 @@ describe('STUDENT_NAV_LINKS', () => {
       'MY GRIT FIT',
       'MY SHORTLIST',
       'MY GRIT GUIDES',
-      'Coach Messages',
+      'COACH MESSAGES',
     ]);
   });
 
@@ -31,7 +31,7 @@ describe('STUDENT_NAV_LINKS', () => {
     expect(byLabel['MY GRIT FIT']).toBe('/gritfit');
     expect(byLabel['MY SHORTLIST']).toBe('/shortlist');
     expect(byLabel['MY GRIT GUIDES']).toBe('/grit-guides');
-    expect(byLabel['Coach Messages']).toBe('/coach-messages');
+    expect(byLabel['COACH MESSAGES']).toBe('/coach-messages');
   });
 
   it('does not include legacy labels', () => {

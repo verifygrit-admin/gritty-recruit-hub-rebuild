@@ -14,7 +14,7 @@ export const STUDENT_NAV_LINKS = [
   { to: '/gritfit', label: 'MY GRIT FIT' },
   { to: '/shortlist', label: 'MY SHORTLIST' },
   { to: '/grit-guides', label: 'MY GRIT GUIDES' },
-  { to: '/coach-messages', label: 'Coach Messages' },
+  { to: '/coach-messages', label: 'COACH MESSAGES' },
 ];
 
 export const COACH_NAV_LINKS = [
