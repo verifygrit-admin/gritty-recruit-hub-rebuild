@@ -956,3 +956,29 @@ input, select, button, textarea {
 .cmg-history-pill[data-channel="twitter"] {
   background: #3A5A8C;
 }
+
+/* Phase 5 — FormPane reveal
+   Progressive-reveal sequencing for the five FormPane sub-phases. Phases
+   mount unconditionally at scenario-select time (subject to scenario-level
+   visibility), and CSS handles the staggered opacity / translateY transition
+   when data-revealed flips true. See computeReveal() in FormPane.jsx for
+   the gating logic and DESIGN_NOTES for the timing spec (500ms ease,
+   ~80ms stagger). */
+.cmg-phase-reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 500ms ease, transform 500ms ease;
+  pointer-events: none;
+  max-height: 0;
+  overflow: hidden;
+}
+.cmg-phase-reveal[data-revealed="true"] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  max-height: 2000px; /* arbitrary upper bound for content height */
+}
+/* Stagger via nth-child if helpful for the initial reveal — keep simple */
+@media (prefers-reduced-motion: reduce) {
+  .cmg-phase-reveal { transition: none; }
+}
