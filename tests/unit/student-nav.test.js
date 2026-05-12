@@ -42,11 +42,12 @@ describe('STUDENT_NAV_LINKS', () => {
 });
 
 describe('COACH_NAV_LINKS', () => {
-  it('is HOME + DASHBOARD + MY PROFILE + GRIT GUIDES (Sprint 022 + 023)', () => {
+  it('is HOME + DASHBOARD + MY PROFILE + PLAYER UPDATES + GRIT GUIDES (Sprint 026)', () => {
     expect(COACH_NAV_LINKS.map(l => l.label)).toEqual([
       'HOME',
       'DASHBOARD',
       'MY PROFILE',
+      'PLAYER UPDATES',
       'GRIT GUIDES',
     ]);
   });
@@ -54,5 +55,10 @@ describe('COACH_NAV_LINKS', () => {
   it('routes MY PROFILE to /coach/profile', () => {
     const byLabel = Object.fromEntries(COACH_NAV_LINKS.map(l => [l.label, l.to]));
     expect(byLabel['MY PROFILE']).toBe('/coach/profile');
+  });
+
+  it('routes PLAYER UPDATES to /coach/player-updates (Sprint 026)', () => {
+    const byLabel = Object.fromEntries(COACH_NAV_LINKS.map(l => [l.label, l.to]));
+    expect(byLabel['PLAYER UPDATES']).toBe('/coach/player-updates');
   });
 });

@@ -208,12 +208,13 @@ export default function Layout({ children }) {
               data-testid="authenticated-nav"
               aria-label="Primary navigation"
             >
-              {navLinks.map(({ to, label }) => (
+              {navLinks.map(({ to, label, testId }) => (
                 <NavLink
                   key={to}
                   to={to}
                   end={to === '/'}
                   className="layout-drawer-link"
+                  data-testid={testId}
                 >
                   {label}
                 </NavLink>

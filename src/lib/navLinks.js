@@ -21,5 +21,8 @@ export const COACH_NAV_LINKS = [
   { to: '/', label: 'HOME' },
   { to: '/coach', label: 'DASHBOARD' },
   { to: '/coach/profile', label: 'MY PROFILE' },
+  // Sprint 026 — Bulk PDS Coach View. Internal module names retain `bulk_pds`;
+  // user-facing label is "PLAYER UPDATES" per G2.
+  { to: '/coach/player-updates', label: 'PLAYER UPDATES', testId: 'coach-nav-player-updates' },
   { to: '/grit-guides', label: 'GRIT GUIDES' },
 ];
