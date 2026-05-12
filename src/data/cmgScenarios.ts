@@ -702,7 +702,7 @@ Sincerely,`,
   },
 
   /**
-   * Scenario 9 — No Reply — First Nudge
+   * Scenario 9 — No Reply #1 — First Nudge
    * Channel pattern: dm-first (DM is priority — email if no DM)
    * Recipients: position_coach, recruiting_area_coach
    * Required form fields derived from body_template tokens:
@@ -727,7 +727,7 @@ Sincerely,`,
    */
   {
     id: 9,
-    title: "No Reply — First Nudge",
+    title: "No Reply #1 — First Nudge",
     kind: "coach_message",
     channel_pattern: "dm-first",
     applies_to_recipients: ["position_coach", "recruiting_area_coach"],
@@ -740,7 +740,7 @@ Sincerely,`,
   },
 
   /**
-   * Scenario 10 — Bump to the Top
+   * Scenario 10 — No Reply #2 — Bump to the Top
    * Channel pattern: dm-first (DM is priority — email if no DM)
    * Recipients: position_coach, recruiting_area_coach
    * Required form fields derived from body_template tokens:
@@ -755,7 +755,7 @@ Sincerely,`,
    */
   {
     id: 10,
-    title: "Bump to the Top",
+    title: "No Reply #2 — Bump to the Top",
     kind: "coach_message",
     channel_pattern: "dm-first",
     applies_to_recipients: ["position_coach", "recruiting_area_coach"],
@@ -768,7 +768,7 @@ Sincerely,`,
   },
 
   /**
-   * Scenario 11 — Respectful Close
+   * Scenario 11 — No Reply #3 — Respectful Close
    * Channel pattern: dm-first (DM is priority — email if no DM)
    * Recipients: position_coach, recruiting_area_coach
    * Required form fields derived from body_template tokens:
@@ -781,7 +781,7 @@ Sincerely,`,
    */
   {
     id: 11,
-    title: "Respectful Close",
+    title: "No Reply #3 — Respectful Close",
     kind: "coach_message",
     channel_pattern: "dm-first",
     applies_to_recipients: ["position_coach", "recruiting_area_coach"],
