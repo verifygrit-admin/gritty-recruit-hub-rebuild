@@ -27,9 +27,10 @@ import { ADMIN_TABS, deriveActiveTab } from '../../src/lib/adminTabs.js';
 
 // ── TC-S001-D1-001 ─────────────────────────────────────────────────────────────
 
-describe('TC-S001-D1-001: ADMIN_TABS exports exactly four tabs', () => {
-  it('has length 4', () => {
-    expect(ADMIN_TABS).toHaveLength(4);
+describe('TC-S001-D1-001: ADMIN_TABS exports exactly five tabs', () => {
+  // Sprint 026 Phase 1b: tab count increased from 4 to 5 with Bulk PDS Approval.
+  it('has length 5', () => {
+    expect(ADMIN_TABS).toHaveLength(5);
   });
 });
 
@@ -50,14 +51,15 @@ describe('TC-S001-D1-002: ADMIN_TABS does not include a schools tab', () => {
 // ── TC-S001-D1-003 ─────────────────────────────────────────────────────────────
 
 describe('TC-S001-D1-003: ADMIN_TABS order matches spec', () => {
-  it('tab keys are in order: users, institutions, recruiting-events, audit', () => {
+  // Sprint 026 Phase 1b: Bulk PDS Approval inserted before Audit Log.
+  it('tab keys are in order: users, institutions, recruiting-events, bulk-pds, audit', () => {
     const keys = ADMIN_TABS.map((t) => t.key);
-    expect(keys).toEqual(['users', 'institutions', 'recruiting-events', 'audit']);
+    expect(keys).toEqual(['users', 'institutions', 'recruiting-events', 'bulk-pds', 'audit']);
   });
 
-  it('tab labels are in order: Users, Institutions, Recruiting Events, Audit Log', () => {
+  it('tab labels are in order: Users, Institutions, Recruiting Events, Bulk PDS Approval, Audit Log', () => {
     const labels = ADMIN_TABS.map((t) => t.label);
-    expect(labels).toEqual(['Users', 'Institutions', 'Recruiting Events', 'Audit Log']);
+    expect(labels).toEqual(['Users', 'Institutions', 'Recruiting Events', 'Bulk PDS Approval', 'Audit Log']);
   });
 });
 
@@ -78,6 +80,11 @@ describe('TC-S001-D1-004: deriveActiveTab resolves valid /admin/<tab> paths', ()
 
   it('returns "audit" for /admin/audit', () => {
     expect(deriveActiveTab('/admin/audit')).toBe('audit');
+  });
+
+  // Sprint 026 Phase 1b — Bulk PDS Approval route.
+  it('returns "bulk-pds" for /admin/bulk-pds', () => {
+    expect(deriveActiveTab('/admin/bulk-pds')).toBe('bulk-pds');
   });
 });
 

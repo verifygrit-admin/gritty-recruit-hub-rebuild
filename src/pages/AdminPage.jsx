@@ -6,11 +6,12 @@ import { ADMIN_TABS, deriveActiveTab } from '../lib/adminTabs.js';
 import AdminUsersTab from '../components/AdminUsersTab.jsx';
 import AdminInstitutionsTab from '../components/AdminInstitutionsTab.jsx';
 import AdminRecruitingEventsTab from '../components/AdminRecruitingEventsTab.jsx';
+import AdminBulkPdsTab from '../components/AdminBulkPdsTab.jsx';
 import AuditLogViewer from '../components/AuditLogViewer.jsx';
 import DualAdminIndicator from '../components/DualAdminIndicator.jsx';
 
-// AdminPage — Section D parent layout (Sprint 001 D1).
-// Four-tab nav: Users, Institutions, Recruiting Events, Audit Log.
+// AdminPage — Section D parent layout (Sprint 001 D1; Sprint 026 added Bulk PDS).
+// Five-tab nav: Users, Institutions, Recruiting Events, Bulk PDS Approval, Audit Log.
 // Hosted under AdminRoute in App.jsx (/admin/*); admin claim already verified.
 
 export default function AdminPage() {
@@ -132,6 +133,7 @@ export default function AdminPage() {
         {activeTab === 'users' && <AdminUsersTab />}
         {activeTab === 'institutions' && <AdminInstitutionsTab />}
         {activeTab === 'recruiting-events' && <AdminRecruitingEventsTab />}
+        {activeTab === 'bulk-pds' && <AdminBulkPdsTab />}
         {activeTab === 'audit' && <AuditLogViewer />}
       </main>
     </div>
