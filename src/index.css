@@ -494,3 +494,465 @@ input, select, button, textarea {
   font-weight: 600;
   padding: 12px 24px;
 }
+
+/* ============================================================================
+   Sprint 025 Phase 4 — Coach Message Generator
+   Visual classes for the CMG page (gallery, builder, preview, history).
+   Theme tokens consumed via var(--brand-*) so per-school theming works
+   through the existing body.school-{slug} class swap.
+   ============================================================================ */
+
+.cmg-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: var(--font-body);
+  color: #2C2C2C;
+}
+
+.cmg-page-header {
+  margin-bottom: 32px;
+}
+
+.cmg-page-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 2rem;
+  margin: 0 0 8px 0;
+  color: var(--brand-maroon);
+}
+
+.cmg-page-intro {
+  font-size: 1rem;
+  color: #444;
+  margin: 0;
+  max-width: 720px;
+}
+
+.cmg-page-loading {
+  font-style: italic;
+  color: #666;
+  padding: 32px 0;
+}
+
+/* --- Gallery ----------------------------------------------------------- */
+
+.cmg-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.cmg-gallery-section {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.cmg-gallery-section-heading {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin: 0 0 16px 0;
+  color: var(--brand-maroon-darker);
+}
+
+.cmg-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .cmg-gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .cmg-gallery-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cmg-scenario-card {
+  background: #FFFFFF;
+  border: 1px solid #E0DBC9;
+  border-left: 3px solid rgba(var(--brand-maroon-rgb), 0.45);
+  border-radius: 6px;
+  padding: 14px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  font: inherit;
+  color: inherit;
+}
+
+.cmg-scenario-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(var(--brand-maroon-rgb), 0.14);
+}
+
+.cmg-scenario-card:focus-visible {
+  outline: 2px solid var(--brand-gold);
+  outline-offset: 2px;
+}
+
+.cmg-scenario-card--selected {
+  background: #FAF6EC;
+  border-left-color: var(--brand-maroon-darker);
+}
+
+.cmg-scenario-card--public {
+  border-left-color: #3A5A8C; /* dusty navy per DESIGN_NOTES Twitter accent */
+}
+
+.cmg-scenario-card--public.cmg-scenario-card--selected {
+  background: #EFF0F4;
+}
+
+.cmg-scenario-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.cmg-scenario-card-number {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--brand-maroon);
+}
+
+.cmg-scenario-card--public .cmg-scenario-card-number {
+  color: #3A5A8C;
+}
+
+.cmg-scenario-card-channel {
+  font-size: 0.75rem;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cmg-scenario-card-title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 0;
+  color: #2C2C2C;
+}
+
+/* --- Builder ----------------------------------------------------------- */
+
+.cmg-builder {
+  margin-top: 40px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  border: 1px solid #E0DBC9;
+  overflow: hidden;
+}
+
+.cmg-builder-header {
+  padding: 18px 24px;
+  background: #FAF6EC;
+  border-bottom: 1px solid #E0DBC9;
+}
+
+.cmg-builder-title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.5rem;
+  margin: 0 0 4px 0;
+  color: var(--brand-maroon);
+}
+
+.cmg-builder-subtitle {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+}
+
+.cmg-builder-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+@media (max-width: 900px) {
+  .cmg-builder-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cmg-form-pane {
+  background: #FCFAF3;
+  padding: 24px;
+  border-right: 1px solid #E0DBC9;
+}
+
+@media (max-width: 900px) {
+  .cmg-form-pane {
+    border-right: none;
+    border-bottom: 1px solid #E0DBC9;
+  }
+}
+
+.cmg-phase {
+  margin-bottom: 24px;
+}
+
+.cmg-phase:last-child {
+  margin-bottom: 0;
+}
+
+.cmg-phase-heading {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin: 0 0 8px 0;
+  color: var(--brand-maroon-darker);
+}
+
+.cmg-phase-stub {
+  font-size: 0.85rem;
+  color: #888;
+  font-style: italic;
+  margin: 0;
+}
+
+.cmg-phase-stub code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-style: normal;
+}
+
+/* --- Preview pane ------------------------------------------------------ */
+
+.cmg-preview-pane {
+  background: #FFFEFA;
+  padding: 24px;
+}
+
+.cmg-preview-header {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+}
+
+.cmg-preview-format-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #FFFFFF;
+  background: var(--brand-maroon);
+}
+
+.cmg-preview-format-badge[data-format="twitter"] {
+  background: #3A5A8C;
+}
+
+.cmg-preview-recipient-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #E0DBC9;
+  margin-bottom: 16px;
+}
+
+.cmg-preview-recipient-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 14px;
+  cursor: pointer;
+  font: inherit;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.cmg-preview-recipient-tab.is-active {
+  color: var(--brand-maroon);
+  border-bottom-color: var(--brand-maroon);
+  font-weight: 600;
+}
+
+.cmg-preview-recipient-tab:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.cmg-preview-rc-callout {
+  background: #FAF6EC;
+  border-left: 3px solid var(--brand-gold);
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: #444;
+  margin-bottom: 16px;
+  border-radius: 0 4px 4px 0;
+}
+
+.cmg-preview-subject {
+  padding: 8px 0;
+  border-bottom: 1px solid #E0DBC9;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.cmg-preview-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.cmg-preview-body {
+  margin: 0 0 20px 0;
+}
+
+.cmg-preview-pre {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #2C2C2C;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+}
+
+.cmg-preview-signature {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed #E0DBC9;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+/* Placeholder-token visual treatment (Phase 6 wires the spans). */
+.cmg-token-placeholder {
+  color: #B85C2A; /* burnt orange — unfilled tokens */
+  text-decoration: underline dotted;
+  font-style: italic;
+}
+
+.cmg-token-placeholder--autofilled {
+  background: #E8DFC4;
+  color: #5C4B2A;
+  border-bottom: 1px solid #C7B98D;
+  padding: 0 2px;
+  border-radius: 2px;
+  text-decoration: none;
+  font-style: normal;
+}
+
+.cmg-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.cmg-preview-action {
+  background: var(--brand-maroon);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.cmg-preview-action:hover:not(:disabled) {
+  background: var(--brand-maroon-darker);
+}
+
+.cmg-preview-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cmg-preview-action--reset {
+  background: transparent;
+  color: var(--brand-maroon);
+  border: 1px solid var(--brand-maroon);
+}
+
+.cmg-preview-action--reset:hover:not(:disabled) {
+  background: rgba(var(--brand-maroon-rgb), 0.06);
+  color: var(--brand-maroon-darker);
+}
+
+/* --- Message history --------------------------------------------------- */
+
+.cmg-history {
+  margin-top: 40px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  border: 1px solid #E0DBC9;
+  padding: 20px 24px;
+}
+
+.cmg-history-heading {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin: 0 0 12px 0;
+  color: var(--brand-maroon-darker);
+}
+
+.cmg-history-empty {
+  color: #888;
+  font-style: italic;
+  margin: 0;
+  padding: 12px 0;
+}
+
+.cmg-history-table-wrap {
+  overflow-x: auto;
+}
+
+.cmg-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.cmg-history-table th,
+.cmg-history-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid #F0EBDA;
+}
+
+.cmg-history-table th {
+  background: #FAF6EC;
+  font-weight: 600;
+  color: #555;
+}
+
+.cmg-history-tag {
+  font-size: 0.85rem;
+  color: var(--brand-maroon);
+}
+
+.cmg-history-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--brand-maroon);
+  color: #FFFFFF;
+}
+
+.cmg-history-pill[data-channel="twitter"] {
+  background: #3A5A8C;
+}

@@ -6,6 +6,7 @@ import HudlLogo from './HudlLogo.jsx';
 import { useSchoolIdentity } from '../hooks/useSchoolIdentity.js';
 import { STUDENT_NAV_LINKS, COACH_NAV_LINKS } from '../lib/navLinks.js';
 import SlideOutShell from './SlideOutShell.jsx';
+import { ToastProvider } from './Toast.jsx';
 // Sprint 017 HF-B — JS-imported background assets (bypasses CSS-relative
 // asset resolution; restored to the proven pre-3b pattern, generalized for
 // two schools). See C-12 carry-forward: spaces in production asset filenames
@@ -139,6 +140,7 @@ export default function Layout({ children }) {
   const displayName = studentName || session?.user.email;
 
   return (
+    <ToastProvider>
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Topbar — single <header> at all viewports. Sandwich icon (left) +
           wordmark. User strip lives inside the drawer. Sprint 025 Phase 3. */}
@@ -312,5 +314,6 @@ export default function Layout({ children }) {
         </span>
       </footer>
     </div>
+    </ToastProvider>
   );
 }
