@@ -17,10 +17,20 @@
  * component renders by reading these templates and substituting bracket
  * tokens at preview time. Do NOT embed template text inside React components.
  *
- * Wording is preserved VERBATIM from the docx. Token strings, punctuation,
- * line breaks, and even spelling artifacts ("[School Namel]", "BC High" hard-
- * coded into some subject lines, "[Abbv Grad Year]" vs "[Abbrev Grad Year]")
- * are kept as-is. Cleanup is a downstream content task (see Sprint 025 retro).
+ * Wording is preserved VERBATIM from the docx with two narrow exceptions:
+ *   (a) "BC High" hardcoded in the subject lines of scenarios 2 and 3 was
+ *       corrected to [HS Name] so the scenario renders correctly for every
+ *       partner school, not just BC High. The docx itself is not modified;
+ *       it remains the archived source of truth for wording.
+ *   (b) Subjects for the No Response sequence (#9/#10/#11) are intentionally
+ *       null — these scenarios are same-thread nudges where the email client
+ *       preserves the prior subject line on reply. See per-scenario JSDoc.
+ *
+ * All other spelling artifacts ("[School Namel]", "[Abbv Grad Year]",
+ * "[College Name]", "[Name of the Camp]", etc.) are preserved verbatim in the
+ * template strings. They resolve correctly because SUBSTITUTION_TOKENS maps
+ * every variant to the same canonical form field — see the canonical-to-variant
+ * mapping block below the SUBSTITUTION_TOKENS export.
  */
 
 // ---------------------------------------------------------------------------
@@ -109,13 +119,13 @@ export const SUBSTITUTION_TOKENS: Record<
     source: "profile",
     field: "height",
     description:
-      "Height — referenced in Scenario 9 body. Not in current public.profiles columns; flagged as schema gap (see report).",
+      "Height (public.profiles.height — text, e.g. \"6-2\"). Auto-filled from profile; referenced in Scenario 9 body.",
   },
   "[Weight]": {
     source: "profile",
     field: "weight",
     description:
-      "Weight — referenced in Scenario 9 body. Not in current public.profiles columns; flagged as schema gap (see report).",
+      "Weight (public.profiles.weight — numeric). Auto-filled from profile; referenced in Scenario 9 body.",
   },
   "[Hudl film link]": {
     source: "profile",
@@ -247,6 +257,78 @@ export const SUBSTITUTION_TOKENS: Record<
 };
 
 // ---------------------------------------------------------------------------
+// Canonical-to-variant token mapping (for maintainability)
+// ---------------------------------------------------------------------------
+// The docx contains a handful of token variants (typos, abbreviations, and
+// alternate phrasings) that all resolve to the same underlying profile column
+// or form field. SUBSTITUTION_TOKENS above is the authoritative dispatcher;
+// every variant has its own entry. This block exists so future maintainers
+// can see the full picture at a glance.
+//
+//   profiles.high_school      ← [HS Name]
+//   profiles.gpa              ← [Current GPA], [GPA]
+//   profiles.grad_year        ← [Grad Year]   (raw four-digit)
+//   profiles.grad_year (deriv) ← [Abbrev Grad Year], [Abbv Grad Year]
+//   profiles.height           ← [Height]
+//   profiles.weight           ← [Weight]
+//   form.school_name          ← [School Name], [School Namel], [College Name]
+//   form.camp_name            ← [Camp Name], [Name of Camp], [Name of the Camp]
+//   form.camp_location        ← [Name of Location]
+//   form.camp_date            ← [Date]
+//   form.event_name           ← [Name of Event]
+//   form.event_day_of_week    ← [day of the week on which the event occurred]
+//   form.thank_you_sentence   ← [Thank the coach by sharing a sentence...]
+//   form.coach_handle         ← [@CoachHandle]   (Phase 1: placeholder; Phase 2: picker)
+//   form.position_coach_handle ← [Position Coach]
+//   form.head_coach_handle    ← [Head Coach]
+//   recipient.last_name       ← [Last Name]   (per active recipient tab)
+//   form.ac_or_rc_last_name   ← [Last Name of the Assistant Coach or Recruiting Coordinator you have been trying to contact]
+//
+// A future content cleanup pass in the docx can collapse the variants. Until
+// then, the renderer is variant-tolerant by design.
+
+/** Canonical-to-variant assertion. Imported by tests; throws at module load
+ *  if a referenced token is missing from SUBSTITUTION_TOKENS. Cheap insurance. */
+export const TOKEN_VARIANT_GROUPS: Record<string, readonly string[]> = {
+  high_school: ["[HS Name]"],
+  gpa: ["[Current GPA]", "[GPA]"],
+  grad_year: ["[Grad Year]"],
+  grad_year_abbrev: ["[Abbrev Grad Year]", "[Abbv Grad Year]"],
+  height: ["[Height]"],
+  weight: ["[Weight]"],
+  school_name: ["[School Name]", "[School Namel]", "[College Name]"],
+  camp_name: ["[Camp Name]", "[Name of Camp]", "[Name of the Camp]"],
+  camp_location: ["[Name of Location]"],
+  camp_date: ["[Date]"],
+  event_name: ["[Name of Event]"],
+  event_day_of_week: ["[day of the week on which the event occurred]"],
+  thank_you_sentence: [
+    "[Thank the coach by sharing a sentence that describes something that was meaningful for you and that took place at the camp or visit.]",
+  ],
+  coach_handle_generic: ["[@CoachHandle]"],
+  position_coach_handle: ["[Position Coach]"],
+  head_coach_handle: ["[Head Coach]"],
+  last_name: ["[Last Name]"],
+  ac_or_rc_last_name: [
+    "[Last Name of the Assistant Coach or Recruiting Coordinator you have been trying to contact]",
+  ],
+} as const;
+
+// Sanity assertion — every variant in TOKEN_VARIANT_GROUPS must be a key in
+// SUBSTITUTION_TOKENS. Runs at module load. If a variant is added to a group
+// but not to the dispatcher, the import fails fast at app startup rather than
+// silently leaving the token unsubstituted in rendered output.
+for (const [groupKey, variants] of Object.entries(TOKEN_VARIANT_GROUPS)) {
+  for (const variant of variants) {
+    if (!(variant in SUBSTITUTION_TOKENS)) {
+      throw new Error(
+        `cmgScenarios: token ${variant} (group "${groupKey}") is not in SUBSTITUTION_TOKENS dispatcher`,
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Signature templates
 // ---------------------------------------------------------------------------
 // The docx renders the signature block as:
@@ -318,11 +400,12 @@ export const CMG_SCENARIOS: ScenarioTemplate[] = [
    *   [Camp Question] both present in body).
    * Source: src/assets/Coach Communication Generator.docx — Section 2
    *   "2. The Camp Follow-Up Email & Twitter/DM"
-   * Verbatim subject line ends with literal "BC High" rather than [HS Name]
-   *   — preserved as-is, flagged for downstream content cleanup.
-   * Verbatim body contains "[School Namel]" (typo with trailing l) —
-   *   preserved as-is, mapped via SUBSTITUTION_TOKENS to the same school_name
-   *   form field.
+   * Subject line: docx hardcodes "BC High" at the end; corrected to [HS Name]
+   *   so the scenario renders correctly for every partner school. The docx
+   *   remains the archived wording source; the correction lives only here.
+   * Body contains "[School Namel]" (typo with trailing l) — preserved
+   *   verbatim, mapped via SUBSTITUTION_TOKENS to the same school_name form
+   *   field. See canonical-to-variant block.
    */
   {
     id: 2,
@@ -345,8 +428,9 @@ Will your school be having Junior Days or visit days in the spring?[Junior Day Q
 
 Thank you for your consideration.
 Sincerely,`,
+    // Corrected from docx source — docx hardcodes "BC High" in sample wording.
     email_subject_template:
-      "Nice to meet you at [Camp Name] | [Abbrev Grad Year] [Position] | BC High",
+      "Nice to meet you at [Camp Name] | [Abbrev Grad Year] [Position] | [HS Name]",
     email_signature_template: EMAIL_SIGNATURE,
     twitter_signature_template: TWITTER_SIGNATURE,
     required_form_fields: [
@@ -368,8 +452,8 @@ Sincerely,`,
    *   school_name, last_name, junior_day_question_text, camp_question_text
    * Closing questions derivation: both
    * Source: docx Section 3 "3. The 'Followed You on X' Email and/or X DM"
-   * Verbatim subject line ends with literal "BC High" rather than [HS Name]
-   *   — preserved verbatim, flagged.
+   * Subject line: docx hardcodes "BC High" at the end; corrected to [HS Name]
+   *   so the scenario renders correctly for every partner school.
    */
   {
     id: 3,
@@ -392,8 +476,9 @@ Will your school be having Junior Days or visit days in the spring?[Junior Day Q
 
 Thank you for your consideration.
 Sincerely,`,
+    // Corrected from docx source — docx hardcodes "BC High" in sample wording.
     email_subject_template:
-      "Thank you for the follow! | [Your Full Name] [Abbrev Grad Year] [Position] | BC High",
+      "Thank you for the follow! | [Your Full Name] [Abbrev Grad Year] [Position] | [HS Name]",
     email_signature_template: EMAIL_SIGNATURE,
     twitter_signature_template: TWITTER_SIGNATURE,
     required_form_fields: [
@@ -620,18 +705,20 @@ Sincerely,`,
    * Required form fields derived from body_template tokens:
    *   school_name, last_name
    *   ([Abbv Grad Year], [Position], [Height], [Weight], [GPA], [HS Name],
-   *    [Hudl film link] are profile-sourced — not form fields)
+   *    [Hudl film link] are all profile-sourced — not form fields)
+   * Profile dependencies (auto-fill from public.profiles):
+   *   grad_year, position, height, weight, gpa, high_school, hudl_url
    * Closing questions derivation: neither
    * Source: docx Section 9 "9. No Reply After Two Weeks" (No Response Sequence)
-   * Note: docx body uses [Abbv Grad Year] (variant of [Abbrev Grad Year]) and
-   *   [GPA] (variant of [Current GPA]). Also references [Height] and [Weight]
-   *   which are not currently in public.profiles. Flagged for content + schema
-   *   cleanup in the sprint retro.
-   * Note: docx does not show an email subject line for scenarios 9/10/11.
-   *   email_subject_template is set to null pending content clarification
-   *   (SPEC_FOR_CODE Step 2 expects a subject for the email fallback path).
-   * Note: docx does not show a signature block for scenarios 9/10/11. The
-   *   standard signature is applied for the email fallback path.
+   * Token variants used here ([Abbv Grad Year], [GPA]) resolve to the same
+   *   profile fields as their canonical counterparts via SUBSTITUTION_TOKENS.
+   *   See canonical-to-variant block.
+   * email_subject_template is intentionally null — the No Response sequence
+   *   (#9/#10/#11) is a same-thread nudge pattern. With no subject, the email
+   *   client preserves the prior subject line on reply, which is the intended
+   *   behavior. The mailto handler emits an empty subject param accordingly.
+   * Signature: docx does not show a signature for #9/#10/#11; the standard
+   *   EMAIL_SIGNATURE / TWITTER_SIGNATURE pair is applied for consistency.
    */
   {
     id: 9,
@@ -657,8 +744,9 @@ Sincerely,`,
    *    "Hi Coach -" with no name. last_name is therefore not required.)
    * Closing questions derivation: neither
    * Source: docx Section 10 "10. No Reply After a Week" (No Response Sequence)
-   * Note: docx does not show an email subject line for scenarios 9/10/11.
-   *   email_subject_template is set to null pending content clarification.
+   * email_subject_template is intentionally null — same-thread nudge pattern
+   *   (No Response sequence). Null subject preserves the prior thread's subject
+   *   line on reply in the email client.
    */
   {
     id: 10,
@@ -682,8 +770,9 @@ Sincerely,`,
    *   (none — the docx body has no [Bracketed Token] form/recipient references)
    * Closing questions derivation: neither
    * Source: docx Section 11 "11. No Reply After Two Weeks" (No Response Sequence)
-   * Note: docx does not show an email subject line for scenarios 9/10/11.
-   *   email_subject_template is set to null pending content clarification.
+   * email_subject_template is intentionally null — same-thread nudge pattern
+   *   (No Response sequence). Null subject preserves the prior thread's subject
+   *   line on reply in the email client.
    */
   {
     id: 11,
