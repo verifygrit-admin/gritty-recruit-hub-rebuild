@@ -2,7 +2,7 @@
  * Sprint 026 — Bulk PDS Playwright helpers
  *
  * Shared sign-in + nav helpers for the four bulk-pds specs. Mirrors the
- * pattern used in tests/regression.spec.js (Quin's selector contract).
+ * pattern used in tests/regression.spec.js (existing selector contract).
  * No new testids introduced beyond what regression.spec.js already relies on
  * (login-email, login-password, login-submit, layout-sandwich-btn).
  */
