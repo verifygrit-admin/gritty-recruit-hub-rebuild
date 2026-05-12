@@ -38,6 +38,15 @@
   --brand-mobile-menu-bg: #7A3232;
   --brand-on-maroon-text: var(--brand-gold);
   --brand-button-border: var(--brand-gold);
+
+  /* Sprint 025 Phase 5 — CMG auto-fill tokens (theme-invariant).
+     Per DESIGN_NOTES.md D3.2 / D1.6: these signal "data sourced from the
+     student's profile" and read consistently across partner-school themes.
+     Consumed by Phase4 profile-display fields and the preview-pane
+     auto-filled placeholder-token treatment. */
+  --autofill-bg: #E8DFC4;
+  --autofill-edge: #C7B98D;
+  --autofill-text: #5C4B2A;
 }
 
 /* Sprint 017 D5 / 3b — Belmont Hill brand-token override.
@@ -982,3 +991,257 @@ input, select, button, textarea {
 @media (prefers-reduced-motion: reduce) {
   .cmg-phase-reveal { transition: none; }
 }
+
+/* Phase 5 — Phase4 Profile (read-only auto-fill) */
+.cmg-p4-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.cmg-p4-header .cmg-phase-heading {
+  margin-bottom: 0;
+}
+
+.cmg-p4-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--autofill-bg);
+  color: var(--autofill-text);
+  border: 1px solid var(--autofill-edge);
+  line-height: 1.4;
+}
+
+.cmg-p4-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  margin: 8px 0 12px 0;
+  padding: 0;
+}
+
+@media (max-width: 600px) {
+  .cmg-p4-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cmg-p4-field {
+  background: var(--autofill-bg);
+  border: 1px solid var(--autofill-edge);
+  border-radius: 4px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cmg-p4-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--autofill-text);
+  opacity: 0.85;
+  margin: 0;
+}
+
+.cmg-p4-dd {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--autofill-text);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.cmg-p4-value--empty {
+  color: var(--autofill-text);
+  opacity: 0.45;
+}
+
+.cmg-p4-value--link {
+  color: var(--autofill-text);
+  text-decoration: underline;
+}
+
+.cmg-p4-value--link:hover {
+  color: #3D3119;
+}
+
+.cmg-p4-help {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 8px 0 0 0;
+}
+
+.cmg-p4-help-link {
+  color: var(--brand-maroon);
+  text-decoration: underline;
+}
+
+.cmg-p4-help-link:hover {
+  color: var(--brand-maroon-darker);
+}
+
+/* Phase 5 — Phase2 Event Context
+   Self-derived field set per scenario (camp_name, camp_location, camp_date,
+   event_name, event_day_of_week, thank_you_sentence). Field grid mirrors
+   the prototype's two-column field-row visual at >=720px and stacks below. */
+.cmg-p2-prompt {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0 0 12px 0;
+}
+
+.cmg-p2-empty {
+  font-size: 0.85rem;
+  color: #888;
+  font-style: italic;
+  margin: 0;
+}
+
+.cmg-p2-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+
+@media (max-width: 720px) {
+  .cmg-p2-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cmg-p2-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cmg-p2-field--wide {
+  grid-column: 1 / -1;
+}
+
+.cmg-p2-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.cmg-p2-label-hint {
+  font-weight: 400;
+  color: #777;
+  font-style: italic;
+}
+
+.cmg-p2-input {
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 8px 10px;
+  border: 1px solid #D6CFB8;
+  border-radius: 4px;
+  background: #FFFFFF;
+  color: #2C2C2C;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cmg-p2-input:focus {
+  outline: 2px solid var(--brand-maroon);
+  outline-offset: -1px;
+  border-color: var(--brand-maroon);
+}
+
+.cmg-p2-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #888 50%),
+                    linear-gradient(135deg, #888 50%, transparent 50%);
+  background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 28px;
+}
+
+.cmg-p2-textarea {
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.45;
+}
+
+.cmg-p2-help {
+  font-size: 0.8rem;
+  color: #777;
+  margin: 4px 0 0 0;
+  line-height: 1.4;
+}
+
+/* Phase 5 — Phase5 Closing Questions
+   Optional Junior Day and Camp question fields, gated by
+   scenario.closing_questions. Empty strings are valid; the substitution
+   layer is responsible for stripping the surrounding question text when
+   either field is empty. */
+.cmg-p5-prompt {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0 0 12px 0;
+}
+
+.cmg-p5-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cmg-p5-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cmg-p5-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.cmg-p5-label-hint {
+  font-weight: 400;
+  color: #777;
+  font-style: italic;
+}
+
+.cmg-p5-input {
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 8px 10px;
+  border: 1px solid #D6CFB8;
+  border-radius: 4px;
+  background: #FFFFFF;
+  color: #2C2C2C;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cmg-p5-input:focus {
+  outline: 2px solid var(--brand-maroon);
+  outline-offset: -1px;
+  border-color: var(--brand-maroon);
+}
+
+.cmg-p5-help {
+  font-size: 0.8rem;
+  color: #777;
+  margin: 4px 0 0 0;
+  line-height: 1.4;
+}
+
