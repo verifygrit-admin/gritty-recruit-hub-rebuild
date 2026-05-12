@@ -537,6 +537,61 @@ input, select, button, textarea {
   max-width: 720px;
 }
 
+/* --- Recruiting Guide CTA (PDF download) ------------------------------- */
+/* Matches the Gritty Guide RequestButton visual treatment from
+   GritGuidesPage.jsx — maroon background, white text, rounded corners,
+   inherits per-school theme via var(--brand-maroon). */
+
+.cmg-guide-cta {
+  margin: 16px 0 20px 0;
+  max-width: 720px;
+}
+
+.cmg-guide-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  background-color: var(--brand-maroon);
+  color: #FFFFFF;
+  text-decoration: none;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.cmg-guide-button:hover,
+.cmg-guide-button:focus-visible {
+  opacity: 0.9;
+  text-decoration: none;
+}
+
+.cmg-guide-button-icon {
+  flex-shrink: 0;
+}
+
+.cmg-guide-helper {
+  font-size: 0.875rem;
+  color: #555;
+  margin: 8px 0 0 0;
+  line-height: 1.45;
+}
+
+@media (max-width: 600px) {
+  .cmg-guide-cta {
+    max-width: 100%;
+  }
+  .cmg-guide-button {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .cmg-page-loading {
   font-style: italic;
   color: #666;

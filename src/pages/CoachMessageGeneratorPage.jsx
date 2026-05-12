@@ -5,6 +5,9 @@ import ScenarioGallery from '../components/cmg/ScenarioGallery.jsx';
 import MessageBuilder from '../components/cmg/MessageBuilder.jsx';
 import MessageHistory from '../components/cmg/MessageHistory.jsx';
 import { CMG_SCENARIOS } from '../data/cmgScenarios.ts';
+// Vite import-as-URL: filename contains a space on disk (do not rename); ?url
+// returns a hashed, URL-safe asset path that the browser can fetch directly.
+import coachCommunicationGuidePdf from '../assets/GritOS_Coach_Communication_Guide 2026.pdf?url';
 
 /**
  * CoachMessageGeneratorPage — the sixth Student View page (/coach-messages).
@@ -118,6 +121,34 @@ export default function CoachMessageGeneratorPage() {
     <div className="cmg-page" data-testid="cmg-page">
       <header className="cmg-page-header">
         <h1 className="cmg-page-title">Coach Messages</h1>
+        <section className="cmg-guide-cta" aria-label="Recruiting Guide">
+          <a
+            className="cmg-guide-button"
+            href={coachCommunicationGuidePdf}
+            download="GritOS-Coach-Communication-Guide-2026.pdf"
+          >
+            <svg
+              className="cmg-guide-button-icon"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>Coach Communication Guide</span>
+          </a>
+          <p className="cmg-guide-helper">
+            How to communicate with college coaches — professionally, confidently, and strategically when they contact you first.
+          </p>
+        </section>
         <p className="cmg-page-intro">
           Pick a scenario, fill in the gaps, and send your recruiting coach a clean, well-formatted message.
         </p>
