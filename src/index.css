@@ -1245,3 +1245,249 @@ input, select, button, textarea {
   line-height: 1.4;
 }
 
+/* Phase 5 — Phase1 Channel & School */
+
+.cmg-p1-field {
+  margin-bottom: 14px;
+}
+
+.cmg-p1-field:last-child {
+  margin-bottom: 0;
+}
+
+.cmg-p1-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.cmg-p1-channel-toggle {
+  display: inline-flex;
+  border: 1px solid #E0DBC9;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #FFFFFF;
+}
+
+.cmg-p1-channel-btn {
+  background: transparent;
+  border: none;
+  padding: 6px 16px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cmg-p1-channel-btn:hover {
+  background: rgba(var(--brand-maroon-rgb), 0.06);
+}
+
+.cmg-p1-channel-btn.is-active {
+  background: var(--brand-maroon);
+  color: #FFFFFF;
+}
+
+.cmg-p1-channel-btn:focus-visible {
+  outline: 2px solid var(--brand-gold);
+  outline-offset: 2px;
+}
+
+.cmg-p1-school-select {
+  width: 100%;
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 7px 10px;
+  border: 1px solid #D6D0BC;
+  border-radius: 4px;
+  background: #FFFFFF;
+  color: #2C2C2C;
+}
+
+.cmg-p1-school-select:focus {
+  outline: none;
+  border-color: var(--brand-maroon);
+  box-shadow: 0 0 0 2px rgba(var(--brand-maroon-rgb), 0.18);
+}
+
+.cmg-p1-help {
+  font-size: 0.78rem;
+  color: #888;
+  margin-top: 4px;
+}
+
+.cmg-p1-typeahead {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cmg-p1-typeahead-input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 7px 10px;
+  border: 1px solid var(--brand-maroon);
+  border-radius: 4px;
+  background: #FFFFFF;
+  color: #2C2C2C;
+}
+
+.cmg-p1-typeahead-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--brand-maroon-rgb), 0.22);
+}
+
+.cmg-p1-typeahead-hint {
+  font-size: 0.8rem;
+  color: #888;
+  font-style: italic;
+}
+
+.cmg-p1-typeahead-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid #E0DBC9;
+  border-radius: 4px;
+  background: #FFFFFF;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.cmg-p1-typeahead-row {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: #2C2C2C;
+}
+
+.cmg-p1-typeahead-row.is-active,
+.cmg-p1-typeahead-row[aria-selected="true"] {
+  background: rgba(var(--brand-maroon-rgb), 0.08);
+}
+
+.cmg-p1-typeahead-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmg-p1-typeahead-type {
+  font-size: 0.75rem;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex: 0 0 auto;
+}
+
+.cmg-p1-typeahead-cancel {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid #D6D0BC;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  color: #555;
+  cursor: pointer;
+}
+
+.cmg-p1-typeahead-cancel:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* Phase 5 — Phase3 Recipients */
+
+.cmg-p3-public-note {
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+  margin: 0;
+}
+
+.cmg-p3-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #E0DBC9;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.cmg-p3-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 7px 14px;
+  cursor: pointer;
+  font: inherit;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.cmg-p3-tab:hover {
+  color: var(--brand-maroon);
+}
+
+.cmg-p3-tab.is-active {
+  color: var(--brand-maroon);
+  border-bottom-color: var(--brand-maroon);
+  font-weight: 600;
+}
+
+.cmg-p3-tab:focus-visible {
+  outline: 2px solid var(--brand-gold);
+  outline-offset: 2px;
+}
+
+.cmg-p3-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cmg-p3-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.cmg-p3-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.cmg-p3-input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 7px 10px;
+  border: 1px solid #D6D0BC;
+  border-radius: 4px;
+  background: #FFFFFF;
+  color: #2C2C2C;
+}
+
+.cmg-p3-input:focus {
+  outline: none;
+  border-color: var(--brand-maroon);
+  box-shadow: 0 0 0 2px rgba(var(--brand-maroon-rgb), 0.18);
+}
+
+.cmg-p3-help {
+  font-size: 0.78rem;
+  color: #888;
+  margin-top: 4px;
+}
+
