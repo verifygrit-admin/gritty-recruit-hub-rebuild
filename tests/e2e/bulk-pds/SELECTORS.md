@@ -76,3 +76,25 @@ Convention: `bulk-pds-<scope>-<role>-<descriptor>`. Coach View scope = `coach`. 
 | `profile-note1-lock.spec.js`                   | none from this file — verifies absence of new field inputs on `/profile`                    |
 
 Last revision: 2026-05-12 (orchestrator scaffold; Agent 1a takes ownership at task start; Agent 1b may append admin entries).
+
+---
+
+## Agent 1d — Test-only selectors
+
+This subsection is APPEND-ONLY by Agent 1d. The specs under `tests/e2e/bulk-pds/`
+reference only selectors from the Agent 1a / 1b tables above; no new testids are
+required by the test scaffolding itself. The `profile-note1-lock.spec.js` spec
+verifies the ABSENCE of inputs/testids matching: `time_5_10_5`, `time_l_drill`,
+`bench_press`, `squat`, `clean` on `/profile` — there is no testid created for
+the locked state (locked == absent).
+
+Pre-existing testids consumed (not owned by Agent 1d, listed for traceability):
+
+| `data-testid`               | Source                              | Used by                                       |
+|-----------------------------|-------------------------------------|-----------------------------------------------|
+| `login-email`               | tests/regression.spec.js contract   | all 4 bulk-pds specs                          |
+| `login-password`            | tests/regression.spec.js contract   | all 4 bulk-pds specs                          |
+| `login-submit`              | tests/regression.spec.js contract   | all 4 bulk-pds specs                          |
+| `layout-sandwich-btn`       | tests/regression.spec.js contract   | post-login auth-state wait marker             |
+
+Last revision: 2026-05-12 (Agent 1d test scaffolding).
