@@ -55,9 +55,16 @@ export default function CoachMessageGeneratorPage() {
           )
           .eq('user_id', userId)
           .single(),
+        // short_list_items denormalizes school_name + div onto each row, so we
+        // read directly from it instead of trying to embed schools(...) —
+        // PostgREST embedded selects require a declared FK between
+        // short_list_items.unitid and schools.unitid, and that constraint does
+        // not exist in this schema. The Phase1Channel option label only needs
+        // unitid + school_name (type is rendered with a `s.type ? ...` guard,
+        // so leaving it undefined is safe).
         supabase
           .from('short_list_items')
-          .select('unitid, schools(unitid, school_name, div, type)')
+          .select('unitid, school_name, div')
           .eq('user_id', userId),
       ]);
       if (cancelled) return;
@@ -65,10 +72,12 @@ export default function CoachMessageGeneratorPage() {
       // Mirror the persisted log into local state so Phase 7 Copy / Email
       // events can append optimistically without a refetch.
       setLogRows(profileRes.data?.cmg_message_log ?? []);
-      // Normalize shortlist into a flat array of school records.
-      const flatShortlist = (shortlistRes.data ?? [])
-        .map(row => row.schools)
-        .filter(Boolean);
+      // Normalize shortlist into the flat shape Phase1Channel expects:
+      // { unitid, school_name, div, type? }. Drops any row missing unitid or
+      // school_name as a defensive guard.
+      const flatShortlist = (shortlistRes.data ?? []).filter(
+        row => row && row.unitid != null && row.school_name,
+      );
       setShortlist(flatShortlist);
       setLoading(false);
     })();
