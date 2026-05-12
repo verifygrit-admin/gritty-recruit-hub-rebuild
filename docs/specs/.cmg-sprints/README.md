@@ -1,5 +1,7 @@
 # Coach Message Generator Prototype
 
+**STATUS:** Sprint 025 SHIPPED 2026-05-12. See `SPRINT_025_RETRO.md` for the close report.
+
 A new sixth page in the Student View of GrittyOS Recruit Hub. The Coach Message Generator (CMG) is a dynamic, phase-by-phase form that constructs templated email and Twitter DM messages to college coaches across 11 recruiting scenarios. Output is plain text; students copy to clipboard or email the message to themselves to send from their own account.
 
 This README, plus DESIGN_NOTES, SPEC_FOR_CODE, EXECUTION_PLAN, and the Sprint 025 session spec, live at `docs/specs/.cmg-sprints/`. The visual ground truth (the prototype HTML) lives at `prototypes/cmg/coach-message-generator.html`. Per Sprint Mode Primer Section 9.5, the split keeps the prototype with other product prototypes and keeps sprint-mode docs (retros, execution plans, session specs) in the docs tree.
@@ -7,7 +9,7 @@ This README, plus DESIGN_NOTES, SPEC_FOR_CODE, EXECUTION_PLAN, and the Sprint 02
 ## Status
 
 **Prototype:** Locked. 11 scenarios, two-pane builder, JSONB-backed message log.
-**Sprint:** Sprint 025 — pending kickoff.
+**Sprint:** Sprint 025 — SHIPPED 2026-05-12 (final commit `1a0c9c9`). See `SPRINT_025_RETRO.md`.
 **Owner WG:** Student View working group (proposed; confirm at session open).
 **Phase strategy:** Phase 1 ships with student-filled coach data (no coach DB). Phase 2 unlocks Position Coach / Recruiting Area Coach pickers once coach contact scraping is complete.
 **Decision logs to file before kickoff:**
