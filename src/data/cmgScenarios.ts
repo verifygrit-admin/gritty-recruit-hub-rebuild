@@ -34,6 +34,18 @@
  */
 
 // ---------------------------------------------------------------------------
+// Section subtitles (Sprint 025 hotfix — restored from prototype)
+// ---------------------------------------------------------------------------
+// Verbatim from prototypes/cmg/coach-message-generator.html lines 930 + 950.
+// Rendered by ScenarioGallery beneath each section heading.
+
+export const SECTION_SUBTITLE_PUBLIC_POSTS =
+  "Broadcast posts on X/Twitter — visible to coaches and the public.";
+
+export const SECTION_SUBTITLE_COACH_MESSAGES =
+  "Direct messages to coaches — email or Twitter DM.";
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -58,6 +70,13 @@ export type ScenarioTemplate = {
   twitter_signature_template: string;
   required_form_fields: string[];
   closing_questions: ClosingQuestionFlag;
+  /**
+   * Short italic situational sentence shown beneath the card title in the
+   * gallery. Verbatim from prototypes/cmg/coach-message-generator.html
+   * (`.scenario-situation`). Optional — defensive for any scenario that may
+   * not yet have one. Sprint 025 hotfix.
+   */
+  helper_text?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -390,6 +409,8 @@ export const CMG_SCENARIOS: ScenarioTemplate[] = [
     twitter_signature_template: TWITTER_SIGNATURE,
     required_form_fields: ["camp_name", "position_coach_handle", "head_coach_handle"],
     closing_questions: "neither",
+    helper_text:
+      "I attended a camp and want to share my highlights with the coaches I worked with.",
   },
 
   /**
@@ -445,6 +466,7 @@ Sincerely,`,
       "camp_question_text",
     ],
     closing_questions: "both",
+    helper_text: "I just attended a camp and want to follow up with a coach I met.",
   },
 
   /**
@@ -491,6 +513,8 @@ Sincerely,`,
       "camp_question_text",
     ],
     closing_questions: "both",
+    helper_text:
+      "A coach just followed me on X/Twitter — I want to thank them and introduce myself.",
   },
 
   /**
@@ -533,6 +557,8 @@ Sincerely,`,
       "camp_question_text",
     ],
     closing_questions: "both",
+    helper_text:
+      "A shortlist school hasn't contacted me yet — I want to introduce myself first.",
   },
 
   /**
@@ -578,6 +604,8 @@ Sincerely,`,
       "camp_question_text",
     ],
     closing_questions: "both",
+    helper_text:
+      "A school sent an unpersonalized email blast — I want to reply and start a real conversation.",
   },
 
   /**
@@ -629,6 +657,8 @@ Sincerely,`,
       "camp_question_text",
     ],
     closing_questions: "both",
+    helper_text:
+      "I messaged an assistant coach or recruiting coordinator and never heard back. Time to reach the head coach.",
   },
 
   /**
@@ -664,6 +694,8 @@ Sincerely,`,
     twitter_signature_template: TWITTER_SIGNATURE,
     required_form_fields: ["camp_name", "last_name", "school_name", "camp_date"],
     closing_questions: "neither",
+    helper_text:
+      "I'm about to attend a camp where this coach will also be — heads-up so they can find me there.",
   },
 
   /**
@@ -699,6 +731,8 @@ Sincerely,`,
       "thank_you_sentence",
     ],
     closing_questions: "neither",
+    helper_text:
+      "I just attended a Junior Day, prospect camp, or visit at a target school.",
   },
 
   /**
@@ -737,6 +771,8 @@ Sincerely,`,
     twitter_signature_template: TWITTER_SIGNATURE,
     required_form_fields: ["school_name", "last_name"],
     closing_questions: "neither",
+    helper_text:
+      "No reply after my last message. Quick re-introduction with the basics.",
   },
 
   /**
@@ -765,6 +801,7 @@ Sincerely,`,
     twitter_signature_template: TWITTER_SIGNATURE,
     required_form_fields: ["school_name"],
     closing_questions: "neither",
+    helper_text: "Still no reply 5–7 days after Scenario 9. Short bump.",
   },
 
   /**
@@ -791,5 +828,7 @@ Sincerely,`,
     twitter_signature_template: TWITTER_SIGNATURE,
     required_form_fields: [],
     closing_questions: "neither",
+    helper_text:
+      "Final message — graceful, leaves the door open. Wait 5–7 days after Scenario 10.",
   },
 ];

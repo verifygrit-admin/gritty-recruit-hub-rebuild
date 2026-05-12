@@ -653,6 +653,28 @@ input, select, button, textarea {
   color: #2C2C2C;
 }
 
+/* Hotfix — Helper text restoration (Sprint 025, 2026-05-12) ---------------
+   Restores the section subtitles and per-scenario italic helper sentences
+   from prototypes/cmg/coach-message-generator.html that were dropped during
+   the React scaffolding pass. Visual treatment matches the prototype:
+   muted italic, smaller font, tight line-height. */
+
+.cmg-gallery-section-subtitle {
+  font-size: 0.8125rem; /* 13px — matches prototype .section-sub */
+  color: #666;
+  font-style: italic;
+  margin: -8px 0 16px 0; /* pulls up under the heading, spaces from grid */
+  line-height: 1.4;
+}
+
+.cmg-scenario-card-helper {
+  font-size: 0.75rem; /* 12px — matches prototype .scenario-situation */
+  color: #666;
+  font-style: italic;
+  line-height: 1.4;
+  margin: 4px 0 0 0;
+}
+
 /* --- Builder ----------------------------------------------------------- */
 
 .cmg-builder {

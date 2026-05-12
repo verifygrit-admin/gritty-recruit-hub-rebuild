@@ -1,4 +1,8 @@
-import { CMG_SCENARIOS } from '../../data/cmgScenarios.ts';
+import {
+  CMG_SCENARIOS,
+  SECTION_SUBTITLE_PUBLIC_POSTS,
+  SECTION_SUBTITLE_COACH_MESSAGES,
+} from '../../data/cmgScenarios.ts';
 
 /**
  * ScenarioGallery — renders the 11 scenario cards as two grouped sections:
@@ -7,13 +11,17 @@ import { CMG_SCENARIOS } from '../../data/cmgScenarios.ts';
  * Sprint 025 Phase 4 — visual shell complete; selection wires to parent
  * via onSelect(scenario).
  *
+ * Sprint 025 hotfix (2026-05-12): restored section subtitles and per-scenario
+ * helper text from the prototype that were dropped during scaffolding.
+ *
  * Visual hooks (CSS classes consumed in index.css):
  *   .cmg-gallery-section, .cmg-gallery-section-heading,
+ *   .cmg-gallery-section-subtitle (hotfix),
  *   .cmg-gallery-grid (3-col desktop → 2-col @ 900px → 1-col @ 560px),
  *   .cmg-scenario-card, .cmg-scenario-card--public,
  *   .cmg-scenario-card--selected, .cmg-scenario-card-number,
  *   .cmg-scenario-card-title, .cmg-scenario-card-channel,
- *   .cmg-scenario-card-situation.
+ *   .cmg-scenario-card-helper (hotfix).
  */
 export default function ScenarioGallery({ activeScenarioId, onSelect }) {
   const publicPosts = CMG_SCENARIOS.filter(s => s.kind === 'public_post');
@@ -24,6 +32,7 @@ export default function ScenarioGallery({ activeScenarioId, onSelect }) {
       <Section
         id="public-posts-section"
         heading="Public Posts"
+        subtitle={SECTION_SUBTITLE_PUBLIC_POSTS}
         scenarios={publicPosts}
         activeScenarioId={activeScenarioId}
         onSelect={onSelect}
@@ -32,6 +41,7 @@ export default function ScenarioGallery({ activeScenarioId, onSelect }) {
       <Section
         id="coach-messages-section"
         heading="Coach Messages"
+        subtitle={SECTION_SUBTITLE_COACH_MESSAGES}
         scenarios={coachMessages}
         activeScenarioId={activeScenarioId}
         onSelect={onSelect}
@@ -41,11 +51,14 @@ export default function ScenarioGallery({ activeScenarioId, onSelect }) {
   );
 }
 
-function Section({ id, heading, scenarios, activeScenarioId, onSelect, variant }) {
+function Section({ id, heading, subtitle, scenarios, activeScenarioId, onSelect, variant }) {
   if (scenarios.length === 0) return null;
   return (
     <section className="cmg-gallery-section" id={id}>
       <h2 className="cmg-gallery-section-heading">{heading}</h2>
+      {subtitle ? (
+        <p className="cmg-gallery-section-subtitle">{subtitle}</p>
+      ) : null}
       <div className="cmg-gallery-grid">
         {scenarios.map(scenario => (
           <Card
@@ -69,9 +82,6 @@ function Card({ scenario, isSelected, onSelect, variant }) {
         ? 'DM → Email'
         : 'Email → DM';
 
-  // Per scenario, surface a 1-line situation snippet derived from the title.
-  // The prototype shows a short situational line; the docx doesn't carry one
-  // separately, so we render the channel pattern + title pairing.
   return (
     <button
       type="button"
@@ -92,6 +102,9 @@ function Card({ scenario, isSelected, onSelect, variant }) {
         <span className="cmg-scenario-card-channel">{channelLabel}</span>
       </div>
       <h3 className="cmg-scenario-card-title">{scenario.title}</h3>
+      {scenario.helper_text ? (
+        <p className="cmg-scenario-card-helper">{scenario.helper_text}</p>
+      ) : null}
     </button>
   );
 }
