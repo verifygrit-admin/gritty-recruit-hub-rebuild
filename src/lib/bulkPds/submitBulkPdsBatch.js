@@ -25,8 +25,9 @@ export async function submitBulkPdsBatch({ batch_id, rows }) {
 
   if (insertError) return { ok: false, error: insertError };
 
-  // Fire-and-forget notification — UI proceeds regardless. Per
-  // notificationContract.md §"Coach-side call site".
+  // Fire-and-forget notification — staging insert is the source of truth;
+  // email is best-effort. Per notificationContract.md §"Coach-side call site".
+  // Failure logged with [NOTIFY_FAILED] prefix for grep-friendly diagnostics.
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.access_token) {
@@ -35,6 +36,7 @@ export async function submitBulkPdsBatch({ batch_id, rows }) {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -44,10 +46,17 @@ export async function submitBulkPdsBatch({ batch_id, rows }) {
           submitted_at: new Date().toISOString(),
           student_count: rows.length,
         }),
-      }).catch((e) => console.warn('[bulk-pds] notify failed (non-blocking):', e));
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const text = await res.text().catch(() => '');
+            console.warn(`[NOTIFY_FAILED] notify-bulk-pds-event HTTP ${res.status} batch_id=${batch_id} body=${text}`);
+          }
+        })
+        .catch((e) => console.warn(`[NOTIFY_FAILED] notify-bulk-pds-event fetch error batch_id=${batch_id}`, e));
     }
   } catch (e) {
-    console.warn('[bulk-pds] notify dispatch failed (non-blocking):', e);
+    console.warn(`[NOTIFY_FAILED] notify dispatch error batch_id=${batch_id}`, e);
   }
 
   return { ok: true, batch_id };
