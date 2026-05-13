@@ -1,0 +1,90 @@
+Sprint 027 Session Spec
+
+I want to run a single development sprint in sprint mode. This will be Sprint 027 in GrittyFB Recruit Hub, dedicated to creating new Admin Panel tab called "Account Updates" with eight subsequent data category toggles for student profiles, high school coach accounts, counselor accounts, high school accounts, college profiles, college coach profiles, and recruiting events, each with their own "Account Update" form.
+
+There will be five goals for this sprint that, when achieved, will constitute a Done State: 
+
+1. The "Account Updates" tab will allow the admin account, chris@grittyfb.com, to have read-write access to any  student profiles, high school coach accounts, counselor accounts, high school accounts, college profiles, college coach profiles, and recruiting event table data field, except for the user id, uuid, account email (if present), or account password (if present), for which the Admin will only have read access.
+
+2. The "Account Updates" tab will only be available in Admin View.
+
+3. The five "Account Update" tab forms will be modeled on the functionality of the "Player Updates" form in Coach View, with the following exceptions:
+
+(A) The "Account Updates" form will only allow for ten accounts within one category of the data table to be edited at any one time.
+(B) The "Account Updates" form functionality will NOT require an additional layer of verification and approval since the data updates are already being created and verified by the Admin through the "Account Updates" form.
+(C) The "Account Updates" tab will contain toggles between eight different types of account "Account Update" forms (student profiles, high school coach accounts, counselor accounts, high school accounts, college profiles, college coach profiles, and recruiting events). This will essentially result in eight "Account Update" forms separate by toggles, each for one of the eight account types.
+
+4. The "Account Updates" form should also allow for the creation or deletion of college profiles, college coach profiles, and recruiting events since these are not associated with an auth layer. However, no such deletion/creation option should be made available for student profiles, high school coach accounts, counselor accounts, or high school accounts, since these are auth-associated.
+
+5. The Admin should be able to:
+
+(A) Log into Admin View
+(B) Navigate to the "Account Updates" panel/tab
+(C) Select an account type toggle for either "Students" | "HS Coaches" | "Counselors" | "High Schools" | "Colleges" | "College Coaches" | "Recruiting Events" Account Update Forms
+(D) Select up to 10 associated accounts from that category of Update Form
+(E) Add missing data or edit existing data to those accounts selected for editing
+(F) Select Update > Review Data Being Update > Confirm and Submit the Updated Account Data
+
+Reference Files:
+"C:\Users\chris\dev\gritty-recruit-hub-rebuild\docs\architecture\DATA_INVENTORY.md"
+"C:\Users\chris\dev\gritty-recruit-hub-rebuild\src\pages\coach\CoachPlayerUpdatesPage.jsx"
+
+Note:
+Parallel subagent execution is encouraged where appropriate throughout this sprint.
+
+Permissions Authorized for this sprint:
+| Asset | What It Does (PM Analogy) | Status |
+|-------|--------------------------|--------|
+| Read | Views any file (checking the blueprint) | Active |
+| Write | Creates or overwrites files (drafting a new blueprint) | Active |
+| Edit | Modifies existing files (redlining a blueprint) | Active |
+| Bash | Runs terminal commands (operating power tools) | Active |
+| Glob | Finds files by pattern (searching the filing cabinet) | Active |
+| Grep | Searches file contents (finding a clause in a contract) | Active |
+| WebSearch | Searches the internet (researching building codes) | Active |
+| WebFetch | Retrieves web page content (pulling a vendor spec sheet) | Active |
+| Agent | Invokes sub-agents with identity binding (calling a specialist) | Active |
+| Skill | Invokes procedural skills (running a standard checklist) | Active |
+| TodoWrite | Tracks task progress (updating the punch list) | Active |
+| AskUserQuestion | Asks operator for decisions (requesting a change order) | Active |
+| EnterPlanMode / ExitPlanMode | Structured planning workflow (design phase) | Active |
+| EnterWorktree | Creates isolated git workspace (separate staging area) | Active |
+| NotebookEdit | Modifies Jupyter notebooks (updating the lab notebook) | Active |
+
+| MCP | What It Does | Status | Governance |
+|-----|-------------|--------|------------|
+| Supabase | Database -- schema, migrations, RLS | Active | Configured |
+| Context7 | Library documentation -- current API docs | Active, underused | Plugin |
+| Google Calendar | Scheduling | Active | Connected |
+| Gmail | Communications | Active | Connected |
+| Google Drive | Document storage | Active | Connected |
+| Canva | Design generation and export | Active | DEC-GLOBAL-051 |
+| Claude Preview | Live dev server preview and inspect | Available, underused | Connected |
+| Claude in Chrome | Browser automation | Available, underused | Connected |
+| Scheduled Tasks | Cron-based automated dispatch | Available, underused | Connected |
+| Sequential Thinking | Structured problem decomposition | Active | Connected |
+| MCP Registry | Tool marketplace | Active | Connected |
+
+| Plugin | Skills Bundled | Status | Governance |
+|--------|---------------|--------|------------|
+| Superpowers | 14 development methodology skills | Active | Undocumented |
+| Code Simplifier | 1 code review agent type | Active | Undocumented |
+| Context7 | 2 MCP documentation tools | Active | Plugin-delivered |
+
+**Superpowers (14):**
+| Skill                          | PM Analogy                                | Status |
+| ------------------------------ | ----------------------------------------- | ------ |
+| brainstorming                  | Requirements discovery workshop           | Active |
+| writing-plans                  | Sprint planning document                  | Active |
+| executing-plans                | Sprint execution with checkpoints         | Active |
+| test-driven-development        | Write inspection criteria before building | Active |
+| systematic-debugging           | Root cause investigation protocol         | Active |
+| verification-before-completion | Punch list walkthrough before sign-off    | Active |
+| requesting-code-review         | Submitting work for peer inspection       | Active |
+| receiving-code-review          | Responding to inspection findings         | Active |
+| finishing-a-development-branch | Phase completion and handoff              | Active |
+| dispatching-parallel-agents    | Assigning parallel work crews             | Active |
+| subagent-driven-development    | Multi-crew coordinated build              | Active |
+| using-git-worktrees            | Setting up isolated staging areas         | Active |
+| using-superpowers              | Orientation to methodology toolkit        | Active |
+| writing-skills                 | Creating new SOPs                         | Active |

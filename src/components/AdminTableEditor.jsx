@@ -403,7 +403,9 @@ export default function AdminTableEditor({
                   const key = cellKey(row[rowKey], col.key);
                   const isEditing = editingCellKey === key;
 
-                  // Read-only cell (non-editable column or mobile viewport)
+                  // Read-only cell (non-editable column or mobile viewport).
+                  // Optional col.render lets a column own custom JSX (e.g. the
+                  // Sprint 027 selection checkbox in account-updates).
                   if (!col.editable || !isDesktop) {
                     return (
                       <td
@@ -414,7 +416,7 @@ export default function AdminTableEditor({
                           width: col.width || 'auto',
                         }}
                       >
-                        {row[col.key] ?? ''}
+                        {col.render ? col.render(row) : (row[col.key] ?? '')}
                       </td>
                     );
                   }
