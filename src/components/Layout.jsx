@@ -143,11 +143,15 @@ export default function Layout({ children }) {
     <ToastProvider>
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Topbar — single <header> at all viewports. Sandwich icon (left) +
-          wordmark. User strip lives inside the drawer. Sprint 025 Phase 3. */}
+          wordmark. User strip lives inside the drawer. Sprint 025 Phase 3.
+          zIndex: 10 keeps the header above any page-level full-bleed
+          `position: fixed` background (e.g. BulkPdsBackground on
+          /coach/player-updates) that would otherwise occlude the nav. */}
       <header style={{
         backgroundColor: 'var(--brand-maroon)',
         padding: '0 24px',
         position: 'relative',
+        zIndex: 10,
       }}>
         <div style={{
           height: 64,
@@ -301,7 +305,8 @@ export default function Layout({ children }) {
         </div>
       </main>
 
-      {/* Footer */}
+      {/* Footer — zIndex matches header so page-level full-bleed fixed
+          backgrounds don't paint over it either. */}
       <footer style={{
         height: 48,
         backgroundColor: '#2C2C2C',
@@ -309,6 +314,8 @@ export default function Layout({ children }) {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 24,
+        position: 'relative',
+        zIndex: 10,
       }}>
         <span style={{ color: '#E8E8E8', fontSize: '0.75rem' }}>
           &copy; 2026 GrittyFB
