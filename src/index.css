@@ -1583,3 +1583,20 @@ input, select, button, textarea {
   white-space: nowrap;
 }
 
+/* ── Bulk PDS Coach Identity Box — responsive layout ────────────────────
+   Three-column grid above 640px (Coach | Email | School), stacked column
+   at <=640px so the box never overflows the mobile content area. Mirrors
+   the inline minmax sizing that previously lived on wrapStyle in
+   CoachIdentityBox.jsx (now className-driven so the media query wins). */
+.bulk-pds-coach-identity-box {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 1fr) minmax(120px, 1fr);
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .bulk-pds-coach-identity-box {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+

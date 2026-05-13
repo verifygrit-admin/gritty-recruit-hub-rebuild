@@ -8,14 +8,15 @@
  * config (Sprint 017 D5/3d).
  */
 
+// Layout is grid-based above the mobile breakpoint and stacks at <=640px
+// via the `.bulk-pds-coach-identity-box` rule in index.css. We don't set
+// gridTemplateColumns/display inline so the media-query class can take
+// over without !important fights.
 const wrapStyle = {
   backgroundColor: '#FFFFFF',
   borderRadius: 8,
   padding: '16px 20px',
   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
-  display: 'grid',
-  gridTemplateColumns: 'minmax(120px, 1fr) minmax(160px, 1fr) minmax(120px, 1fr)',
-  gap: 16,
 };
 
 const fieldWrap = { minWidth: 0 };
@@ -42,6 +43,7 @@ export default function CoachIdentityBox({ identity }) {
 
   return (
     <section
+      className="bulk-pds-coach-identity-box"
       style={wrapStyle}
       data-testid="bulk-pds-coach-identity-box"
       aria-label="Coach identity"
