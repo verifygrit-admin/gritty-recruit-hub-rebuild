@@ -64,7 +64,7 @@ const HIGH_SCHOOLS_COLUMNS = [
 
 const COLLEGES_COLUMNS = [
   colNarrow('unitid', 'UNITID'),
-  col('school_name', 'School', '200px'),
+  col('school_name', 'School', '240px'),
   col('city', 'City', '120px'),
   colNarrow('state', 'State'),
   col('ncaa_division', 'Div', '100px'),
@@ -88,6 +88,8 @@ const RECRUITING_EVENTS_COLUMNS = [
   col('event_type', 'Type', '120px'),
   col('event_name', 'Name', '200px'),
   col('event_date', 'Date', '120px'),
+  col('end_date', 'End', '120px'),
+  col('registration_deadline', 'Reg Deadline', '140px'),
   colNarrow('unitid', 'UNITID'),
   col('status', 'Status', '120px'),
   col('location', 'Location', '160px'),

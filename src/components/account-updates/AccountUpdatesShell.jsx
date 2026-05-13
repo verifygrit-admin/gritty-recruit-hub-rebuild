@@ -9,6 +9,8 @@ import useIsDesktop from '../../hooks/useIsDesktop.js';
 import AdminTableEditor from '../AdminTableEditor.jsx';
 import AccountUpdatesToggleBar from './AccountUpdatesToggleBar.jsx';
 import BulkEditDrawer from './BulkEditDrawer.jsx';
+import CreateRowModal from './CreateRowModal.jsx';
+import DeleteConfirmModal from './DeleteConfirmModal.jsx';
 import EmptyState from './EmptyState.jsx';
 import { ENTITY_KEYS, getEntity } from '../../lib/adminAccountUpdates/entityRegistry.js';
 import { getColumns } from '../../lib/adminAccountUpdates/columnConfigs.js';
@@ -30,6 +32,8 @@ export default function AccountUpdatesShell() {
   const [loadError, setLoadError] = useState('');
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [rowToDelete, setRowToDelete] = useState(null);
 
   const cfg = getEntity(activeEntity);
   const pkCol = cfg.pk;
@@ -83,38 +87,73 @@ export default function AccountUpdatesShell() {
     [showToast],
   );
 
-  // Compose columns with a leading checkbox column
+  // Compose columns with a leading checkbox column and (when delete_enabled)
+  // a trailing delete-action column. The delete column is OMITTED entirely
+  // for the 4 auth-linked entities — runtime gate matching the compile-time
+  // gate on Create/Delete modal imports in the 4 auth-linked views per Q5.
   const baseColumns = useMemo(() => getColumns(activeEntity), [activeEntity]);
   const columnsWithSelect = useMemo(
-    () => [
-      {
-        key: '__select__',
-        label: '',
-        editable: false,
-        width: '36px',
-        render: (row) => {
-          const id = row[pkCol];
-          const checked = selectedIds.has(id);
-          const atCap = !checked && selectedIds.size >= SELECTION_CAP;
-          return (
-            <input
-              type="checkbox"
-              data-testid={`row-select-${id}`}
-              checked={checked}
-              onChange={(e) => {
-                e.stopPropagation();
-                toggleSelected(id);
-              }}
-              onClick={(e) => e.stopPropagation()}
-              aria-label={`Select row ${id}`}
-              data-at-cap={atCap ? 'true' : 'false'}
-            />
-          );
+    () => {
+      const cols = [
+        {
+          key: '__select__',
+          label: '',
+          editable: false,
+          width: '36px',
+          render: (row) => {
+            const id = row[pkCol];
+            const checked = selectedIds.has(id);
+            const atCap = !checked && selectedIds.size >= SELECTION_CAP;
+            return (
+              <input
+                type="checkbox"
+                data-testid={`row-select-${id}`}
+                checked={checked}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  toggleSelected(id);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`Select row ${id}`}
+                data-at-cap={atCap ? 'true' : 'false'}
+              />
+            );
+          },
         },
-      },
-      ...baseColumns,
-    ],
-    [baseColumns, selectedIds, pkCol, toggleSelected],
+        ...baseColumns,
+      ];
+      if (cfg.delete_enabled) {
+        cols.push({
+          key: '__delete__',
+          label: '',
+          editable: false,
+          width: '64px',
+          render: (row) => (
+            <button
+              type="button"
+              data-testid={`row-delete-${row[pkCol]}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setRowToDelete(row);
+              }}
+              style={{
+                padding: '4px 10px',
+                backgroundColor: '#FFFFFF',
+                color: '#8B3A3A',
+                border: '1px solid #8B3A3A',
+                borderRadius: 3,
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+              }}
+            >
+              Delete
+            </button>
+          ),
+        });
+      }
+      return cols;
+    },
+    [baseColumns, selectedIds, pkCol, toggleSelected, cfg.delete_enabled],
   );
 
   const selectedRows = useMemo(
@@ -157,6 +196,25 @@ export default function AccountUpdatesShell() {
           <span data-testid="row-count">{total} total rows</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          {cfg.create_enabled && (
+            <button
+              type="button"
+              data-testid="open-create-row"
+              onClick={() => setCreateModalOpen(true)}
+              style={{
+                padding: '6px 14px',
+                backgroundColor: '#FFFFFF',
+                color: '#8B3A3A',
+                border: '1px solid #8B3A3A',
+                borderRadius: 4,
+                fontSize: '0.875rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              + Create new
+            </button>
+          )}
           <button
             type="button"
             data-testid="open-bulk-edit"
@@ -222,6 +280,35 @@ export default function AccountUpdatesShell() {
           onClose={() => setDrawerOpen(false)}
           onSuccess={handleBulkSuccess}
           adminEmail={adminEmail}
+        />
+      )}
+
+      {cfg.create_enabled && createModalOpen && (
+        <CreateRowModal
+          entity={activeEntity}
+          adminEmail={adminEmail}
+          onClose={() => setCreateModalOpen(false)}
+          onSuccess={(newRow) => {
+            setCreateModalOpen(false);
+            showToast({ message: `Created new ${cfg.label.toLowerCase().replace(/s$/, '')}.`, variant: 'success' });
+            // newRow could be merged into local state, but a refetch is simplest
+            load();
+            void newRow;
+          }}
+        />
+      )}
+
+      {cfg.delete_enabled && rowToDelete && (
+        <DeleteConfirmModal
+          entity={activeEntity}
+          row={rowToDelete}
+          adminEmail={adminEmail}
+          onClose={() => setRowToDelete(null)}
+          onSuccess={() => {
+            setRowToDelete(null);
+            showToast({ message: 'Row soft-deleted.', variant: 'success' });
+            load();
+          }}
         />
       )}
     </div>

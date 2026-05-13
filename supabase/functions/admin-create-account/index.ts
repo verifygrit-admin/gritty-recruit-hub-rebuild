@@ -1,44 +1,21 @@
-// admin-create-account Edge Function — Sprint 027 Phase 1 STUB.
+// admin-create-account Edge Function — Sprint 027 Phase 2.
 //
-// PURPOSE
-// -------
 // CREATE row for the 3 create-enabled entities (Q5 LOCKED):
 //   college_coaches | recruiting_events
+// colleges is in the enum for symmetry but the underlying schools_deny_insert
+// RLS policy blocks all writes; the UI never sends colleges to this EF.
 //
-// The colleges entity is listed in the type enum for symmetry, but the
-// underlying schools_deny_insert RLS policy blocks all writes — and the UI
-// never sends colleges to this EF (CollegesView does not import CreateRowModal).
+// AUTH (DEC 016-C WT-B): getUser() + app_metadata.role === 'admin'.
 //
-// AUTH GATE
-// ---------
-// Same as admin-update-account: getUser() + app_metadata.role === 'admin'.
+// REQUEST: POST /functions/v1/admin-create-account
+//   Body: { entity, row, admin_email }
 //
-// REQUEST
-// -------
-//   POST /functions/v1/admin-create-account
-//   Body: CreateRequest (see below)
-//
-// ENTITY GATE (defense-in-depth)
-// ------------------------------
-// EF rejects entity not in the 3 create-enabled keys with 400.
-//
-// REQUIRED FIELDS
-// ---------------
-// Per entity's create_required from COLUMN_WHITELISTS.md:
+// Required fields per entity from COLUMN_WHITELISTS.md:
 //   college_coaches: [unitid, name]
 //   recruiting_events: [unitid, event_date]
-// Missing → 400.
 //
-// WHITELIST ENFORCEMENT
-// ---------------------
-// Every key in row must be in entity's create_whitelist. Unknown → 400.
-//
-// AUDIT
-// -----
-// One row to admin_audit_log: action='INSERT', field=null, old_value=null,
-// new_value=<row jsonb>.
-//
-// PHASE 1 STUB — Phase 2 task 2.C1 fills the body.
+// AUDIT: one row to admin_audit_log: action='INSERT', field=null,
+//   old_value=null, new_value={...row}.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -51,17 +28,23 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-export type CreatableEntityKey = "colleges" | "college_coaches" | "recruiting_events";
+type CreatableEntityKey = "colleges" | "college_coaches" | "recruiting_events";
 
-export type CreateRequest = {
-  entity: CreatableEntityKey;
-  row: Record<string, unknown>;
-  admin_email: string;
+type EntityConfig = {
+  table: string;
+  pk: string;
+  create_whitelist: readonly string[];
+  create_required: readonly string[];
 };
 
-export type CreateResponse =
-  | { success: true; row: Record<string, unknown> }
-  | { success: false; error: string };
+const COLLEGE_COACHES_WHITELIST = ["unitid","name","title","email","photo_url","twitter_handle","is_head_coach","profile_url"] as const;
+const RECRUITING_EVENTS_WHITELIST = ["unitid","event_type","event_name","event_date","end_date","registration_deadline","location","cost_dollars","registration_url","status","description"] as const;
+
+const REGISTRY: Record<CreatableEntityKey, EntityConfig | null> = {
+  colleges: null, // hard-blocked by schools_deny_insert; rejected at gate
+  college_coaches: { table: "college_coaches", pk: "id", create_whitelist: COLLEGE_COACHES_WHITELIST, create_required: ["unitid","name"] },
+  recruiting_events: { table: "recruiting_events", pk: "id", create_whitelist: RECRUITING_EVENTS_WHITELIST, create_required: ["unitid","event_date"] },
+};
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -71,16 +54,88 @@ function json(data: unknown, status = 200): Response {
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-  }
-  if (req.method !== "POST") {
-    return json({ success: false, error: "Method not allowed" }, 405);
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (req.method !== "POST") return json({ success: false, error: "Method not allowed" }, 405);
+
+  // --- AUTH GATE ---
+  const authHeader = req.headers.get("authorization") ?? "";
+  const accessToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!accessToken) return json({ success: false, error: "Authorization header required" }, 401);
+
+  const userClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+  const { data: userData, error: userError } = await userClient.auth.getUser(accessToken);
+  if (userError || !userData?.user) return json({ success: false, error: "Invalid or expired session token" }, 401);
+  if (userData.user.app_metadata?.role !== "admin") return json({ success: false, error: "Forbidden" }, 403);
+
+  // --- BODY ---
+  let body: any;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ success: false, error: "Invalid JSON body" }, 400);
   }
 
-  const _ = createClient;
-  void SUPABASE_URL;
-  void SUPABASE_SERVICE_ROLE_KEY;
+  const entity = body?.entity as CreatableEntityKey;
+  const row = body?.row;
+  const admin_email = body?.admin_email;
 
-  return json({ success: false, error: "admin-create-account: Phase 1 stub. Implement in Phase 2 task 2.C1." }, 501);
+  if (entity === "colleges") {
+    return json({ success: false, error: "Create disabled for colleges (schools_deny_insert)" }, 400);
+  }
+  const cfg = REGISTRY[entity];
+  if (!cfg) {
+    return json({ success: false, error: "entity must be one of: college_coaches, recruiting_events" }, 400);
+  }
+  if (!row || typeof row !== "object") {
+    return json({ success: false, error: "row is required" }, 400);
+  }
+  if (typeof admin_email !== "string" || !admin_email) {
+    return json({ success: false, error: "admin_email is required" }, 400);
+  }
+
+  // Required fields
+  for (const f of cfg.create_required) {
+    const v = row[f];
+    if (v === undefined || v === null || v === "") {
+      return json({ success: false, error: `Required field missing: ${f}` }, 400);
+    }
+  }
+  // Whitelist
+  for (const k of Object.keys(row)) {
+    if (!cfg.create_whitelist.includes(k)) {
+      return json({ success: false, error: `Invalid column for entity: '${k}'` }, 400);
+    }
+  }
+
+  const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+
+  try {
+    const ins = await db.from(cfg.table).insert(row).select("*").maybeSingle();
+    if (ins.error || !ins.data) {
+      console.error("insert failed", ins.error);
+      return json({ success: false, error: ins.error?.message || "Insert failed" }, 500);
+    }
+    const created = ins.data as Record<string, any>;
+
+    // Audit
+    const auditIns = await db.from("admin_audit_log").insert({
+      admin_email,
+      action: "INSERT",
+      table_name: cfg.table,
+      row_id: String(created[cfg.pk]),
+      field: null,
+      old_value: null,
+      new_value: row,
+    });
+    if (auditIns.error) console.error("audit insert failed:", auditIns.error);
+
+    return json({ success: true, row: created });
+  } catch (err) {
+    console.error("admin-create-account: unexpected error", err);
+    const msg = err instanceof Error ? err.message : "Internal server error";
+    return json({ success: false, error: msg }, 500);
+  }
 });
