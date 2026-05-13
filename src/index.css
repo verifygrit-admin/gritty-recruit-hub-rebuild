@@ -1600,3 +1600,19 @@ input, select, button, textarea {
   }
 }
 
+/* ── Layout content well — mobile horizontal padding ────────────────────
+   The Layout content well uses inline padding: 48 for desktop. On mobile
+   that consumes 96px of viewport width, squeezing Coach View pages
+   (Player Updates list, panels rendered inside) and pushing content right
+   to the edge. Drop horizontal padding to 16px at <=640px so cards and
+   panels breathe properly inside the 375-414px viewport range. Vertical
+   padding stays generous so the visual rhythm of the page is preserved. */
+@media (max-width: 640px) {
+  .layout-content-well {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-top: 24px !important;
+    padding-bottom: 24px !important;
+  }
+}
+

@@ -300,7 +300,10 @@ export default function Layout({ children }) {
           backgroundColor: 'var(--brand-overlay-rgba, rgba(245, 239, 224, 0.9))',
           pointerEvents: 'none',
         }} />
-        <div style={{ width: '100%', maxWidth: 1200, padding: 48, position: 'relative', zIndex: 1 }}>
+        <div
+          className="layout-content-well"
+          style={{ width: '100%', maxWidth: 1200, padding: 48, position: 'relative', zIndex: 1 }}
+        >
           {children}
         </div>
       </main>
