@@ -17,9 +17,12 @@ const colNarrow = (key, label) => col(key, label, '90px');
 // ---------- per-entity column configs ----------
 
 const STUDENTS_COLUMNS = [
-  col('name', 'Name', '160px'),
+  col('name', 'Name', '180px'),
+  col('status', 'Status', '100px'),
   colWide('email', 'Email'),
-  col('high_school', 'HS', '160px'),
+  colNarrow('phone', 'Phone'),
+  col('parent_guardian_email', 'Parent Email', '200px'),
+  col('high_school', 'HS', '180px'),
   colNarrow('grad_year', 'Grad'),
   colNarrow('state', 'State'),
   colNarrow('position', 'Pos'),
@@ -28,13 +31,12 @@ const STUDENTS_COLUMNS = [
   colNarrow('speed_40', '40yd'),
   colNarrow('gpa', 'GPA'),
   colNarrow('sat', 'SAT'),
-  col('status', 'Status', '100px'),
 ];
 
 const HS_COACHES_COLUMNS = [
   col('full_name', 'Name', '160px'),
   colWide('email', 'Email'),
-  col('account_status', 'Status', '100px'),
+  col('account_status', 'Status', '110px'),
   col('payment_status', 'Payment', '100px'),
   colNarrow('email_verified', 'Verified'),
   col('hs_program_name', 'School', '160px'), // joined display field
@@ -57,6 +59,7 @@ const HIGH_SCHOOLS_COLUMNS = [
   colNarrow('zip', 'ZIP'),
   col('conference', 'Conference', '160px'),
   col('division', 'Div', '100px'),
+  colNarrow('state_athletic_association', 'Assoc'),
 ];
 
 const COLLEGES_COLUMNS = [
