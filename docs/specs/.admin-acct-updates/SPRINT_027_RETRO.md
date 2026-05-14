@@ -177,3 +177,5 @@ ad62585 sprint-027/Group B: per-entity column-config polish from 4 subagent repo
 ---
 
 **Sprint 027 closes after operator approves Phase 4 push + PR.**
+
+MERGED 566b910 on 2026-05-13.
