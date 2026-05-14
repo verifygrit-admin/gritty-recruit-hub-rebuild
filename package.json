@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "test:unit": "vitest run tests/unit/",
     "test:e2e": "npx playwright test",
-    "migrate": "node scripts/migrate.js"
+    "migrate": "node scripts/migrate.js",
+    "audit:migrations": "node scripts/audit-migration-tracking.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",
