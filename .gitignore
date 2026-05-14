@@ -13,6 +13,10 @@ docs/superpowers/
 # Playwright output (DEC-GLOBAL-056)
 playwright-report/
 test-results/
+playwright-results.json
+tests/e2e/admin-account-updates/.auth/
+tests/e2e/admin-account-updates/playwright-report/
+tests/e2e/admin-account-updates/playwright-results.json
 
 # Agent-generated working artifacts (DEC-GLOBAL-056)
 *_log.txt

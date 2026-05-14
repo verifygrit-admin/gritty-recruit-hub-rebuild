@@ -7,6 +7,7 @@ import AdminUsersTab from '../components/AdminUsersTab.jsx';
 import AdminInstitutionsTab from '../components/AdminInstitutionsTab.jsx';
 import AdminRecruitingEventsTab from '../components/AdminRecruitingEventsTab.jsx';
 import AdminBulkPdsTab from '../components/AdminBulkPdsTab.jsx';
+import AdminAccountUpdatesPage from './AdminAccountUpdatesPage.jsx';
 import AuditLogViewer from '../components/AuditLogViewer.jsx';
 import DualAdminIndicator from '../components/DualAdminIndicator.jsx';
 
@@ -134,6 +135,7 @@ export default function AdminPage() {
         {activeTab === 'institutions' && <AdminInstitutionsTab />}
         {activeTab === 'recruiting-events' && <AdminRecruitingEventsTab />}
         {activeTab === 'bulk-pds' && <AdminBulkPdsTab />}
+        {activeTab === 'account-updates' && <AdminAccountUpdatesPage />}
         {activeTab === 'audit' && <AuditLogViewer />}
       </main>
     </div>
