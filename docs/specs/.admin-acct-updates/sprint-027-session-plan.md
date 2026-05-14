@@ -285,36 +285,36 @@ For EACH of the 7 entities, run this script:
 
 **Goal:** Single feature branch, commit per phase milestone, push at sprint close.
 
-### Tasks
+**STATUS: COMPLETED 2026-05-13.** See `SPRINT_027_RETRO.md` for the full close-out report.
 
-- [ ] **4.1 Branch.** Cut `sprint-027/admin-account-updates` from `master` HEAD.
-  ```bash
-  git checkout master
-  git pull origin master
-  git checkout -b sprint-027/admin-account-updates
+### Tasks (all DONE)
+
+- [x] **4.1 Branch.** Cut `sprint-027/admin-account-updates` from `master` HEAD `02eab22`. Verified clean state before cutting.
+
+- [x] **4.2 Commit cadence.** Final 6 commits:
   ```
-
-- [ ] **4.2 Commit cadence.**
-  - End of Phase 0: commit `PHASE_0_ERD_RECON.md` + `READ_ONLY_FIELDS.md` (`docs(sprint-027): phase 0 ERD recon + readonly fields artifact`).
-  - End of Phase 1: commit `PHASE_1_ARCHITECTURE.md` (`docs(sprint-027): phase 1 architecture`).
-  - During Phase 2: per-task commits per the cadence in Group A/B/C/D (~16 commits).
-  - End of Phase 3: commit Playwright suite + any test fixes (`test(sprint-027): admin account updates e2e + negative coverage`).
-
-- [ ] **4.3 No push until sprint close.** All commits stay local until Phase 3 done condition is confirmed by Chris. This prevents partial-feature deploys to preview.
-
-- [ ] **4.4 Push at sprint close.**
-  ```bash
-  git push -u origin sprint-027/admin-account-updates
+  e52dfea sprint-027/Phase 4: scripts/audit-migration-tracking.js (CF-027-2 follow-up)
+  0d26a27 sprint-027/Phase 3: e2e suite — 63 tests pass (50 positive + 12 negative + 1 smoke)
+  e94bb27 sprint-027/Group D: cross-entity data-plane smoke report
+  ca8fb6a sprint-027/Group C: create + delete EFs + modals + Shell wiring + polish
+  ad62585 sprint-027/Group B: per-entity column-config polish from 4 subagent reports
+  1225029 sprint-027/Group A: scaffolding + EFs (read+update) + migrations
   ```
-  Then open PR. PR body links this session plan and the three phase artifacts.
+  Lower than the original `~16 commits` estimate because Group A was bundled (foundational scaffolding doesn't benefit from sub-commits) and Group B/C subagent dispatches did read-only review (no per-subagent commits).
 
-- [ ] **4.5 Push protocol checks (per `~/.claude/rules/push-protocol.md`).** Trigger events that fire in this sprint:
-  - Event #5 (cutting a new branch) — base is master, must be clean and pushed (verify before 4.1).
-  - Event #9 (schema/API contract changes) — `0051` and `0052` migrations + 4 new EF contracts.
+- [x] **4.3 No push until sprint close.** Honored — branch stayed local through Phase 3 done.
+
+- [x] **4.4 Push at sprint close.** Branch pushed; PR opened. See SPRINT_027_RETRO.md for URLs.
+
+- [x] **4.5 Push protocol checks.**
+  - Event #5 (cutting a new branch) — base was master `02eab22`, clean.
+  - Event #9 (schema/API contract changes) — `0051` + `0052` migrations applied to live; 4 EFs deployed; documented in PHASE_2_SMOKE_REPORT.md.
   - Event #10 (data pipeline operations) — none (no Serper/IPEDS).
-  - Event #1 (session close / pause) — fires at the end of the session regardless of phase.
+  - Event #1 (session close / pause) — fired at sprint close.
 
-- [ ] **4.6 Post-merge.** After Chris approves PR + merge, the deploy pipeline runs. Standard post-deploy verification per `~/.claude/rules/push-protocol.md`. Out of scope for this plan.
+- [x] **4.6 CF-027-2 follow-up (added per Phase 4 directive).** `scripts/audit-migration-tracking.js` written + `npm run audit:migrations` script added. First-run output confirms 0 missing tracking rows when both `public.supabase_migrations` and `supabase_migrations.schema_migrations` are queried (key Phase 4 discovery: this project has TWO tracking tables, not one).
+
+- [ ] **4.7 Post-merge.** After operator approves PR + merge, the deploy pipeline runs. Standard post-deploy verification per `~/.claude/rules/push-protocol.md`. Out of scope for this sprint — handed off to operator.
 
 ---
 
